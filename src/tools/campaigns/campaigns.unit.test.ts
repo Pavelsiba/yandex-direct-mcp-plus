@@ -4,11 +4,13 @@ import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/f
 import {
   handleCreateCampaign,
   handleGetCampaign,
+  handleGetStrategy,
   handleListCampaigns,
   handleManageCampaigns,
+  handleSetStrategy,
   handleUpdateCampaign
 } from "./handler.js"
-import { createCampaignSchema, getCampaignSchema, updateCampaignSchema } from "./schema.js"
+import { createCampaignSchema, getCampaignSchema, setStrategySchema, updateCampaignSchema } from "./schema.js"
 
 installFetchMock()
 
@@ -127,6 +129,71 @@ describe("manage_campaigns", () => {
 
     expect(lastBody().method).toBe("archive")
     expect(lastRawBody()).toContain('"Ids":[123,456]')
+  })
+})
+
+describe("get_strategy", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("запрашивает стратегию отдельным набором полей текстовой кампании", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleGetStrategy({ campaign_id: "123" })
+
+    expect(lastBody().params.TextCampaignFieldNames).toEqual(["BiddingStrategy"])
+  })
+})
+
+describe("set_strategy", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("кладёт настройки в объект, названный по стратегии", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "WB_MAXIMUM_CLICKS",
+      network_type: "NETWORK_DEFAULT",
+      weekly_spend_limit: 7000,
+      bid_ceiling: 50,
+      network_limit_percent: 30
+    })
+
+    await handleSetStrategy(params)
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy).toEqual({
+      Search: {
+        BiddingStrategyType: "WB_MAXIMUM_CLICKS",
+        WbMaximumClicks: { WeeklySpendLimit: 7_000_000_000, BidCeiling: 50_000_000 }
+      },
+      Network: { BiddingStrategyType: "NETWORK_DEFAULT", NetworkDefault: { LimitPercent: 30 } }
+    })
+  })
+
+  it("не даёт включить максимум кликов без недельного бюджета", async () => {
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "WB_MAXIMUM_CLICKS",
+      network_type: "SERVING_OFF"
+    })
+
+    await expect(handleSetStrategy(params)).rejects.toThrow("weekly_spend_limit обязателен")
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it("отправляет стратегию без настроек пустым объектом", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "HIGHEST_POSITION",
+      network_type: "NETWORK_DEFAULT"
+    })
+
+    await handleSetStrategy(params)
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy).toEqual({
+      Search: { BiddingStrategyType: "HIGHEST_POSITION" },
+      Network: { BiddingStrategyType: "NETWORK_DEFAULT", NetworkDefault: {} }
+    })
   })
 })
 
