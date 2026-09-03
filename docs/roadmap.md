@@ -1,0 +1,65 @@
+# Пробелы в покрытии API и план доработки
+
+Разобрано чтением исходников, а не README. Актуально на 03.09.2026, версия кода —
+48 инструментов.
+
+## Что уже покрыто
+
+Кампании (+ управление и стратегии), группы объявлений, объявления (+ модерация),
+ключевые фразы и ставки, минус-фразы (+ общие наборы `NegativeKeywordSharedSets`),
+быстрые ссылки, уточнения, изображения объявлений, корректировки ставок
+(устройства / пол / возраст), ретаргетинг-листы, аудиторные и динамические цели,
+фиды (только чтение), отчёт по поисковым запросам, `get_changes`, визитки, профили
+организаций, баланс, регионы. Полный список — в README.
+
+## P1 — критично
+
+1. **Часовой пояс и временной таргетинг (`TimeTargeting`)** — отсутствует полностью:
+   ни в `create_campaign`, ни в `update_campaign`, ни отдельным инструментом
+   (`grep TimeTargeting src/` — 0 совпадений). Без него нельзя ни ограничить показы
+   рабочими часами, ни задать кампании часовой пояс, отличный от МСК.
+
+2. **Смена стратегии на существующей кампании.** `create_campaign` принимает
+   `AVERAGE_CPA`, `AVERAGE_CPC`, `PAY_FOR_CONVERSION`, а `set_strategy` — нет: там
+   зашит enum `HIGHEST_POSITION | WB_MAXIMUM_CLICKS | SERVING_OFF` плюс
+   `NETWORK_DEFAULT`. Типовой сценарий «стартовать на оплате за клики, набрать
+   статистику, переключиться на оплату за конверсии» через API недоступен.
+
+3. **Минус-фразы — только полная замена.** `set_campaign_negative_keywords` и
+   `set_ad_group_negative_keywords` отправляют `NegativeKeywords.Items` целиком.
+   Чтение (`get_campaign_negative_keywords`) есть, объединения нет — чтобы добавить
+   одну фразу, клиент обязан сам прочитать, слить и отправить весь список.
+
+## P2 — заметно ограничивает
+
+4. **`get_statistics` — `ReportType` зашит в `CAMPAIGN_PERFORMANCE_REPORT`.**
+   Из отчётов Директа доступен только он; `get_search_queries` отдельно закрывает
+   `SEARCH_QUERY_PERFORMANCE_REPORT`. Недоступны `ADGROUP_PERFORMANCE_REPORT`,
+   `AD_PERFORMANCE_REPORT`, `CRITERIA_PERFORMANCE_REPORT`,
+   `ACCOUNT_PERFORMANCE_REPORT`, `CUSTOM_REPORT`,
+   `REACH_AND_FREQUENCY_PERFORMANCE_REPORT`.
+
+5. **UTM-разметка (`TrackingParams`)** — не поддержана ни на кампании, ни на
+   объявлении. Метки можно только вписать руками в `href` при создании объявления.
+
+6. **Автотаргетинг в группах.** `create_ad_group` принимает только `Name`,
+   `CampaignId`, `RegionIds`. Категории автотаргетинга (`RelevantKeywords`)
+   недоступны ни на чтение, ни на запись.
+
+## P3 — по мере необходимости
+
+7. **Фиды — только чтение** (`list_feeds`). `Feeds.add/update/delete` не покрыты,
+   товарные кампании настраиваются вручную.
+
+8. **Комбинаторные объявления.** `create_text_ad` / `update_text_ad` работают только
+   с классическим `TextAd`. Отдельный ли это `AdType` в сервисе `Ads` или другая
+   модель данных (ассеты ЕПК) — требует исследования до написания кода.
+
+9. Не трогаем без явного запроса: `AgencyClients`, `Clients`, `Creatives`,
+   `AdVideos`, `TurboPages`, `Leads`, `KeywordsResearch`, портфельные `Strategies`.
+
+## Инфраструктура
+
+Отдельным потоком, до фич: архитектура (`docs/architecture.md`), линтеры
+(eslint + boundaries, knip), хуки (lefthook, commitlint), обновление зависимостей
+(zod v4, SDK 1.30), рефакторинг под архитектуру, CI/CD, semantic-release.
