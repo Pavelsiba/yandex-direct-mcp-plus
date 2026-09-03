@@ -12,8 +12,16 @@ export const listFeedsSchema = z.object({
 export async function handleListFeeds(params: z.infer<typeof listFeedsSchema>): Promise<string> {
   const request: Record<string, unknown> = {
     FieldNames: [
-      "Id", "Name", "BusinessType", "SourceType", "FilterSchema", "UpdatedAt",
-      "CampaignIds", "NumberOfItems", "Status", "TitleAndTextSources"
+      "Id",
+      "Name",
+      "BusinessType",
+      "SourceType",
+      "FilterSchema",
+      "UpdatedAt",
+      "CampaignIds",
+      "NumberOfItems",
+      "Status",
+      "TitleAndTextSources"
     ],
     FileFeedFieldNames: ["Filename"],
     UrlFeedFieldNames: ["Login", "Url", "RemoveUtmTags"]

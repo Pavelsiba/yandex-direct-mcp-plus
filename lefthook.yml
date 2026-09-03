@@ -12,16 +12,19 @@ pre-commit:
       run: git branch --show-current | grep -qxv -e main -e dev
       fail_text: "main и dev — интеграционные ветки. Заведите ветку под задачу: git switch -c feat/…"
 
-    # --no-warn-ignored: в {staged_files} может попасть игнорируемый файл, и без
-    # флага предупреждение об этом валит коммит через --max-warnings 0.
+    # Biome: формат и линт одним проходом, свой парсер — от версии TypeScript
+    # не зависит. --no-errors-on-unmatched и --files-ignore-unknown нужны потому,
+    # что в {staged_files} попадают файлы вне области biome.json (доки, ямлы):
+    # без них хук падал бы на каждом коммите, не трогающем код.
     - name: lint
-      glob: "*.ts"
-      run: npx eslint --fix --max-warnings 0 --no-warn-ignored {staged_files}
+      glob: "{*.ts,*.js}"
+      run: npx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
 
-    # tsc проверяет проект целиком, per-file его гонять нельзя.
+    # tsc проверяет проект целиком, per-file его гонять нельзя. Конфиги на .js
+    # тоже под проверкой (tsconfig.json их включает), отсюда второй шаблон.
     - name: typecheck
-      glob: "*.ts"
+      glob: "{*.ts,*.config.js}"
       run: npm run typecheck
 
     # Тесты не ходят в сеть, весь прогон — меньше секунды, поэтому гоняем всегда.

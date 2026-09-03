@@ -6,7 +6,10 @@ import { buildPage, pageFields } from "../pagination.js"
 
 export const listVcardsSchema = z.object({
   vcard_ids: z.array(idField("ID визитки")).max(10000).optional(),
-  campaign_ids: z.array(idField("ID кампании")).max(10).optional()
+  campaign_ids: z
+    .array(idField("ID кампании"))
+    .max(10)
+    .optional()
     .describe("Найти визитки, привязанные к объявлениям этих кампаний"),
   ...pageFields
 })
@@ -14,12 +17,12 @@ export const listVcardsSchema = z.object({
 export async function handleListVcards(params: z.infer<typeof listVcardsSchema>): Promise<string> {
   const ids = new Set(params.vcard_ids ?? [])
   if (params.campaign_ids?.length) {
-    const ads = await apiPost("ads", "get", {
+    const ads = (await apiPost("ads", "get", {
       SelectionCriteria: { CampaignIds: apiIds(params.campaign_ids) },
       FieldNames: ["Id"],
       TextAdFieldNames: ["VCardId"],
       Page: { Limit: 10000 }
-    }) as { result?: { Ads?: Array<{ TextAd?: { VCardId?: unknown } }> } }
+    })) as { result?: { Ads?: Array<{ TextAd?: { VCardId?: unknown } }> } }
     for (const ad of ads.result?.Ads ?? []) {
       const value = ad.TextAd?.VCardId
       if (typeof value === "string" && /^[1-9]\d*$/.test(value)) ids.add(value)
@@ -33,9 +36,23 @@ export async function handleListVcards(params: z.infer<typeof listVcardsSchema>)
   const request: Record<string, unknown> = {
     SelectionCriteria: { Ids: apiIds([...ids]) },
     FieldNames: [
-      "Id", "CampaignId", "Country", "City", "CompanyName", "WorkTime", "Phone",
-      "Street", "House", "Building", "Apartment", "InstantMessenger", "ExtraMessage",
-      "ContactEmail", "Ogrn", "ContactPerson", "MetroStationId"
+      "Id",
+      "CampaignId",
+      "Country",
+      "City",
+      "CompanyName",
+      "WorkTime",
+      "Phone",
+      "Street",
+      "House",
+      "Building",
+      "Apartment",
+      "InstantMessenger",
+      "ExtraMessage",
+      "ContactEmail",
+      "Ogrn",
+      "ContactPerson",
+      "MetroStationId"
     ]
   }
   const page = buildPage(params)

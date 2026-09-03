@@ -17,7 +17,9 @@ export const getBidAdjustmentsSchema = z.object({
   ad_group_ids: z.array(idField("ID группы объявлений")).min(1).max(1000).optional(),
   adjustment_ids: z.array(idField("ID корректировки")).min(1).max(10000).optional(),
   types: z.array(adjustmentType).optional(),
-  levels: z.array(z.enum(["CAMPAIGN", "AD_GROUP"])).min(1)
+  levels: z
+    .array(z.enum(["CAMPAIGN", "AD_GROUP"]))
+    .min(1)
     .describe("Уровни корректировок: CAMPAIGN и/или AD_GROUP"),
   ...pageFields
 })
@@ -56,10 +58,13 @@ export const setBidAdjustmentsSchema = z.object({
 })
 
 export async function handleSetBidAdjustments(params: z.infer<typeof setBidAdjustmentsSchema>): Promise<string> {
-  return formatResult(await apiPost("bidmodifiers", "set", {
-    BidModifiers: params.adjustments.map((item) => ({
-      Id: apiId(item.adjustment_id),
-      BidModifier: item.bid_modifier
-    }))
-  }), { money: false })
+  return formatResult(
+    await apiPost("bidmodifiers", "set", {
+      BidModifiers: params.adjustments.map((item) => ({
+        Id: apiId(item.adjustment_id),
+        BidModifier: item.bid_modifier
+      }))
+    }),
+    { money: false }
+  )
 }

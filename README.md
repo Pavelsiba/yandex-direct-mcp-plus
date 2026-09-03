@@ -167,7 +167,7 @@ npm run dev        # tsx src/index.ts
 
 Проект начат на коде [`theYahia/yandex-direct-mcp`](https://github.com/theYahia/yandex-direct-mcp) под лицензией MIT. Расширение с 20 до 48 инструментов и перевод ID на строки — работа [**Maxim (DrSeedon)**](https://github.com/DrSeedon), [PR #7](https://github.com/theYahia/yandex-direct-mcp/pull/7); в npm эта версия не публиковалась. Дальше проект развивается самостоятельно и апстрим не отслеживает.
 
-Что изменилось относительно исходного кода — в [CHANGELOG.md](CHANGELOG.md), план — в [docs/roadmap.md](docs/roadmap.md), архитектура — в [docs/architecture.md](docs/architecture.md).
+История до отделения от апстрима (версии 3.0.0–5.0.0, включая вклад DrSeedon) — в [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md); дальнейшие изменения — в [CHANGELOG.md](CHANGELOG.md). План — в [docs/roadmap.md](docs/roadmap.md), архитектура — в [docs/architecture.md](docs/architecture.md).
 
 ## Лицензия
 

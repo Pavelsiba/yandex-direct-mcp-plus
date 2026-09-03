@@ -1,3 +1,4 @@
+// biome-ignore-all lint/plugin: тесты разбирают тело запроса; проверка самих ID обязана сравнивать сырую строку (rawBody)
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mockFetch = vi.fn()
@@ -14,12 +15,21 @@ function ok(data: unknown = { result: {} }) {
   }
 }
 
+// mock.calls.at() типизирован как possibly undefined. Вызов есть всегда, когда
+// проверка до него дошла, но strict требует это высказать — иначе тесты остаются
+// вне контроля типов (esbuild их не проверяет).
+function callAt(n: number) {
+  const call = mockFetch.mock.calls.at(n)
+  if (!call) throw new Error(`fetch не вызывался: нет вызова ${n}`)
+  return call
+}
+
 function body() {
-  return JSON.parse(mockFetch.mock.calls.at(-1)[1].body)
+  return JSON.parse(callAt(-1)[1].body)
 }
 
 function rawBody(): string {
-  return mockFetch.mock.calls.at(-1)[1].body
+  return callAt(-1)[1].body
 }
 
 describe("remaining Yandex Direct tools", () => {
@@ -69,8 +79,7 @@ describe("remaining Yandex Direct tools", () => {
   })
 
   it("lists and creates retargeting lists", async () => {
-    const { handleListRetargetingLists, handleAddRetargetingList } =
-      await import("../tools/retargeting.js")
+    const { handleListRetargetingLists, handleAddRetargetingList } = await import("../tools/retargeting.js")
     await handleListRetargetingLists({
       retargeting_list_ids: ["1915016273214320641"],
       types: ["RETARGETING"]
@@ -79,27 +88,30 @@ describe("remaining Yandex Direct tools", () => {
     await handleAddRetargetingList({
       name: "Брошенная заявка",
       type: "RETARGETING",
-      rules: [{
-        operator: "ANY",
-        arguments: [{ external_id: "1915016273214320641", membership_life_span: 30 }]
-      }]
+      rules: [
+        {
+          operator: "ANY",
+          arguments: [{ external_id: "1915016273214320641", membership_life_span: 30 }]
+        }
+      ]
     })
     expect(rawBody()).toContain('"ExternalId":1915016273214320641')
     expect(body().params.RetargetingLists[0].Rules[0].Operator).toBe("ANY")
   })
 
   it("lists audience targets and manages their lifecycle", async () => {
-    const { handleListAudienceTargets, handleSetAudienceTargets } =
-      await import("../tools/audience_targets.js")
+    const { handleListAudienceTargets, handleSetAudienceTargets } = await import("../tools/audience_targets.js")
     await handleListAudienceTargets({ campaign_ids: ["1915016273214320641"] })
     expect(rawBody()).toContain('"CampaignIds":[1915016273214320641]')
     await handleSetAudienceTargets({
       action: "add",
-      targets: [{
-        ad_group_id: "1915016273214320641",
-        retargeting_list_id: "99",
-        context_bid: 12.5
-      }]
+      targets: [
+        {
+          ad_group_id: "1915016273214320641",
+          retargeting_list_id: "99",
+          context_bid: 12.5
+        }
+      ]
     })
     expect(rawBody()).toContain('"AdGroupId":1915016273214320641')
     expect(body().params.AudienceTargets[0].ContextBid).toBe(12_500_000)
@@ -116,22 +128,25 @@ describe("remaining Yandex Direct tools", () => {
   })
 
   it("lists dynamic targets and changes their bids", async () => {
-    const { handleListDynamicTargets, handleManageDynamicTargets } =
-      await import("../tools/dynamic_targets.js")
+    const { handleListDynamicTargets, handleManageDynamicTargets } = await import("../tools/dynamic_targets.js")
     await handleListDynamicTargets({ ad_group_ids: ["1915016273214320641"] })
     expect(rawBody()).toContain('"AdGroupIds":[1915016273214320641]')
     await handleManageDynamicTargets({
       action: "add",
-      targets: [{
-        ad_group_id: "1915016273214320641",
-        name: "Страница тарифов",
-        conditions: [{
-          operand: "PAGE_TITLE",
-          operator: "CONTAINS_ANY",
-          arguments: ["/pricing"]
-        }],
-        bid: 10
-      }]
+      targets: [
+        {
+          ad_group_id: "1915016273214320641",
+          name: "Страница тарифов",
+          conditions: [
+            {
+              operand: "PAGE_TITLE",
+              operator: "CONTAINS_ANY",
+              arguments: ["/pricing"]
+            }
+          ],
+          bid: 10
+        }
+      ]
     })
     expect(rawBody()).toContain('"AdGroupId":1915016273214320641')
     expect(body().params.Webpages[0]).toMatchObject({
@@ -215,7 +230,7 @@ describe("remaining Yandex Direct tools", () => {
       .mockResolvedValueOnce(ok({ result: { Ads: [{ TextAd: { VCardId: 55 } }] } }))
       .mockResolvedValueOnce(ok({ result: { VCards: [] } }))
     await handleListVcards({ campaign_ids: ["1915016273214320641"] })
-    expect(mockFetch.mock.calls.at(-2)[1].body).toContain('"CampaignIds":[1915016273214320641]')
+    expect(callAt(-2)[1].body).toContain('"CampaignIds":[1915016273214320641]')
     expect(body().params.SelectionCriteria.Ids).toEqual([55])
     await handleAddVcard({
       campaign_id: "1915016273214320641",

@@ -3,9 +3,10 @@ import { apiPost } from "../client.js"
 import { formatResult } from "../format.js"
 import { apiIds, idField } from "../id.js"
 
-const timestamp = z.string()
+const timestamp = z
+  .string()
   .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, "Ожидается YYYY-MM-DDThh:mm:ssZ")
-  .refine(value => !Number.isNaN(Date.parse(value)), "Некорректная дата")
+  .refine((value) => !Number.isNaN(Date.parse(value)), "Некорректная дата")
   .describe("Момент времени ISO 8601, например 2026-07-23T00:00:00Z")
 
 export const getChangesSchema = z.object({
@@ -14,15 +15,20 @@ export const getChangesSchema = z.object({
   campaign_ids: z.array(idField("ID кампании")).min(1).max(3000).optional(),
   ad_group_ids: z.array(idField("ID группы объявлений")).min(1).max(10000).optional(),
   ad_ids: z.array(idField("ID объявления")).min(1).max(50000).optional(),
-  field_names: z.array(z.enum(["CampaignIds", "AdGroupIds", "AdIds", "CampaignsStat"]))
-    .min(1).optional()
+  field_names: z
+    .array(z.enum(["CampaignIds", "AdGroupIds", "AdIds", "CampaignsStat"]))
+    .min(1)
+    .optional()
 })
 
 export async function handleGetChanges(params: z.infer<typeof getChangesSchema>): Promise<string> {
   if (params.mode === "campaigns") {
-    return formatResult(await apiPost("changes", "checkCampaigns", {
-      Timestamp: params.timestamp
-    }), { money: false })
+    return formatResult(
+      await apiPost("changes", "checkCampaigns", {
+        Timestamp: params.timestamp
+      }),
+      { money: false }
+    )
   }
 
   const selectors = [

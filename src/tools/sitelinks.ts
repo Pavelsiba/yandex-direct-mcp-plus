@@ -39,7 +39,10 @@ export async function handleSetSitelinks(params: z.infer<typeof setSitelinksSche
     if (link.description !== undefined) item.Description = link.description
     return item
   })
-  return formatResult(await apiPost("sitelinks", "add", {
-    SitelinksSets: [{ Sitelinks }]
-  }), { money: false })
+  return formatResult(
+    await apiPost("sitelinks", "add", {
+      SitelinksSets: [{ Sitelinks }]
+    }),
+    { money: false }
+  )
 }

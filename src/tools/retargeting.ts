@@ -12,16 +12,20 @@ export const listRetargetingListsSchema = z.object({
   ...pageFields
 })
 
-export async function handleListRetargetingLists(
-  params: z.infer<typeof listRetargetingListsSchema>
-): Promise<string> {
+export async function handleListRetargetingLists(params: z.infer<typeof listRetargetingListsSchema>): Promise<string> {
   const selection: Record<string, unknown> = {}
   if (params.retargeting_list_ids?.length) selection.Ids = apiIds(params.retargeting_list_ids)
   if (params.types?.length) selection.Types = params.types
   const request: Record<string, unknown> = {
     FieldNames: [
-      "Type", "Id", "Name", "Description", "Rules", "IsAvailable",
-      "Scope", "AvailableForTargetsInAdGroupTypes"
+      "Type",
+      "Id",
+      "Name",
+      "Description",
+      "Rules",
+      "IsAvailable",
+      "Scope",
+      "AvailableForTargetsInAdGroupTypes"
     ]
   }
   if (Object.keys(selection).length) request.SelectionCriteria = selection
@@ -47,15 +51,13 @@ export const addRetargetingListSchema = z.object({
   rules: z.array(rule).min(1)
 })
 
-export async function handleAddRetargetingList(
-  params: z.infer<typeof addRetargetingListSchema>
-): Promise<string> {
+export async function handleAddRetargetingList(params: z.infer<typeof addRetargetingListSchema>): Promise<string> {
   const item: Record<string, unknown> = {
     Name: params.name,
     Type: params.type,
-    Rules: params.rules.map(ruleItem => ({
+    Rules: params.rules.map((ruleItem) => ({
       Operator: ruleItem.operator,
-      Arguments: ruleItem.arguments.map(argument => {
+      Arguments: ruleItem.arguments.map((argument) => {
         const result: Record<string, unknown> = { ExternalId: apiId(argument.external_id) }
         if (argument.membership_life_span !== undefined) {
           result.MembershipLifeSpan = argument.membership_life_span
@@ -65,7 +67,10 @@ export async function handleAddRetargetingList(
     }))
   }
   if (params.description !== undefined) item.Description = params.description
-  return formatResult(await apiPost("retargetinglists", "add", {
-    RetargetingLists: [item]
-  }), { money: false })
+  return formatResult(
+    await apiPost("retargetinglists", "add", {
+      RetargetingLists: [item]
+    }),
+    { money: false }
+  )
 }

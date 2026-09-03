@@ -1,8 +1,8 @@
 import { z } from "zod"
 import { apiPost } from "../client.js"
 import { formatResult } from "../format.js"
-import { pageFields, buildPage } from "../pagination.js"
 import { apiId, apiIds, idField } from "../id.js"
+import { buildPage, pageFields } from "../pagination.js"
 
 export const listAdsSchema = z.object({
   ad_group_ids: z.array(idField("ID группы объявлений")).describe("ID групп объявлений"),
@@ -40,10 +40,12 @@ export async function handleCreateTextAd(params: z.infer<typeof createTextAdSche
   if (params.title2) textAd.Title2 = params.title2
 
   const data = await apiPost("ads", "add", {
-    Ads: [{
-      AdGroupId: apiId(params.ad_group_id),
-      TextAd: textAd
-    }]
+    Ads: [
+      {
+        AdGroupId: apiId(params.ad_group_id),
+        TextAd: textAd
+      }
+    ]
   })
   return formatResult(data)
 }
@@ -74,17 +76,18 @@ export async function handleUpdateTextAd(params: z.infer<typeof updateTextAdSche
 }
 
 const AD_ACTIONS: Record<string, string> = {
-  suspend: "suspend",     // остановить показы
-  resume: "resume",       // возобновить
-  archive: "archive",     // в архив
+  suspend: "suspend", // остановить показы
+  resume: "resume", // возобновить
+  archive: "archive", // в архив
   unarchive: "unarchive", // из архива
-  moderate: "moderate",   // отправить на модерацию
-  delete: "delete"       // удалить
+  moderate: "moderate", // отправить на модерацию
+  delete: "delete" // удалить
 }
 
 export const manageAdsSchema = z.object({
   ad_ids: z.array(idField("ID объявления")).min(1).describe("ID объявлений"),
-  action: z.enum(["suspend", "resume", "archive", "unarchive", "moderate", "delete"])
+  action: z
+    .enum(["suspend", "resume", "archive", "unarchive", "moderate", "delete"])
     .describe("Действие: suspend/resume/archive/unarchive/moderate/delete")
 })
 
@@ -101,7 +104,9 @@ export const moderateAdsSchema = z.object({
 })
 
 export async function handleModerateAds(params: z.infer<typeof moderateAdsSchema>): Promise<string> {
-  return formatResult(await apiPost("ads", "moderate", {
-    SelectionCriteria: { Ids: apiIds(params.ad_ids) }
-  }))
+  return formatResult(
+    await apiPost("ads", "moderate", {
+      SelectionCriteria: { Ids: apiIds(params.ad_ids) }
+    })
+  )
 }

@@ -17,30 +17,34 @@ export const manageAdImagesSchema = z.object({
   ...pageFields
 })
 
-export async function handleManageAdImages(
-  params: z.infer<typeof manageAdImagesSchema>
-): Promise<string> {
+export async function handleManageAdImages(params: z.infer<typeof manageAdImagesSchema>): Promise<string> {
   if (params.action === "add") {
     if (!params.images?.length) throw new Error("Для action=add передайте images.")
-    return formatResult(await apiPost("adimages", "add", {
-      AdImages: params.images.map(image => {
-        const item: Record<string, unknown> = {
-          ImageData: image.image_data,
-          Name: image.name
-        }
-        if (image.type) item.Type = image.type
-        return item
-      })
-    }), { money: false })
+    return formatResult(
+      await apiPost("adimages", "add", {
+        AdImages: params.images.map((image) => {
+          const item: Record<string, unknown> = {
+            ImageData: image.image_data,
+            Name: image.name
+          }
+          if (image.type) item.Type = image.type
+          return item
+        })
+      }),
+      { money: false }
+    )
   }
 
   if (params.action === "delete") {
     if (!params.ad_image_hashes?.length) {
       throw new Error("Для action=delete передайте ad_image_hashes.")
     }
-    return formatResult(await apiPost("adimages", "delete", {
-      SelectionCriteria: { AdImageHashes: params.ad_image_hashes }
-    }), { money: false })
+    return formatResult(
+      await apiPost("adimages", "delete", {
+        SelectionCriteria: { AdImageHashes: params.ad_image_hashes }
+      }),
+      { money: false }
+    )
   }
 
   const selection: Record<string, unknown> = {}
