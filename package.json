@@ -1,6 +1,6 @@
 {
   "name": "yandex-direct-mcp-plus",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP-сервер для API Яндекс.Директа v5: кампании, объявления, ключевые фразы, ставки, минус-фразы, статистика. Деньги в рублях, ID без потери точности.",
   "type": "module",
   "main": "dist/app/index.js",
