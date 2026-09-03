@@ -1,8 +1,8 @@
 import { z } from "zod"
 import { apiPost } from "../client.js"
 import { formatResult } from "../format.js"
-import { pageFields, buildPage } from "../pagination.js"
 import { apiId, apiIds, idField } from "../id.js"
+import { buildPage, pageFields } from "../pagination.js"
 
 export const listKeywordsSchema = z.object({
   ad_group_ids: z.array(idField("ID группы объявлений")).describe("ID групп объявлений"),
@@ -28,7 +28,7 @@ export const addKeywordsSchema = z.object({
 
 export async function handleAddKeywords(params: z.infer<typeof addKeywordsSchema>): Promise<string> {
   const data = await apiPost("keywords", "add", {
-    Keywords: params.keywords.map(kw => ({
+    Keywords: params.keywords.map((kw) => ({
       AdGroupId: apiId(params.ad_group_id),
       Keyword: kw
     }))

@@ -9,13 +9,20 @@ export const listBusinessesSchema = z.object({
   ...pageFields
 })
 
-export async function handleListBusinesses(
-  params: z.infer<typeof listBusinessesSchema>
-): Promise<string> {
+export async function handleListBusinesses(params: z.infer<typeof listBusinessesSchema>): Promise<string> {
   const request: Record<string, unknown> = {
     FieldNames: [
-      "Id", "Name", "Address", "Phone", "ProfileUrl", "InternalUrl",
-      "IsPublished", "MergedIds", "Rubric", "Urls", "HasOffice"
+      "Id",
+      "Name",
+      "Address",
+      "Phone",
+      "ProfileUrl",
+      "InternalUrl",
+      "IsPublished",
+      "MergedIds",
+      "Rubric",
+      "Urls",
+      "HasOffice"
     ]
   }
   if (params.business_ids?.length) request.SelectionCriteria = { Ids: apiIds(params.business_ids) }

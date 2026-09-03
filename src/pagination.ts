@@ -4,7 +4,12 @@ import { z } from "zod"
 // LimitedBy в ответе (через formatResult) подсказывает offset следующей страницы.
 export const pageFields = {
   limit: z.number().int().positive().max(10000).optional().describe("Сколько объектов вернуть (макс 10000)"),
-  offset: z.number().int().nonnegative().optional().describe("Смещение выборки для пагинации (= LimitedBy предыдущей страницы)")
+  offset: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .describe("Смещение выборки для пагинации (= LimitedBy предыдущей страницы)")
 }
 
 export function buildPage(params: { limit?: number; offset?: number }): Record<string, number> | undefined {

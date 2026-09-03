@@ -18,14 +18,24 @@ MCP-сервер (stdio) поверх API Яндекс.Директа v5: 48 и�
 ## Команды
 
 ```bash
-npm run build        # clean + tsc → dist/
+npm run build        # clean + tsc -p tsconfig.build.json → dist/
 npm test             # vitest run
 npm run test:watch
 npm run dev          # tsx src/index.ts, без сборки
+npm run lint         # biome check (формат + линт)
+npm run lint:fix     # biome check --write
+npm run typecheck    # tsc --noEmit: src, тесты и конфиги
+npm run lint:dead    # knip
 ```
 
 После правок исходников — `npm run build`: MCP-клиенты запускают собранный
 `dist/index.js`, а не TypeScript.
+
+Два конфига TypeScript, и это не дублирование: `tsconfig.json` ничего не собирает
+и покрывает всё (`src`, тесты, конфиги) — по нему идёт `typecheck` и живёт редактор;
+`tsconfig.build.json` наследует его, добавляет `rootDir`/`outDir` и исключает тесты.
+Одним файлом это не сходится: сборке тесты не нужны, проверке типов — обязательны,
+иначе они не проверяются ничем (vitest срезает типы через esbuild без проверки).
 
 ## Архитектура — коротко
 
@@ -38,8 +48,11 @@ src/
   shared/config/  эндпоинты, окружение, перечисления
 ```
 
-Направление зависимостей `app → tools → shared` сторожит `eslint-plugin-boundaries`.
-Инструмент не импортирует инструмент, `shared` не знает про `tools`.
+Направление зависимостей — `app → tools → shared`: инструмент не импортирует
+инструмент, `shared` не знает про `tools`. Сторожит `noRestrictedImports` в
+`overrides` секции `biome.json`, по блоку на слой. Сейчас там один блок — запрет
+импорта соседа из `src/tools/**`; политики между слоями дописываются вместе
+с раскладкой, когда каталоги появятся.
 
 Новый инструмент = каталог в `tools/<домен>/`, дескриптор через `defineTool`, явный
 импорт в `app/registry.ts`, тест рядом с кодом. Аннотация (`READ` / `WRITE` /
@@ -56,7 +69,9 @@ src/
 без потери точности. Наружу — десятичные строки через `idField`, внутрь — `BigInt`.
 `z.coerce` на ID-полях запрещён: он принял бы уже округлённое число и превратил его
 в правдоподобную строку. Разбор и сериализация JSON — только через `json-bigint` и
-только в `shared/api`. Полный разбор — `docs/architecture.md`.
+только в `shared/api`. Держит это GritQL-плагин Biome (`plugins/no-native-json.grit`);
+исключения помечены в самих файлах строкой `// biome-ignore-all lint/plugin`.
+Полный разбор — `docs/architecture.md`.
 
 **Перечисления — `z.literal([...])`, не `z.string()`.** Схема для модели и есть документация:
 допустимые значения обязаны быть типом, а не прозой. Описание поля — `.meta({ description })`
@@ -123,7 +138,18 @@ X» не является разрешением зафиксировать ре
 
 - Тесты не ходят в сеть: `fetch` подменяется. Проверяем тело запроса к Директу и
   разбор ответа — там живут ошибки маппинга.
-- Баг диалекта JSON Schema в `@modelcontextprotocol/sdk` 1.29–1.30 (`mapMiniTarget`
-  отдаёт `draft-7` вместо `draft-2020-12`) ломает клиентов со строгой валидацией и
-  проявляется на пути zod v4. При обновлении зависимостей — проверять пробой, что
-  `inputSchema` уходит в `draft-2020-12`.
+- Линтер и форматтер — **Biome**, не ESLint. Причина: `typescript-eslint` не
+  поддерживает TypeScript 7 («does not support TS 7.0»), а его пир `<6.1.0` сидит
+  в `@typescript-eslint/parser` и `typescript-estree`, так что подменой пакета это
+  не обходится. У Biome собственный парсер на Rust, от версии TypeScript он не
+  зависит вовсе. Обратно на ESLint — только вместе с откатом компилятора.
+- Biome держит и конфиги: `files.includes` покрывает `src`, корневые `.js`/`.ts`
+  и `.json`, включая `.vscode`. JSONC он не портит — комментарии `tsconfig.json`
+  переживают `format` побайтово, проверено. Правило `noQuickfixBiome` заодно
+  ловит устаревшие имена действий в `.vscode/settings.json`.
+- Баг диалекта JSON Schema в `@modelcontextprotocol/sdk` (`mapMiniTarget` отдаёт
+  `draft-7` вместо `draft-2020-12`) ломает клиентов со строгой валидацией. Пробоем
+  03.09.2026 установлено, что от версии zod он не зависит: `draft-07` уходит и на
+  3.25.76 + SDK 1.29, и на 4.5.4 + SDK 1.30. Описания полей при этом доезжают —
+  и через `.meta({ description })`, и через легаси `.describe()`. При обновлении
+  SDK пробой повторять: поднять сервер, вызвать `listTools`, посмотреть `$schema`.

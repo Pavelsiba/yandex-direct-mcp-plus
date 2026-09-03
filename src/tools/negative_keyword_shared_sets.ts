@@ -43,17 +43,20 @@ export async function handleManageNegativeKeywordSharedSets(
 ): Promise<string> {
   if (params.action === "add") {
     if (!params.add_sets?.length) throw new Error("Для action=add передайте add_sets.")
-    return formatResult(await apiPost("negativekeywordsharedsets", "add", {
-      NegativeKeywordSharedSets: params.add_sets.map(set => ({
-        Name: set.name,
-        NegativeKeywords: set.negative_keywords
-      }))
-    }), { money: false })
+    return formatResult(
+      await apiPost("negativekeywordsharedsets", "add", {
+        NegativeKeywordSharedSets: params.add_sets.map((set) => ({
+          Name: set.name,
+          NegativeKeywords: set.negative_keywords
+        }))
+      }),
+      { money: false }
+    )
   }
 
   if (params.action === "update") {
     if (!params.update_sets?.length) throw new Error("Для action=update передайте update_sets.")
-    const sets = params.update_sets.map(set => {
+    const sets = params.update_sets.map((set) => {
       if (set.name === undefined && set.negative_keywords === undefined) {
         throw new Error("Для каждого update_sets укажите name и/или negative_keywords.")
       }
@@ -62,20 +65,28 @@ export async function handleManageNegativeKeywordSharedSets(
       if (set.negative_keywords !== undefined) item.NegativeKeywords = set.negative_keywords
       return item
     })
-    return formatResult(await apiPost("negativekeywordsharedsets", "update", {
-      NegativeKeywordSharedSets: sets
-    }), { money: false })
+    return formatResult(
+      await apiPost("negativekeywordsharedsets", "update", {
+        NegativeKeywordSharedSets: sets
+      }),
+      { money: false }
+    )
   }
 
   if (!params.set_ids?.length) throw new Error("Для action=delete передайте set_ids.")
-  return formatResult(await apiPost("negativekeywordsharedsets", "delete", {
-    SelectionCriteria: { Ids: apiIds(params.set_ids) }
-  }), { money: false })
+  return formatResult(
+    await apiPost("negativekeywordsharedsets", "delete", {
+      SelectionCriteria: { Ids: apiIds(params.set_ids) }
+    }),
+    { money: false }
+  )
 }
 
 export const linkNegativeKeywordSetsSchema = z.object({
   ad_group_ids: z.array(idField("ID группы объявлений")).min(1).max(1000),
-  set_ids: z.array(idField("ID общего набора минус-фраз")).max(3)
+  set_ids: z
+    .array(idField("ID общего набора минус-фраз"))
+    .max(3)
     .describe("ID общих наборов; пустой массив удаляет привязки")
 })
 
@@ -83,10 +94,13 @@ export async function handleLinkNegativeKeywordSets(
   params: z.infer<typeof linkNegativeKeywordSetsSchema>
 ): Promise<string> {
   const sharedSets = { Items: apiIds(params.set_ids) }
-  return formatResult(await apiPost("adgroups", "update", {
-    AdGroups: params.ad_group_ids.map(adGroupId => ({
-      Id: apiId(adGroupId),
-      NegativeKeywordSharedSetIds: sharedSets
-    }))
-  }), { money: false })
+  return formatResult(
+    await apiPost("adgroups", "update", {
+      AdGroups: params.ad_group_ids.map((adGroupId) => ({
+        Id: apiId(adGroupId),
+        NegativeKeywordSharedSetIds: sharedSets
+      }))
+    }),
+    { money: false }
+  )
 }

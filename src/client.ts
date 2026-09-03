@@ -5,9 +5,7 @@
 
 const SANDBOX = process.env.YANDEX_DIRECT_SANDBOX === "1" || process.env.YANDEX_DIRECT_SANDBOX === "true"
 
-const BASE_URL = SANDBOX
-  ? "https://api-sandbox.direct.yandex.com/json/v5/"
-  : "https://api.direct.yandex.com/json/v5/"
+const BASE_URL = SANDBOX ? "https://api-sandbox.direct.yandex.com/json/v5/" : "https://api.direct.yandex.com/json/v5/"
 const REPORT_URL = `${BASE_URL}reports`
 // Финансовая информация (баланс) живёт только в Live API v4, не в v5.
 const V4_URL = SANDBOX
@@ -57,10 +55,10 @@ function logUnits(response: Response): void {
 }
 
 type YandexApiError = {
-  error_code?: number | string;
-  error_string?: string;
-  error_detail?: string;
-  request_id?: string;
+  error_code?: number | string
+  error_string?: string
+  error_detail?: string
+  request_id?: string
 }
 
 // API v5 возвращает ошибки уровня запроса в теле с HTTP 200 — детектируем по ключу `error`.
@@ -68,9 +66,7 @@ type YandexApiError = {
 function assertNoApiError(data: unknown): void {
   const e = (data as { error?: YandexApiError } | null)?.error
   if (e && typeof e === "object") {
-    const parts = [
-      `Ошибка API Яндекс.Директ [${e.error_code ?? "?"}]: ${e.error_string ?? "неизвестная ошибка"}`
-    ]
+    const parts = [`Ошибка API Яндекс.Директ [${e.error_code ?? "?"}]: ${e.error_string ?? "неизвестная ошибка"}`]
     if (e.error_detail) parts.push(`— ${e.error_detail}`)
     if (e.request_id) parts.push(`(request_id: ${e.request_id})`)
     throw new Error(parts.join(" "))
@@ -91,7 +87,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
       if (response.status >= 500 && attempt < retries) {
         const delay = Math.min(1000 * 2 ** (attempt - 1), 8000)
         console.error(`[yd-mcp] ${response.status} от ${url}, повтор через ${delay}мс (${attempt}/${retries})`)
-        await new Promise(r => setTimeout(r, delay))
+        await new Promise((r) => setTimeout(r, delay))
         continue
       }
 
@@ -128,9 +124,9 @@ export async function apiPost(service: string, method: string, params: Record<st
 // 200 = готов, 201 = поставлен в очередь, 202 = ещё формируется (повторить через retryIn сек).
 // Док: https://yandex.ru/dev/direct/doc/en/codes
 export type ReportOptions = {
-  skipReportHeader?: boolean;
-  skipReportSummary?: boolean;
-  skipColumnHeader?: boolean;
+  skipReportHeader?: boolean
+  skipReportSummary?: boolean
+  skipColumnHeader?: boolean
 }
 
 export async function apiReport(params: Record<string, unknown>, opts: ReportOptions = {}): Promise<string> {
@@ -159,8 +155,10 @@ export async function apiReport(params: Record<string, unknown>, opts: ReportOpt
       const raw = response.headers?.get?.("retryIn")
       const parsed = raw == null ? NaN : Number(raw)
       const retryIn = Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_RETRY_IN_SEC
-      console.error(`[yd-mcp] Отчёт формируется (HTTP ${response.status}), повтор через ${retryIn}с (${poll + 1}/${REPORT_MAX_POLLS})`)
-      await new Promise(r => setTimeout(r, Math.min(retryIn, 15) * 1000))
+      console.error(
+        `[yd-mcp] Отчёт формируется (HTTP ${response.status}), повтор через ${retryIn}с (${poll + 1}/${REPORT_MAX_POLLS})`
+      )
+      await new Promise((r) => setTimeout(r, Math.min(retryIn, 15) * 1000))
       continue
     }
 
@@ -186,6 +184,7 @@ export async function apiV4(method: string, param: Record<string, unknown> = {})
   }
   return data
 }
+
 import JSONbigFactory from "json-bigint"
 
 const JSONbig = JSONbigFactory({ storeAsString: true })

@@ -1,0 +1,14 @@
+{
+  // Сборка: то же ядро строгости, но с эмитом. Тесты и конфиги в dist не нужны,
+  // поэтому include сужен до src, а тесты исключены.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    // Пакет публикуется с files: ["dist"], типы потребителю нужны.
+    "declaration": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+}

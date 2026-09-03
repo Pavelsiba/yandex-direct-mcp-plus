@@ -1,3 +1,4 @@
+// biome-ignore-all lint/plugin: слой форматирования вывода — ID сюда приходят уже строками
 import { microsToRubles } from "./client.js"
 
 // Поля ответов API v5, которые приходят в микроединицах и конвертируются в рубли на выводе.
@@ -17,9 +18,9 @@ function convertMoney(value: unknown): unknown {
 }
 
 type Notification = {
-  Code?: number;
-  Message?: string;
-  Details?: string;
+  Code?: number
+  Message?: string
+  Details?: string
 }
 
 function fmtNote(prefix: string, key: string, idx: number, n: Notification): string {
@@ -34,7 +35,9 @@ function collectNotices(data: unknown): string {
   const result = (data as { result?: Record<string, unknown> })?.result
   if (result && typeof result === "object") {
     if (typeof result.LimitedBy === "number") {
-      lines.push(`ℹ️ Результат обрезан (LimitedBy=${result.LimitedBy}). Для следующей страницы передайте offset=${result.LimitedBy}.`)
+      lines.push(
+        `ℹ️ Результат обрезан (LimitedBy=${result.LimitedBy}). Для следующей страницы передайте offset=${result.LimitedBy}.`
+      )
     }
     for (const [key, val] of Object.entries(result)) {
       if (/Results$/.test(key) && Array.isArray(val)) {

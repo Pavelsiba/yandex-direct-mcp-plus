@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+// biome-ignore-all lint/plugin: тесты разбирают тело запроса; проверка самих ID обязана сравнивать сырую строку (rawBody)
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mock fetch globally before importing modules
 const mockFetch = vi.fn()
@@ -136,7 +137,9 @@ describe("update_campaign", () => {
     const { handleUpdateCampaign } = await import("../tools/campaigns.js")
     mockFetch
       .mockResolvedValueOnce(mockOk({ result: { SuspendResults: [{ Id: 1 }] } }))
-      .mockResolvedValueOnce(mockOk({ result: { UpdateResults: [{ Errors: [{ Code: 8800, Message: "Бюджет недопустим" }] }] } }))
+      .mockResolvedValueOnce(
+        mockOk({ result: { UpdateResults: [{ Errors: [{ Code: 8800, Message: "Бюджет недопустим" }] }] } })
+      )
 
     const res = await handleUpdateCampaign({ campaign_id: "1", status: "SUSPEND", daily_budget: 1 })
     expect(res).toContain("Бюджет недопустим")
@@ -227,7 +230,9 @@ describe("list_keywords", () => {
 
   it("converts Bid micros to rubles in output", async () => {
     const { handleListKeywords } = await import("../tools/keywords.js")
-    mockFetch.mockResolvedValueOnce(mockOk({ result: { Keywords: [{ Id: 1, Bid: 30_000_000, ContextBid: 15_000_000 }] } }))
+    mockFetch.mockResolvedValueOnce(
+      mockOk({ result: { Keywords: [{ Id: 1, Bid: 30_000_000, ContextBid: 15_000_000 }] } })
+    )
 
     const res = JSON.parse(await handleListKeywords({ ad_group_ids: ["1"] }))
     expect(res.result.Keywords[0].Bid).toBe(30)
@@ -303,8 +308,18 @@ describe("get_statistics", () => {
   it("polls on 202 then returns on 200", async () => {
     const { handleGetStatistics } = await import("../tools/statistics.js")
     mockFetch
-      .mockResolvedValueOnce({ ok: true, status: 202, headers: { get: (k: string) => (k === "retryIn" ? "0" : null) }, text: () => Promise.resolve("") })
-      .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => null }, text: () => Promise.resolve("Clicks\n5") })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 202,
+        headers: { get: (k: string) => (k === "retryIn" ? "0" : null) },
+        text: () => Promise.resolve("")
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        text: () => Promise.resolve("Clicks\n5")
+      })
 
     const res = await handleGetStatistics({ campaign_ids: ["1"], date_from: "2026-01-01", date_to: "2026-01-31" })
     expect(res).toContain("Clicks")
@@ -356,18 +371,22 @@ describe("error handling", () => {
 
   it("throws on API error object inside HTTP 200 body", async () => {
     const { handleListCampaigns } = await import("../tools/campaigns.js")
-    mockFetch.mockResolvedValueOnce(mockOk({
-      error: { error_code: 53, error_string: "Неверная авторизация", error_detail: "bad token", request_id: "abc" }
-    }))
+    mockFetch.mockResolvedValueOnce(
+      mockOk({
+        error: { error_code: 53, error_string: "Неверная авторизация", error_detail: "bad token", request_id: "abc" }
+      })
+    )
 
     await expect(handleListCampaigns({})).rejects.toThrow("Неверная авторизация")
   })
 
   it("surfaces per-item errors in output (partial success)", async () => {
     const { handleAddKeywords } = await import("../tools/keywords.js")
-    mockFetch.mockResolvedValueOnce(mockOk({
-      result: { AddResults: [{ Id: 1 }, { Errors: [{ Code: 5, Message: "Дубль фразы" }] }] }
-    }))
+    mockFetch.mockResolvedValueOnce(
+      mockOk({
+        result: { AddResults: [{ Id: 1 }, { Errors: [{ Code: 5, Message: "Дубль фразы" }] }] }
+      })
+    )
 
     const res = await handleAddKeywords({ ad_group_id: "1", keywords: ["a", "b"] })
     expect(res).toContain("Дубль фразы")

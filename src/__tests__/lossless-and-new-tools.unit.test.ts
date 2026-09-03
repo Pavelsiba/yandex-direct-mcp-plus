@@ -1,3 +1,4 @@
+// biome-ignore-all lint/plugin: тесты разбирают тело запроса; проверка самих ID обязана сравнивать сырую строку (rawBody)
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mockFetch = vi.fn()
@@ -19,7 +20,11 @@ function ok(data: unknown) {
 }
 
 function lastBody(): string {
-  return mockFetch.mock.calls.at(-1)[1].body
+  // at() возвращает possibly undefined; вызов на этом месте есть всегда, но
+  // strict требует явной проверки.
+  const call = mockFetch.mock.calls.at(-1)
+  if (!call) throw new Error("fetch не вызывался")
+  return call[1].body
 }
 
 describe("lossless 64-bit IDs", () => {
@@ -27,17 +32,21 @@ describe("lossless 64-bit IDs", () => {
 
   it("requires IDs as decimal strings", async () => {
     const { updateTextAdSchema } = await import("../tools/ads.js")
-    expect(updateTextAdSchema.parse({
-      ad_id: "1915016273214320641",
-      title: "Точный ID"
-    }).ad_id).toBe("1915016273214320641")
-    expect(() => updateTextAdSchema.parse({
-      // Литерал теряет точность намеренно: тест проверяет, что схема отвергает
-      // число и требует строку — именно так ID и портится по дороге от модели.
-      // eslint-disable-next-line no-loss-of-precision
-      ad_id: 1915016273214320641,
-      title: "Неточный ID"
-    })).toThrow()
+    expect(
+      updateTextAdSchema.parse({
+        ad_id: "1915016273214320641",
+        title: "Точный ID"
+      }).ad_id
+    ).toBe("1915016273214320641")
+    expect(() =>
+      updateTextAdSchema.parse({
+        // Литерал теряет точность намеренно: тест проверяет, что схема отвергает
+        // число и требует строку — именно так ID и портится по дороге от модели.
+        // biome-ignore lint/correctness/noPrecisionLoss: в том и суть проверки
+        ad_id: 1915016273214320641,
+        title: "Неточный ID"
+      })
+    ).toThrow()
   })
 
   it("sends a 19-digit ad ID as an exact JSON number", async () => {
@@ -52,9 +61,7 @@ describe("lossless 64-bit IDs", () => {
 
   it("preserves a 19-digit ID returned by Yandex", async () => {
     const { handleListCampaigns } = await import("../tools/campaigns.js")
-    mockFetch.mockResolvedValueOnce(response(
-      '{"result":{"Campaigns":[{"Id":1915016273214320641,"Name":"Test"}]}}'
-    ))
+    mockFetch.mockResolvedValueOnce(response('{"result":{"Campaigns":[{"Id":1915016273214320641,"Name":"Test"}]}}'))
 
     const result = JSON.parse(await handleListCampaigns({}))
     expect(result.result.Campaigns[0].Id).toBe("1915016273214320641")

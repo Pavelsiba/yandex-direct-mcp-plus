@@ -15,10 +15,12 @@ export async function handleSetCampaignNegativeKeywords(
   params: z.infer<typeof setCampaignNegativeKeywordsSchema>
 ): Promise<string> {
   const data = await apiPost("campaigns", "update", {
-    Campaigns: [{
-      Id: apiId(params.campaign_id),
-      NegativeKeywords: { Items: params.negative_keywords }
-    }]
+    Campaigns: [
+      {
+        Id: apiId(params.campaign_id),
+        NegativeKeywords: { Items: params.negative_keywords }
+      }
+    ]
   })
   return formatResult(data)
 }
@@ -46,10 +48,12 @@ export async function handleSetAdGroupNegativeKeywords(
   params: z.infer<typeof setAdGroupNegativeKeywordsSchema>
 ): Promise<string> {
   const data = await apiPost("adgroups", "update", {
-    AdGroups: [{
-      Id: apiId(params.ad_group_id),
-      NegativeKeywords: { Items: params.negative_keywords }
-    }]
+    AdGroups: [
+      {
+        Id: apiId(params.ad_group_id),
+        NegativeKeywords: { Items: params.negative_keywords }
+      }
+    ]
   })
   return formatResult(data)
 }

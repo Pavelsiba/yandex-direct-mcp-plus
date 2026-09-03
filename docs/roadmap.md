@@ -61,5 +61,6 @@
 ## Инфраструктура
 
 Отдельным потоком, до фич: архитектура (`docs/architecture.md`), линтеры
-(eslint + boundaries, knip), хуки (lefthook, commitlint), обновление зависимостей
-(zod v4, SDK 1.30), рефакторинг под архитектуру, CI/CD, semantic-release.
+(Biome, knip), хуки (lefthook, commitlint), обновление зависимостей
+(zod v4, SDK 1.30, TypeScript 7 — сделано 03.09.2026), рефакторинг под
+архитектуру, CI/CD, semantic-release.

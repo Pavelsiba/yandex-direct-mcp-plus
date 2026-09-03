@@ -14,9 +14,7 @@ export const listAudienceTargetsSchema = z.object({
   ...pageFields
 })
 
-export async function handleListAudienceTargets(
-  params: z.infer<typeof listAudienceTargetsSchema>
-): Promise<string> {
+export async function handleListAudienceTargets(params: z.infer<typeof listAudienceTargetsSchema>): Promise<string> {
   const selection: Record<string, unknown> = {}
   if (params.audience_target_ids?.length) selection.Ids = apiIds(params.audience_target_ids)
   if (params.ad_group_ids?.length) selection.AdGroupIds = apiIds(params.ad_group_ids)
@@ -24,14 +22,20 @@ export async function handleListAudienceTargets(
   if (params.retargeting_list_ids?.length) selection.RetargetingListIds = apiIds(params.retargeting_list_ids)
   if (params.interest_ids?.length) selection.InterestIds = apiIds(params.interest_ids)
   if (params.states?.length) selection.States = params.states
-  if (!Object.keys(selection).some(key => key !== "States")) {
+  if (!Object.keys(selection).some((key) => key !== "States")) {
     throw new Error("Укажите хотя бы один фильтр ID для list_audience_targets.")
   }
   const request: Record<string, unknown> = {
     SelectionCriteria: selection,
     FieldNames: [
-      "Id", "AdGroupId", "CampaignId", "RetargetingListId",
-      "InterestId", "ContextBid", "StrategyPriority", "State"
+      "Id",
+      "AdGroupId",
+      "CampaignId",
+      "RetargetingListId",
+      "InterestId",
+      "ContextBid",
+      "StrategyPriority",
+      "State"
     ]
   }
   const page = buildPage(params)
@@ -62,12 +66,10 @@ export const setAudienceTargetsSchema = z.object({
   audience_target_ids: z.array(idField("ID условия нацеливания")).min(1).max(10000).optional()
 })
 
-export async function handleSetAudienceTargets(
-  params: z.infer<typeof setAudienceTargetsSchema>
-): Promise<string> {
+export async function handleSetAudienceTargets(params: z.infer<typeof setAudienceTargetsSchema>): Promise<string> {
   if (params.action === "add") {
     if (!params.targets?.length) throw new Error("Для action=add передайте targets.")
-    const targets = params.targets.map(target => {
+    const targets = params.targets.map((target) => {
       if ((target.retargeting_list_id ? 1 : 0) + (target.interest_id ? 1 : 0) !== 1) {
         throw new Error("Каждая цель должна содержать ровно одно из retargeting_list_id/interest_id.")
       }
@@ -83,7 +85,7 @@ export async function handleSetAudienceTargets(
 
   if (params.action === "set_bids") {
     if (!params.bids?.length) throw new Error("Для action=set_bids передайте bids.")
-    const bids = params.bids.map(bid => {
+    const bids = params.bids.map((bid) => {
       const selectors = [bid.audience_target_id, bid.ad_group_id, bid.campaign_id].filter(Boolean)
       if (selectors.length !== 1) {
         throw new Error("Каждая ставка должна содержать ровно один ID цели, группы или кампании.")
@@ -105,7 +107,9 @@ export async function handleSetAudienceTargets(
   if (!params.audience_target_ids?.length) {
     throw new Error(`Для action=${params.action} передайте audience_target_ids.`)
   }
-  return formatResult(await apiPost("audiencetargets", params.action, {
-    SelectionCriteria: { Ids: apiIds(params.audience_target_ids) }
-  }))
+  return formatResult(
+    await apiPost("audiencetargets", params.action, {
+      SelectionCriteria: { Ids: apiIds(params.audience_target_ids) }
+    })
+  )
 }

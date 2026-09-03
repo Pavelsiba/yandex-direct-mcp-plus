@@ -12,16 +12,19 @@ pre-commit:
       run: git branch --show-current | grep -qxv -e main -e dev
       fail_text: "main и dev — интеграционные ветки. Заведите ветку под задачу: git switch -c feat/…"
 
-    # --no-warn-ignored: в {staged_files} может попасть игнорируемый файл, и без
-    # флага предупреждение об этом валит коммит через --max-warnings 0.
+    # Biome: формат и линт одним проходом, свой парсер — от версии TypeScript
+    # не зависит. --no-errors-on-unmatched и --files-ignore-unknown нужны потому,
+    # что в {staged_files} попадают файлы вне области biome.json (доки, ямлы):
+    # без них хук падал бы на каждом коммите, не трогающем код.
     - name: lint
-      glob: "*.ts"
-      run: npx eslint --fix --max-warnings 0 --no-warn-ignored {staged_files}
+      glob: "{*.ts,*.js}"
+      run: npx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
 
-    # tsc проверяет проект целиком, per-file его гонять нельзя.
+    # tsc проверяет проект целиком, per-file его гонять нельзя. Конфиги на .js
+    # тоже под проверкой (tsconfig.json их включает), отсюда второй шаблон.
     - name: typecheck
-      glob: "*.ts"
+      glob: "{*.ts,*.config.js}"
       run: npm run typecheck
 
     # Тесты не ходят в сеть, весь прогон — меньше секунды, поэтому гоняем всегда.
@@ -39,3 +42,21 @@ commit-msg:
   jobs:
     - name: commitlint
       run: npx commitlint --edit {1}
+
+# Гард на пуш. pre-commit ловит только попытку закоммитить, находясь на main,
+# и не мешает `git push origin HEAD:main` из ветки задачи — а это как раз тот
+# промах, который случается по невнимательности. main наполняется исключительно
+# мерджем PR из dev на стороне GitHub, поэтому прямой пуш отклоняем здесь.
+# В CI хуки выключены (LEFTHOOK=0), так что релизу этот гард не мешает.
+pre-push:
+  jobs:
+    # git отдаёт pre-push строки вида "<local ref> <sha> <remote ref> <sha>"
+    # через stdin, отсюда use_stdin: без него lefthook держит псевдо-TTY,
+    # stdin не закрывается и `while read` виснет.
+    - name: no-push-to-main
+      use_stdin: true
+      run: |
+        while read -r _local_ref _local_sha remote_ref _remote_sha; do
+          test "$remote_ref" != "refs/heads/main"
+        done
+      fail_text: "main наполняется только мерджем PR из dev на стороне GitHub."

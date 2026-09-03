@@ -1,8 +1,8 @@
 import { z } from "zod"
 import { apiPost, rublesToMicros } from "../client.js"
 import { formatResult } from "../format.js"
-import { pageFields, buildPage } from "../pagination.js"
 import { apiId, idField } from "../id.js"
+import { buildPage, pageFields } from "../pagination.js"
 
 export const listCampaignsSchema = z.object({
   status: z.string().optional().describe("Фильтр по статусу: ACCEPTED, DRAFT, MODERATION и т.д."),
@@ -41,10 +41,21 @@ export async function handleGetCampaign(params: z.infer<typeof getCampaignSchema
 export const createCampaignSchema = z.object({
   name: z.string().describe("Название кампании"),
   type: z.string().default("TEXT_CAMPAIGN").describe("Тип: TEXT_CAMPAIGN, DYNAMIC_TEXT_CAMPAIGN"),
-  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Формат даты YYYY-MM-DD").describe("Дата начала YYYY-MM-DD"),
+  start_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Формат даты YYYY-MM-DD")
+    .describe("Дата начала YYYY-MM-DD"),
   daily_budget: z.number().positive().optional().describe("Дневной бюджет в рублях (напр. 1000 = 1000 ₽)"),
-  search_strategy: z.string().default("HIGHEST_POSITION").describe("Стратегия на поиске: HIGHEST_POSITION, WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION, SERVING_OFF"),
-  network_strategy: z.string().default("SERVING_OFF").describe("Стратегия в сетях (РСЯ): SERVING_OFF, NETWORK_DEFAULT, MAXIMUM_COVERAGE, WB_MAXIMUM_CLICKS")
+  search_strategy: z
+    .string()
+    .default("HIGHEST_POSITION")
+    .describe(
+      "Стратегия на поиске: HIGHEST_POSITION, WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION, SERVING_OFF"
+    ),
+  network_strategy: z
+    .string()
+    .default("SERVING_OFF")
+    .describe("Стратегия в сетях (РСЯ): SERVING_OFF, NETWORK_DEFAULT, MAXIMUM_COVERAGE, WB_MAXIMUM_CLICKS")
 })
 
 export async function handleCreateCampaign(params: z.infer<typeof createCampaignSchema>): Promise<string> {
@@ -85,7 +96,10 @@ export async function handleUpdateCampaign(params: z.infer<typeof updateCampaign
   // 1) Действие со статусом (отдельный метод API).
   if (params.status) {
     const actionMap: Record<string, string> = {
-      SUSPEND: "suspend", RESUME: "resume", ARCHIVE: "archive", UNARCHIVE: "unarchive"
+      SUSPEND: "suspend",
+      RESUME: "resume",
+      ARCHIVE: "archive",
+      UNARCHIVE: "unarchive"
     }
     const method = actionMap[params.status.toUpperCase()]
     if (!method) {
@@ -115,8 +129,7 @@ export async function handleUpdateCampaign(params: z.infer<typeof updateCampaign
 
 export const manageCampaignsSchema = z.object({
   campaign_ids: z.array(idField("ID кампании")).min(1).max(1000).describe("ID кампаний"),
-  action: z.enum(["suspend", "resume", "archive", "unarchive"])
-    .describe("Действие: suspend/resume/archive/unarchive")
+  action: z.enum(["suspend", "resume", "archive", "unarchive"]).describe("Действие: suspend/resume/archive/unarchive")
 })
 
 export async function handleManageCampaigns(params: z.infer<typeof manageCampaignsSchema>): Promise<string> {

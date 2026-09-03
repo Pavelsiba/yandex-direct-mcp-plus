@@ -1,0 +1,15 @@
+// Инвариант 64-битных ID: родной JSON.parse молча округляет 19-значные ID
+// (1915016273214320641 → 1915016273214320600), а JSON.stringify бросает на BigInt.
+// Разбор и сериализация — только через json-bigint в транспортном слое.
+// Полный разбор — docs/architecture.md, раздел «Инвариант: 64-битные ID».
+//
+// Правило глобальное: overrides плагины не отключает (проверено на 2.5.11),
+// поэтому исключения помечаются в самих файлах строкой
+//   // biome-ignore-all lint/plugin: причина
+`JSON.$method($args)` where {
+    $method <: or { `parse`, `stringify` },
+    register_diagnostic(
+        span = $method,
+        message = "JSON.parse/stringify запрещены вне транспортного слоя: 64-битные ID теряют точность. Используйте json-bigint."
+    )
+}
