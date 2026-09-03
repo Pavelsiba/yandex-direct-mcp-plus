@@ -21,11 +21,13 @@
    `create_campaign`. Наружу расписание задаётся правилами «дни + часы +
    коэффициент», строки из 25 чисел собирает хендлер.
 
-2. **Смена стратегии на существующей кампании.** `create_campaign` принимает
-   `AVERAGE_CPA`, `AVERAGE_CPC`, `PAY_FOR_CONVERSION`, а `set_strategy` — нет: там
-   зашит enum `HIGHEST_POSITION | WB_MAXIMUM_CLICKS | SERVING_OFF` плюс
-   `NETWORK_DEFAULT`. Типовой сценарий «стартовать на оплате за клики, набрать
-   статистику, переключиться на оплату за конверсии» через API недоступен.
+2. ~~**Смена стратегии на существующей кампании.**~~ — сделано 03.09.2026,
+   `chore/zod4-conventions`: `set_strategy` принимает `AVERAGE_CPC`, `AVERAGE_CPA`
+   и `PAY_FOR_CONVERSION` (плюс `MAXIMUM_COVERAGE` в сетях), настройки собираются
+   в `AverageCpc` / `AverageCpa` / `PayForConversion`, цель Метрики приходит
+   параметром `goal_id`. Сочетание сторон схемой не проверяется: таблица
+   совместимости живёт у Директа. Не покрыты стратегии с несколькими целями,
+   `AVERAGE_ROI`, `AVERAGE_CRR`, `MAX_PROFIT` и недельный пакет кликов.
 
 3. **Минус-фразы — только полная замена.** `set_campaign_negative_keywords` и
    `set_ad_group_negative_keywords` отправляют `NegativeKeywords.Items` целиком.

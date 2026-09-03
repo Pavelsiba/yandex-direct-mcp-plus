@@ -113,25 +113,62 @@ export async function handleGetStrategy(params: z.infer<typeof getStrategySchema
 type StrategyParams = z.infer<typeof setStrategySchema>
 type StrategyType = StrategyParams["search_type"] | StrategyParams["network_type"]
 
-// Настройки лежат не рядом с типом, а во вложенном объекте, названном по стратегии.
-function strategyPart(type: StrategyType, params: StrategyParams): Record<string, unknown> {
-  const part: Record<string, unknown> = { BiddingStrategyType: type }
+// Цену стратегии, без которой она не имеет смысла, требуем сами: Директ вернул бы
+// ту же ошибку, но после запроса и на своём языке.
+function required(value: number | undefined, field: string, type: StrategyType): number {
+  if (value === undefined) throw new Error(`${field} обязателен для стратегии ${type}.`)
+  return value
+}
 
-  if (type === "WB_MAXIMUM_CLICKS") {
-    if (params.weekly_spend_limit === undefined) {
-      throw new Error("weekly_spend_limit обязателен для стратегии WB_MAXIMUM_CLICKS.")
+// Необязательные поля добавляются только когда заданы: пустое поле в запросе Директ
+// трактует как «сбросить», а не «оставить как есть».
+function withOptional(settings: Record<string, unknown>, params: StrategyParams): Record<string, unknown> {
+  if (params.weekly_spend_limit !== undefined) settings.WeeklySpendLimit = params.weekly_spend_limit
+  if (params.goal_id !== undefined) settings.GoalId = apiId(params.goal_id)
+  return settings
+}
+
+// Настройки лежат не рядом с типом, а во вложенном объекте, названном по стратегии:
+// имя объекта и есть переключатель, а BiddingStrategyType только дублирует его.
+function strategySettings(type: StrategyType, params: StrategyParams): Record<string, unknown> | undefined {
+  switch (type) {
+    case "WB_MAXIMUM_CLICKS": {
+      const settings: Record<string, unknown> = {
+        WeeklySpendLimit: required(params.weekly_spend_limit, "weekly_spend_limit", type)
+      }
+      if (params.bid_ceiling !== undefined) settings.BidCeiling = params.bid_ceiling
+      return { WbMaximumClicks: settings }
     }
-    const settings: Record<string, number> = { WeeklySpendLimit: params.weekly_spend_limit }
-    if (params.bid_ceiling !== undefined) settings.BidCeiling = params.bid_ceiling
-    part.WbMaximumClicks = settings
-  }
 
-  if (type === "NETWORK_DEFAULT") {
-    part.NetworkDefault =
-      params.network_limit_percent === undefined ? {} : { LimitPercent: params.network_limit_percent }
-  }
+    case "AVERAGE_CPC":
+      return { AverageCpc: withOptional({ AverageCpc: required(params.average_cpc, "average_cpc", type) }, params) }
 
-  return part
+    case "AVERAGE_CPA": {
+      const settings = withOptional({ AverageCpa: required(params.average_cpa, "average_cpa", type) }, params)
+      if (params.bid_ceiling !== undefined) settings.BidCeiling = params.bid_ceiling
+      return { AverageCpa: settings }
+    }
+
+    // Cpa, а не AverageCpa: у оплаты за конверсию это фиксированная цена конверсии.
+    case "PAY_FOR_CONVERSION":
+      return {
+        PayForConversion: withOptional({ Cpa: required(params.conversion_price, "conversion_price", type) }, params)
+      }
+
+    case "NETWORK_DEFAULT":
+      return {
+        NetworkDefault: params.network_limit_percent === undefined ? {} : { LimitPercent: params.network_limit_percent }
+      }
+
+    // HIGHEST_POSITION, MAXIMUM_COVERAGE и SERVING_OFF настроек не имеют:
+    // в TextCampaignStrategyBase структуры под них нет вовсе.
+    default:
+      return undefined
+  }
+}
+
+function strategyPart(type: StrategyType, params: StrategyParams): Record<string, unknown> {
+  return { BiddingStrategyType: type, ...strategySettings(type, params) }
 }
 
 export async function handleSetStrategy(params: StrategyParams): Promise<string> {

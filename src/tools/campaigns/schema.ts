@@ -12,6 +12,7 @@ import {
   SETTABLE_NETWORK_STRATEGIES,
   SETTABLE_SEARCH_STRATEGIES
 } from "#shared/config/enums"
+import { dateField } from "#shared/lib/date"
 import { idField } from "#shared/lib/id"
 import { rublesField } from "#shared/lib/money"
 import { pageFields } from "#shared/lib/pagination"
@@ -35,10 +36,7 @@ export const createCampaignSchema = z.object({
     .literal(CAMPAIGN_TYPES_CREATABLE)
     .default("TEXT_CAMPAIGN")
     .meta({ description: "Тип кампании: текстово-графическая или динамические объявления" }),
-  start_date: z
-    .string()
-    .check(z.regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Формат даты YYYY-MM-DD" }))
-    .meta({ description: "Дата начала показов, YYYY-MM-DD" }),
+  start_date: dateField("Дата начала показов, YYYY-MM-DD"),
   daily_budget: rublesField("Дневной бюджет в рублях, например 1000 — это 1000 ₽").optional(),
   search_strategy: z
     .literal(SEARCH_STRATEGIES)
@@ -89,18 +87,32 @@ export const getStrategySchema = z.object({
   campaign_id: idField("ID текстово-графической кампании")
 })
 
-// Набор уже, чем SEARCH_STRATEGIES: хендлер умеет собрать настройки только этих трёх.
-// Расширение — задача P1 из roadmap, а не побочный эффект перекладки.
+// Набор уже, чем SEARCH_STRATEGIES: хендлер умеет собрать настройки только для
+// перечисленных типов. Настройки общие на обе стороны — автоматическая стратегия
+// по правилам Директа стоит на одной из них, вторая идёт NETWORK_DEFAULT или
+// SERVING_OFF, так что двусмысленности не возникает.
 export const setStrategySchema = z.object({
   campaign_id: idField("ID текстово-графической кампании"),
-  search_type: z
-    .literal(SETTABLE_SEARCH_STRATEGIES)
-    .meta({ description: "Стратегия на поиске: ручная, максимум кликов или показы отключены" }),
-  network_type: z
-    .literal(SETTABLE_NETWORK_STRATEGIES)
-    .meta({ description: "Стратегия в сетях: по умолчанию, максимум кликов или показы отключены" }),
-  weekly_spend_limit: rublesField("Недельный бюджет в рублях; обязателен для WB_MAXIMUM_CLICKS").optional(),
-  bid_ceiling: rublesField("Максимальная ставка в рублях для WB_MAXIMUM_CLICKS").optional(),
+  search_type: z.literal(SETTABLE_SEARCH_STRATEGIES).meta({
+    description:
+      "Стратегия на поиске: HIGHEST_POSITION (ручная), WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
+  }),
+  network_type: z.literal(SETTABLE_NETWORK_STRATEGIES).meta({
+    description:
+      "Стратегия в сетях: NETWORK_DEFAULT (по настройкам поиска), MAXIMUM_COVERAGE, WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
+  }),
+  weekly_spend_limit: rublesField(
+    "Недельный бюджет в рублях; обязателен для WB_MAXIMUM_CLICKS, для остальных автостратегий необязателен"
+  ).optional(),
+  bid_ceiling: rublesField("Максимальная ставка в рублях для WB_MAXIMUM_CLICKS и AVERAGE_CPA").optional(),
+  average_cpc: rublesField("Средняя цена клика в рублях; обязательна для AVERAGE_CPC").optional(),
+  average_cpa: rublesField("Средняя цена конверсии в рублях; обязательна для AVERAGE_CPA").optional(),
+  conversion_price: rublesField(
+    "Цена конверсии в рублях для PAY_FOR_CONVERSION: списывается за конверсию, а не за клик"
+  ).optional(),
+  goal_id: idField(
+    "ID цели Метрики для AVERAGE_CPA и PAY_FOR_CONVERSION; для оплаты за конверсию обязателен"
+  ).optional(),
   network_limit_percent: z
     .int()
     .check(z.gte(1, { error: "Доля расходов не меньше 1%" }), z.lte(100, { error: "Доля расходов не больше 100%" }))
