@@ -37,13 +37,14 @@ jobs:
       group: release
       cancel-in-progress: false
     steps:
-      # persist-credentials: false обязателен. checkout иначе прописывает
-      # http.extraheader со штатным GITHUB_TOKEN, а заголовок Authorization
-      # перебивает креды в URL, который semantic-release собирает из PAT
-      # (lib/get-git-auth-url.js). Пуш ушёл бы от github-actions, у которого
-      # bypass в рулсетах нет, и упал бы на защите main.
+      # persist-credentials: false обязателен: иначе checkout оставляет для
+      # последующих git-команд креды штатного GITHUB_TOKEN — с v6 в отдельном файле
+      # под $RUNNER_TEMP, до неё заголовком http.extraheader в .git/config, — и они
+      # перебивают PAT в URL, который semantic-release собирает сам
+      # (lib/get-git-auth-url.js). Пуш ушёл бы от github-actions, у которого bypass
+      # в рулсетах нет, и упал бы на защите main.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
@@ -54,7 +55,7 @@ jobs:
       # публикацию — тогда же вернутся NPM_TOKEN и permissions: id-token: write
       # под provenance.
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -88,7 +89,7 @@ jobs:
       # в личном репозитории добавить нельзя — API отвечает, что интеграция
       # должна принадлежать источнику рулсета.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: dev
           fetch-depth: 0
