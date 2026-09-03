@@ -51,8 +51,36 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["./*.js"],
-                    "message": "Инструмент не импортирует инструмент: общая логика едет в shared (docs/architecture.md)."
+                    "group": ["#tools/**"],
+                    "message": "Инструмент не импортирует инструмент: внутри домена — относительный путь, общее едет в shared (docs/architecture.md)."
+                  },
+                  {
+                    "group": ["#app/**"],
+                    "message": "Направление зависимостей — app → tools → shared: инструмент про app не знает."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "Выход за пределы домена относительным путём: границы объявляются через #shared/*."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/shared/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["#tools/**", "#app/**", "../**"],
+                    "message": "shared не знает про tools и app: транспортный слой остаётся переиспользуемым (docs/architecture.md)."
                   }
                 ]
               }

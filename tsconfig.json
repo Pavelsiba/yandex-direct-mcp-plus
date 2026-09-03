@@ -5,6 +5,19 @@
     "lib": ["ES2023"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    // Границы слоёв объявлены subpath imports в package.json (#shared/*, #tools/*,
+    // #app/*). Условие development разрешает их в исходники src/*.ts — по нему живут
+    // tsc, редактор, vitest и tsx; Node в проде идёт веткой default → dist/*.js.
+    "customConditions": ["development"],
+    // Те же границы, продублированные для оснастки: knip не резолвит subpath
+    // imports (webpro-nl/knip#1256) и без paths считает весь src мёртвым кодом.
+    // tsc сюда не заглядывает — он идёт через imports по условию выше.
+    "paths": {
+      "#app/*": ["./src/app/*"],
+      "#shared/*": ["./src/shared/*"],
+      "#testing/*": ["./src/testing/*"],
+      "#tools/*": ["./src/tools/*"]
+    },
     "types": ["node"],
 
     // Этот конфиг ничего не собирает — он обслуживает typecheck и редактор и

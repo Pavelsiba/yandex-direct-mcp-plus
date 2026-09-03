@@ -3,9 +3,31 @@
   "version": "1.0.0",
   "description": "MCP-сервер для API Яндекс.Директа v5: кампании, объявления, ключевые фразы, ставки, минус-фразы, статистика. Деньги в рублях, ID без потери точности.",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/app/index.js",
+  "imports": {
+    "#shared/*": {
+      "types": "./src/shared/*.ts",
+      "development": "./src/shared/*.ts",
+      "default": "./dist/shared/*.js"
+    },
+    "#tools/*": {
+      "types": "./src/tools/*.ts",
+      "development": "./src/tools/*.ts",
+      "default": "./dist/tools/*.js"
+    },
+    "#app/*": {
+      "types": "./src/app/*.ts",
+      "development": "./src/app/*.ts",
+      "default": "./dist/app/*.js"
+    },
+    "#testing/*": {
+      "types": "./src/testing/*.ts",
+      "development": "./src/testing/*.ts",
+      "default": "./dist/testing/*.js"
+    }
+  },
   "bin": {
-    "yandex-direct-mcp-plus": "dist/index.js"
+    "yandex-direct-mcp-plus": "dist/app/index.js"
   },
   "files": [
     "dist"
@@ -16,8 +38,8 @@
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.build.json",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js",
+    "dev": "tsx --conditions=development src/app/index.ts",
+    "start": "node dist/app/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build",

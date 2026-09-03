@@ -1,4 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "project": ["src/**/*.ts"]
+  "entry": ["src/**/*.unit.test.ts"],
+  "project": ["src/**/*.ts"],
+  "paths": {
+    "#app/*": ["./src/app/*.ts"],
+    "#shared/*": ["./src/shared/*.ts"],
+    "#tools/*": ["./src/tools/*.ts"],
+    "#testing/*": ["./src/testing/*.ts"]
+  }
 }
