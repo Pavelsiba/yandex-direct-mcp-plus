@@ -160,8 +160,15 @@ OAuth-токен выпускается для приложения, зарег�
 npm install
 npm run build      # tsc → dist/
 npm test           # vitest (моки fetch)
-npm run dev        # tsx src/index.ts
+npm run dev        # tsx --conditions=development src/app/index.ts
+npm run lint       # biome
+npm run typecheck  # tsc --noEmit
+npm run lint:dead  # knip
 ```
+
+Код разложен по слоям `app → tools → shared`; инструмент — это каталог
+`src/tools/<домен>/` с `schema.ts`, `handler.ts` и `tool.ts`. Подробности —
+в [docs/architecture.md](docs/architecture.md).
 
 ## Происхождение и благодарности
 

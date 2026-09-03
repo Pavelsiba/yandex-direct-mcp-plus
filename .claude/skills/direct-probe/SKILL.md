@@ -29,8 +29,8 @@ description: Эмпирическая проба API Яндекс.Директа
 **Проверка, что песочница правда включена** — читающий вызов и глазами по URL в логе:
 
 ```bash
-YANDEX_DIRECT_SANDBOX=1 npx tsx -e "
-  const { apiPost } = await import('./src/client.ts')
+YANDEX_DIRECT_SANDBOX=1 npx tsx --conditions=development -e "
+  const { apiPost } = await import('./src/shared/api/client.ts')
   console.error(await apiPost('campaigns', 'get', { SelectionCriteria: {}, FieldNames: ['Id','Name'] }))
 "
 ```
@@ -46,7 +46,7 @@ YANDEX_DIRECT_SANDBOX=1 npx tsx -e "
 
 ```ts
 // <scratchpad>/probe.ts
-import { apiPost } from "../src/client.js"
+import { apiPost } from "../src/shared/api/client.js"
 
 const raw = await apiPost("keywords", "get", {
   SelectionCriteria: { CampaignIds: [/* id из песочницы */] },
@@ -57,7 +57,8 @@ const raw = await apiPost("keywords", "get", {
 console.error(JSON.stringify(raw, null, 2))
 ```
 
-Запуск: `YANDEX_DIRECT_SANDBOX=1 npx tsx <scratchpad>/probe.ts`.
+Запуск: `YANDEX_DIRECT_SANDBOX=1 npx tsx --conditions=development <scratchpad>/probe.ts`.
+Флаг обязателен: без него tsx резолвит `#shared/*` в `dist/` и исполняет прошлую сборку.
 
 **Почему `console.error`, а не `log`:** stdout занят транспортом MCP. В пробе это не
 критично, но привычка полезная — в сервере вывод в stdout ломает протокол.
