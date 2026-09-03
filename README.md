@@ -1,15 +1,24 @@
-# @theyahia/yandex-direct-mcp
+# yandex-direct-mcp-plus
 
 MCP-сервер для API Яндекс.Директ — управление контекстной рекламой из любого MCP-клиента (Claude, Cursor и др.): кампании, объявления, аудитории, изображения, фиды, уточнения, ставки, минус-фразы, стратегии, статистика и баланс. **48 инструментов.**
 
-[![npm](https://img.shields.io/npm/v/@theyahia/yandex-direct-mcp)](https://www.npmjs.com/package/@theyahia/yandex-direct-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-green.svg)](https://nodejs.org)
 
 > Деньги — **в рублях** (бюджеты, ставки на вводе и выводе); сервер сам конвертирует в микроединицы API. Поддержаны **песочница** для безопасного теста и **агентский режим** (Client-Login).
 >
 > Все ID передаются строками (`"1915016273214320641"`). Это сохраняет 64-битные идентификаторы Яндекс.Директа без потери точности в JavaScript.
 
+> [!NOTE]
+> В npm пакет пока не опубликован — ставится сборкой из исходников. Публикация будет отдельным релизом.
+
 ## Установка
+
+```bash
+git clone git@github.com:Pavelsiba/yandex-direct-mcp-plus.git
+cd yandex-direct-mcp-plus
+npm ci && npm run build
+```
 
 ### Claude Desktop
 
@@ -17,8 +26,8 @@ MCP-сервер для API Яндекс.Директ — управление �
 {
   "mcpServers": {
     "yandex-direct": {
-      "command": "npx",
-      "args": ["-y", "@theyahia/yandex-direct-mcp"],
+      "command": "node",
+      "args": ["/путь/к/yandex-direct-mcp-plus/dist/index.js"],
       "env": {
         "YANDEX_DIRECT_TOKEN": "ваш_токен"
       }
@@ -30,9 +39,8 @@ MCP-сервер для API Яндекс.Директ — управление �
 ### Claude Code
 
 ```bash
-claude mcp add yandex-direct -e YANDEX_DIRECT_TOKEN=ваш_токен -- npx -y @theyahia/yandex-direct-mcp
+claude mcp add yandex-direct -e YANDEX_DIRECT_TOKEN=ваш_токен -- node /путь/к/yandex-direct-mcp-plus/dist/index.js
 ```
-
 ## Конфигурация (переменные окружения)
 
 | Переменная | Обязательна | Назначение |
@@ -155,6 +163,12 @@ npm test           # vitest (моки fetch)
 npm run dev        # tsx src/index.ts
 ```
 
+## Происхождение и благодарности
+
+Проект начат на коде [`theYahia/yandex-direct-mcp`](https://github.com/theYahia/yandex-direct-mcp) под лицензией MIT. Расширение с 20 до 48 инструментов и перевод ID на строки — работа [**Maxim (DrSeedon)**](https://github.com/DrSeedon), [PR #7](https://github.com/theYahia/yandex-direct-mcp/pull/7); в npm эта версия не публиковалась. Дальше проект развивается самостоятельно и апстрим не отслеживает.
+
+Что изменилось относительно исходного кода — в [CHANGELOG.md](CHANGELOG.md), план — в [docs/roadmap.md](docs/roadmap.md), архитектура — в [docs/architecture.md](docs/architecture.md).
+
 ## Лицензия
 
-MIT
+MIT — см. [LICENSE](LICENSE). Уведомление об авторских правах исходного проекта сохранено.

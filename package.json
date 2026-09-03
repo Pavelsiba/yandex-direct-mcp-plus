@@ -1,17 +1,17 @@
 {
-  "name": "yd-mcp",
-  "version": "5.0.0",
-  "description": "Локальный форк yandex-direct-mcp (theYahia/YaAll, MIT) — полное покрытие API Яндекс.Директа v5",
+  "name": "yandex-direct-mcp-plus",
+  "version": "1.0.0",
+  "description": "MCP-сервер для API Яндекс.Директа v5: кампании, объявления, ключевые фразы, ставки, минус-фразы, статистика. Деньги в рублях, ID без потери точности.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "yd-mcp": "dist/index.js"
+    "yandex-direct-mcp-plus": "dist/index.js"
   },
   "files": [
     "dist"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
@@ -63,8 +63,15 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/theYahia/yandex-direct-mcp.git"
+    "url": "git+https://github.com/Pavelsiba/yandex-direct-mcp-plus.git"
   },
-  "homepage": "https://github.com/theYahia/yandex-direct-mcp#readme",
-  "author": "theYahia (https://github.com/theYahia)"
+  "homepage": "https://github.com/Pavelsiba/yandex-direct-mcp-plus#readme",
+  "author": "Pavelsiba (https://github.com/Pavelsiba)",
+  "bugs": {
+    "url": "https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues"
+  },
+  "contributors": [
+    "theYahia (https://github.com/theYahia)",
+    "Maxim DrSeedon (https://github.com/DrSeedon)"
+  ]
 }

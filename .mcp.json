@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "yandex-direct": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@theyahia/yandex-direct-mcp"
-      ],
+      "command": "node",
+      "args": ["./dist/index.js"],
       "env": {
         "YANDEX_DIRECT_TOKEN": "YOUR_TOKEN"
       }
