@@ -1,0 +1,70 @@
+{
+  "name": "yd-mcp",
+  "version": "5.0.0",
+  "description": "Локальный форк yandex-direct-mcp (theYahia/YaAll, MIT) — полное покрытие API Яндекс.Директа v5",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "yd-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "json-bigint": "^1.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/json-bigint": "^1.0.4",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "modelcontextprotocol",
+    "claude",
+    "ai",
+    "llm",
+    "anthropic",
+    "cursor",
+    "ai-tools",
+    "ai-agent",
+    "russian-api",
+    "yandex",
+    "direct",
+    "advertising",
+    "ppc",
+    "ads",
+    "marketing",
+    "typescript",
+    "yandex-direct",
+    "api"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theYahia/yandex-direct-mcp.git"
+  },
+  "homepage": "https://github.com/theYahia/yandex-direct-mcp#readme",
+  "author": "theYahia (https://github.com/theYahia)"
+}
