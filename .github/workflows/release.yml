@@ -98,10 +98,14 @@ jobs:
       # смерджил бы до-релизный main и молча оставил дрейф.
       # [skip ci] обязателен — пуш от PAT, в отличие от штатного токена,
       # запускает workflow, и CI прогнался бы второй раз на том же коде.
+      # --no-ff обязателен по той же причине: без него merge перематывает dev,
+      # своего коммита не появляется, а GitHub читает [skip ci] только в головном
+      # коммите пуша. На холостом прогоне 03.09.2026 релиза не было, main ушёл вперёд
+      # ровно на мердж-коммит PR — dev перемотался, и лишний CI на нём запустился.
       - name: Merge main into dev
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
-          git merge -m "chore: back-merge main в dev [skip ci]" FETCH_HEAD
+          git merge --no-ff -m "chore: back-merge main в dev [skip ci]" FETCH_HEAD
           git push origin HEAD:dev

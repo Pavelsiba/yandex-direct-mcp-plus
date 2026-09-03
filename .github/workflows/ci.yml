@@ -7,7 +7,89 @@ on:
     branches: [main, dev]
 
 jobs:
-  build-test:
+  # Biome, tsc и сборка от версии Node не зависят: у Biome свой парсер на Rust,
+  # у tsc 7 — нативный бинарник, а вывод компилятора детерминирован. Гонять их
+  # по матрице — тройная плата за один и тот же ответ, поэтому одна версия.
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  # Отдельно от сборки намеренно: tsconfig.json покрывает тесты и конфиги,
+  # которых нет в tsconfig.build.json. Сборка их не проверяет вообще.
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  # Мёртвый код: экспорты без импортёров, неиспользуемые файлы и зависимости.
+  # Отдельной джобой, а не шагом линта: knip смотрит граф целиком и падает по
+  # другой причине — его красный не должен читаться как «формат поехал».
+  knip:
+    name: Dead code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Knip
+        run: npm run lint:dead
+
+  # Матрица нужна только тесту: он единственный исполняет код на Node.
+  test:
+    name: Test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -25,9 +107,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
       - name: Test
         run: npm test
 
@@ -36,10 +115,18 @@ jobs:
   ci-ok:
     name: ci-ok
     runs-on: ubuntu-latest
-    needs: build-test
+    needs: [lint, typecheck, build, knip, test]
     if: always()
     steps:
-      - name: Проверить результат матрицы
+      - name: Проверить результаты джоб
         run: |
-          echo "build-test: ${{ needs.build-test.result }}"
-          test "${{ needs.build-test.result }}" = "success"
+          echo "lint:      ${{ needs.lint.result }}"
+          echo "typecheck: ${{ needs.typecheck.result }}"
+          echo "build:     ${{ needs.build.result }}"
+          echo "knip:      ${{ needs.knip.result }}"
+          echo "test:      ${{ needs.test.result }}"
+          test "${{ needs.lint.result }}" = "success"
+          test "${{ needs.typecheck.result }}" = "success"
+          test "${{ needs.build.result }}" = "success"
+          test "${{ needs.knip.result }}" = "success"
+          test "${{ needs.test.result }}" = "success"
