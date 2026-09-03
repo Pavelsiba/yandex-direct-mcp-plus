@@ -1,34 +1,13 @@
 {
   "branches": ["main"],
-  "preset": "conventionalcommits",
-  "presetConfig": {
-    "types": [
-      { "type": "feat", "section": "Возможности" },
-      { "type": "fix", "section": "Исправления" },
-      { "type": "perf", "section": "Производительность" },
-      { "type": "refactor", "section": "Рефакторинг" },
-      { "type": "docs", "section": "Документация" },
-      { "type": "revert", "section": "Откаты" },
-      { "type": "chore", "hidden": true },
-      { "type": "ci", "hidden": true },
-      { "type": "build", "hidden": true },
-      { "type": "style", "hidden": true },
-      { "type": "test", "hidden": true }
-    ]
-  },
   "plugins": [
-    [
-      "@semantic-release/commit-analyzer",
-      {
-        "releaseRules": [{ "type": "refactor", "release": "patch" }]
-      }
-    ],
+    "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     [
       "@semantic-release/changelog",
       {
         "changelogFile": "CHANGELOG.md",
-        "changelogTitle": "# Changelog\n\nВсе значимые изменения проекта документируются в этом файле. Секции ниже\nдобавляет semantic-release по conventional commits; версионирование —\n[SemVer](https://semver.org/lang/ru/). Коммиты типов `chore`, `ci`, `build`,\n`style` и `test` в файл не попадают — политика типов задана в `.releaserc.json`.\n\nИстория до отделения от апстрима (версии 3.0.0–5.0.0, проект\n`theYahia/yandex-direct-mcp`) — в\n[docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md)."
+        "changelogTitle": "# Changelog\n\nИстория до отделения от апстрима (версии 3.0.0–5.0.0, проект\n`theYahia/yandex-direct-mcp`) — в\n[docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md)."
       }
     ],
     [
