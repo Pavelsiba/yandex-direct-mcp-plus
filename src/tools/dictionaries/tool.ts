@@ -1,6 +1,6 @@
 import { defineTool, READ } from "#shared/lib/tool"
-import { handleGetRegions } from "./handler.js"
-import { getRegionsSchema } from "./schema.js"
+import { handleGetRegions, handleListTimeZones } from "./handler.js"
+import { getRegionsSchema, listTimeZonesSchema } from "./schema.js"
 
 export const getRegionsTool = defineTool({
   name: "get_regions",
@@ -9,4 +9,14 @@ export const getRegionsTool = defineTool({
   annotations: READ,
   schema: getRegionsSchema,
   handler: handleGetRegions
+})
+
+export const listTimeZonesTool = defineTool({
+  name: "list_time_zones",
+  title: "Справочник часовых поясов",
+  description:
+    "Справочник часовых поясов (TimeZones) для set_time_targeting и create_campaign. Фильтр по коду или названию.",
+  annotations: READ,
+  schema: listTimeZonesSchema,
+  handler: handleListTimeZones
 })

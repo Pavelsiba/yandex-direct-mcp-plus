@@ -195,6 +195,92 @@ describe("set_strategy", () => {
       Network: { BiddingStrategyType: "NETWORK_DEFAULT", NetworkDefault: {} }
     })
   })
+
+  // Ради этого перехода стратегии и расширялись: набрать статистику на кликах,
+  // затем переключить кампанию на оплату за конверсии.
+  it("переключает кампанию на оплату за конверсию с целью и ценой", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "PAY_FOR_CONVERSION",
+      network_type: "NETWORK_DEFAULT",
+      conversion_price: 900,
+      goal_id: "12345",
+      weekly_spend_limit: 15000
+    })
+
+    await handleSetStrategy(params)
+
+    // ID здесь короткий намеренно: lastBody() разбирает тело нативным JSON.parse,
+    // и 19-значный он бы сам округлил. Точность проверяет соседний тест по сырому телу.
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy.Search).toEqual({
+      BiddingStrategyType: "PAY_FOR_CONVERSION",
+      PayForConversion: { Cpa: 900_000_000, WeeklySpendLimit: 15_000_000_000, GoalId: 12345 }
+    })
+  })
+
+  it("отправляет ID цели числом без потери точности", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+
+    await handleSetStrategy(
+      setStrategySchema.parse({
+        campaign_id: "123",
+        search_type: "AVERAGE_CPA",
+        network_type: "SERVING_OFF",
+        average_cpa: 500,
+        goal_id: "1915016273214320641"
+      })
+    )
+
+    expect(lastRawBody()).toContain('"GoalId":1915016273214320641')
+  })
+
+  it("кладёт среднюю цену конверсии и потолок ставки в AverageCpa", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+
+    await handleSetStrategy(
+      setStrategySchema.parse({
+        campaign_id: "123",
+        search_type: "AVERAGE_CPA",
+        network_type: "SERVING_OFF",
+        average_cpa: 500,
+        bid_ceiling: 120
+      })
+    )
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy.Search.AverageCpa).toEqual({
+      AverageCpa: 500_000_000,
+      BidCeiling: 120_000_000
+    })
+  })
+
+  it("не даёт включить среднюю цену клика без самой цены", async () => {
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "AVERAGE_CPC",
+      network_type: "SERVING_OFF"
+    })
+
+    await expect(handleSetStrategy(params)).rejects.toThrow("average_cpc обязателен")
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it("не шлёт незаданные настройки: пустое поле Директ трактует как сброс", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+
+    await handleSetStrategy(
+      setStrategySchema.parse({
+        campaign_id: "123",
+        search_type: "AVERAGE_CPC",
+        network_type: "SERVING_OFF",
+        average_cpc: 25
+      })
+    )
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy.Search.AverageCpc).toEqual({
+      AverageCpc: 25_000_000
+    })
+  })
 })
 
 describe("схемы кампаний", () => {
@@ -208,5 +294,21 @@ describe("схемы кампаний", () => {
 
   it("отклоняют неизвестное действие со статусом", () => {
     expect(updateCampaignSchema.safeParse({ campaign_id: "123", status: "DELETE" }).success).toBe(false)
+  })
+})
+
+describe("часовой пояс кампании", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("уходит в TimeZone только когда задан", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
+    await handleCreateCampaign(createCampaignSchema.parse({ name: "Улов", start_date: "2026-09-10" }))
+    expect(lastBody().params.Campaigns[0].TimeZone).toBeUndefined()
+
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
+    await handleCreateCampaign(
+      createCampaignSchema.parse({ name: "Улов", start_date: "2026-09-10", time_zone: "Asia/Yekaterinburg" })
+    )
+    expect(lastBody().params.Campaigns[0].TimeZone).toBe("Asia/Yekaterinburg")
   })
 })

@@ -77,7 +77,9 @@ export const getStrategyTool = defineTool({
 export const setStrategyTool = defineTool({
   name: "set_strategy",
   title: "Изменить стратегию кампании",
-  description: "Изменить стратегию текстово-графической кампании: ручная или максимум кликов с недельным бюджетом.",
+  description:
+    "Изменить стратегию текстово-графической кампании: ручная, максимум кликов, средняя цена клика или конверсии, " +
+    "оплата за конверсию. Цены — в рублях, цель Метрики — goal_id.",
   annotations: IDEMPOTENT,
   schema: setStrategySchema,
   handler: handleSetStrategy

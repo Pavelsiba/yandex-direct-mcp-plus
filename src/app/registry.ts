@@ -19,7 +19,7 @@ import {
   updateCampaignTool
 } from "#tools/campaigns/tool"
 import { getChangesTool } from "#tools/changes/tool"
-import { getRegionsTool } from "#tools/dictionaries/tool"
+import { getRegionsTool, listTimeZonesTool } from "#tools/dictionaries/tool"
 import { listDynamicTargetsTool, manageDynamicTargetsTool } from "#tools/dynamic-targets/tool"
 import { listFeedsTool } from "#tools/feeds/tool"
 import { addKeywordsTool, listKeywordsTool, manageKeywordsTool, setKeywordBidsTool } from "#tools/keywords/tool"
@@ -35,6 +35,7 @@ import { addRetargetingListTool, listRetargetingListsTool } from "#tools/retarge
 import { getSearchQueriesTool } from "#tools/search-queries/tool"
 import { listSitelinksTool, setSitelinksTool } from "#tools/sitelinks/tool"
 import { getStatisticsTool } from "#tools/statistics/tool"
+import { getTimeTargetingTool, setTimeTargetingTool } from "#tools/time-targeting/tool"
 import { addVcardTool, listVcardsTool } from "#tools/vcards/tool"
 
 export const tools: readonly ToolDescriptor[] = [
@@ -46,6 +47,8 @@ export const tools: readonly ToolDescriptor[] = [
   manageCampaignsTool,
   getStrategyTool,
   setStrategyTool,
+  getTimeTargetingTool,
+  setTimeTargetingTool,
 
   // Группы объявлений
   listAdGroupsTool,
@@ -102,5 +105,6 @@ export const tools: readonly ToolDescriptor[] = [
   listBusinessesTool,
   getChangesTool,
   listFeedsTool,
-  getRegionsTool
+  getRegionsTool,
+  listTimeZonesTool
 ]

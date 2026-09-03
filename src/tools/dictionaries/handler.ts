@@ -1,7 +1,7 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
 import { formatResult } from "#shared/lib/format"
-import type { getRegionsSchema } from "./schema.js"
+import type { getRegionsSchema, listTimeZonesSchema } from "./schema.js"
 
 type GeoRegion = {
   GeoRegionId: number
@@ -10,41 +10,67 @@ type GeoRegion = {
   ParentId?: number | null
 }
 
-// Справочник GeoRegions — тысячи записей и почти неизменен, поэтому держится
-// в памяти процесса: иначе каждый вызов тратил бы баллы API на одно и то же.
-let regionsCache: GeoRegion[] | null = null
-
-async function loadRegions(): Promise<GeoRegion[]> {
-  if (regionsCache) return regionsCache
-
-  const data = (await apiPost("dictionaries", "get", { DictionaryNames: ["GeoRegions"] })) as {
-    result?: { GeoRegions?: GeoRegion[] }
-  }
-  regionsCache = data?.result?.GeoRegions ?? []
-  return regionsCache
+type TimeZone = {
+  TimeZone: string
+  TimeZoneName: string
+  UtcOffset?: number
 }
 
-function filterRegions(regions: GeoRegion[], search?: string): GeoRegion[] {
-  if (!search) return regions
+// Справочники Директа — тысячи записей и почти неизменны, поэтому держатся
+// в памяти процесса: иначе каждый вызов тратил бы баллы API на одно и то же.
+const cache = new Map<string, unknown[]>()
+
+async function loadDictionary<Item>(name: string): Promise<Item[]> {
+  const cached = cache.get(name)
+  if (cached) return cached as Item[]
+
+  const data = (await apiPost("dictionaries", "get", { DictionaryNames: [name] })) as {
+    result?: Record<string, Item[]>
+  }
+  const items = data?.result?.[name] ?? []
+  cache.set(name, items)
+  return items
+}
+
+function filterByName<Item>(items: Item[], names: (item: Item) => string[], search?: string): Item[] {
+  if (!search) return items
 
   const needle = search.toLowerCase()
-  return regions.filter((region) =>
-    String(region.GeoRegionName ?? "")
-      .toLowerCase()
-      .includes(needle)
+  return items.filter((item) =>
+    names(item).some((name) =>
+      String(name ?? "")
+        .toLowerCase()
+        .includes(needle)
+    )
   )
 }
 
-export async function handleGetRegions(params: z.infer<typeof getRegionsSchema>): Promise<string> {
-  const matched = filterRegions(await loadRegions(), params.search)
-  const limited = matched.slice(0, params.limit)
+function limitedOutput<Item>(matched: Item[], limit: number): string {
+  const limited = matched.slice(0, limit)
 
   const note =
     matched.length > limited.length
       ? `ℹ️ Показано ${limited.length} из ${matched.length}. Уточните search или увеличьте limit.\n\n`
       : ""
 
-  // Коды регионов короткие, но вывод всё равно идёт через общий форматтер:
+  // Записи справочника короткие, но вывод всё равно идёт через общий форматтер:
   // один формат ответа на все инструменты, никаких исключений.
   return note + formatResult(limited, { money: false })
+}
+
+export async function handleGetRegions(params: z.infer<typeof getRegionsSchema>): Promise<string> {
+  const regions = await loadDictionary<GeoRegion>("GeoRegions")
+  return limitedOutput(
+    filterByName(regions, (region) => [region.GeoRegionName], params.search),
+    params.limit
+  )
+}
+
+export async function handleListTimeZones(params: z.infer<typeof listTimeZonesSchema>): Promise<string> {
+  const zones = await loadDictionary<TimeZone>("TimeZones")
+  // Ищем и по коду (Europe/Moscow), и по названию: модель приходит то с одним, то с другим.
+  return limitedOutput(
+    filterByName(zones, (zone) => [zone.TimeZone, zone.TimeZoneName], params.search),
+    params.limit
+  )
 }

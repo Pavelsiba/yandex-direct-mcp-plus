@@ -128,7 +128,34 @@ export const WEBPAGE_CONDITION_OPERATORS = ["EQUALS_ANY", "NOT_EQUALS_ALL", "CON
 export const CHANGES_MODES = ["campaigns", "objects"] as const
 export const CHANGES_FIELD_NAMES = ["CampaignIds", "AdGroupIds", "AdIds", "CampaignsStat"] as const
 
-// Стратегии, которые умеет выставлять set_strategy. Ограничение нашей реализации:
-// хендлер собирает настройки только для WbMaximumClicks и NetworkDefault.
-export const SETTABLE_SEARCH_STRATEGIES = ["HIGHEST_POSITION", "WB_MAXIMUM_CLICKS", "SERVING_OFF"] as const
-export const SETTABLE_NETWORK_STRATEGIES = ["NETWORK_DEFAULT", "WB_MAXIMUM_CLICKS", "SERVING_OFF"] as const
+// Стратегии, которые умеет выставлять set_strategy. Список по-прежнему уже полного
+// (в TextCampaignStrategyBase двенадцать структур настроек), но покрывает переход
+// «клики → конверсии»: ручная, максимум кликов, средняя цена клика, средняя цена
+// конверсии и оплата за конверсию. Ограничение наше, не Директа — хендлер собирает
+// настройки только для этих типов.
+//
+// Сочетание сторон схемой не проверяется: таблица совместимости живёт у Директа
+// и меняется без нас, а лишний запрет здесь отклонял бы валидный вызов.
+export const SETTABLE_SEARCH_STRATEGIES = [
+  "HIGHEST_POSITION",
+  "WB_MAXIMUM_CLICKS",
+  "AVERAGE_CPC",
+  "AVERAGE_CPA",
+  "PAY_FOR_CONVERSION",
+  "SERVING_OFF"
+] as const
+
+export const SETTABLE_NETWORK_STRATEGIES = [
+  "NETWORK_DEFAULT",
+  "MAXIMUM_COVERAGE",
+  "WB_MAXIMUM_CLICKS",
+  "AVERAGE_CPC",
+  "AVERAGE_CPA",
+  "PAY_FOR_CONVERSION",
+  "SERVING_OFF"
+] as const
+
+// Дни недели расписания показов. В API день — первое число строки Schedule
+// (1 — понедельник … 7 — воскресенье); наружу отдаются буквенные коды: число
+// модель путает с часом, а порядок дней в неделе Директа не совпадает с ISO-датой.
+export const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const
