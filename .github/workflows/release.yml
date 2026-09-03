@@ -1,0 +1,107 @@
+name: Release
+
+# Релиз идёт только с main: стартует по завершении workflow «CI» на main
+# (workflow_run) и работает лишь при его успехе и событии push, то есть после
+# мерджа PR из dev. Прогоны CI на pull_request отфильтрованы условием на event.
+# workflow_dispatch оставлен для ручного запуска, когда релиз надо догнать.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Хуки lefthook рассчитаны на локальную работу: pre-commit запрещает коммит на
+# main, а релизный коммит делается именно там. В CI проверки свои.
+env:
+  LEFTHOOK: "0"
+
+jobs:
+  release:
+    name: Release
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      # persist-credentials: false обязателен. checkout иначе прописывает
+      # http.extraheader со штатным GITHUB_TOKEN, а заголовок Authorization
+      # перебивает креды в URL, который semantic-release собирает из PAT
+      # (lib/get-git-auth-url.js). Пуш ушёл бы от github-actions, у которого
+      # bypass в рулсетах нет, и упал бы на защите main.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      # registry-url не задаём: он ломает публикацию через semantic-release
+      # (об этом прямо предупреждает документация). Пригодится, когда включим
+      # публикацию — тогда же вернутся NPM_TOKEN и permissions: id-token: write
+      # под provenance.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm clean-install
+
+      - name: Verify the integrity of provenance attestations
+        run: npm audit signatures
+
+      # PAT, а не github.token: пуш релизного коммита в защищённый main
+      # проходит только от личности, внесённой в bypass_actors рулсетов.
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+        run: npx semantic-release
+
+  # Релизный цикл оставляет в main два коммита, которых нет в dev: мердж-коммит
+  # PR и chore(release) от semantic-release. Без обратного мерджа дрейф копится —
+  # в dev врёт package.json, а следующий PR показывает CHANGELOG как откат.
+  # Отдельным job'ом, чтобы падение back-merge не красило сам релиз.
+  backmerge:
+    name: Back-merge main → dev
+    needs: release
+    runs-on: ubuntu-latest
+    concurrency:
+      group: backmerge
+      cancel-in-progress: false
+    steps:
+      # Тем же PAT: на dev висит ci-required, а bypass для github-actions
+      # в личном репозитории добавить нельзя — API отвечает, что интеграция
+      # должна принадлежать источнику рулсета.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+
+      # Мерджим FETCH_HEAD, а не origin/main: устаревший remote-tracking ref
+      # смерджил бы до-релизный main и молча оставил дрейф.
+      # [skip ci] обязателен — пуш от PAT, в отличие от штатного токена,
+      # запускает workflow, и CI прогнался бы второй раз на том же коде.
+      - name: Merge main into dev
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge -m "chore: back-merge main в dev [skip ci]" FETCH_HEAD
+          git push origin HEAD:dev

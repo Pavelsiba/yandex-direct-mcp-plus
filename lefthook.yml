@@ -39,3 +39,21 @@ commit-msg:
   jobs:
     - name: commitlint
       run: npx commitlint --edit {1}
+
+# Гард на пуш. pre-commit ловит только попытку закоммитить, находясь на main,
+# и не мешает `git push origin HEAD:main` из ветки задачи — а это как раз тот
+# промах, который случается по невнимательности. main наполняется исключительно
+# мерджем PR из dev на стороне GitHub, поэтому прямой пуш отклоняем здесь.
+# В CI хуки выключены (LEFTHOOK=0), так что релизу этот гард не мешает.
+pre-push:
+  jobs:
+    # git отдаёт pre-push строки вида "<local ref> <sha> <remote ref> <sha>"
+    # через stdin, отсюда use_stdin: без него lefthook держит псевдо-TTY,
+    # stdin не закрывается и `while read` виснет.
+    - name: no-push-to-main
+      use_stdin: true
+      run: |
+        while read -r _local_ref _local_sha remote_ref _remote_sha; do
+          test "$remote_ref" != "refs/heads/main"
+        done
+      fail_text: "main наполняется только мерджем PR из dev на стороне GitHub."
