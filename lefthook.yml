@@ -1,0 +1,41 @@
+# Хуки гоняются локально; в CI отключены переменной LEFTHOOK=0 (проверки там свои).
+pre-commit:
+  parallel: true
+  jobs:
+    # Работа идёт в ветках под задачу (feat/…, fix/…, chore/…). dev собирает их
+    # мерджем, main — релизная и наполняется только PR из dev. Коммит напрямую в
+    # любую из двух — почти всегда промах, поэтому запрещаем на входе.
+    # Без $( ) и без `|` в шаблоне намеренно: lefthook отдаёт run в `sh -c`, и
+    # вертикальная черта внутри регулярки разбирается как конвейер (поймано 03.09:
+    # `grep -qxvE "main|dev"` превращался в пайп на команду `dev`). Отсюда -e/-e.
+    - name: branch
+      run: git branch --show-current | grep -qxv -e main -e dev
+      fail_text: "main и dev — интеграционные ветки. Заведите ветку под задачу: git switch -c feat/…"
+
+    # --no-warn-ignored: в {staged_files} может попасть игнорируемый файл, и без
+    # флага предупреждение об этом валит коммит через --max-warnings 0.
+    - name: lint
+      glob: "*.ts"
+      run: npx eslint --fix --max-warnings 0 --no-warn-ignored {staged_files}
+      stage_fixed: true
+
+    # tsc проверяет проект целиком, per-file его гонять нельзя.
+    - name: typecheck
+      glob: "*.ts"
+      run: npm run typecheck
+
+    # Тесты не ходят в сеть, весь прогон — меньше секунды, поэтому гоняем всегда.
+    - name: test
+      skip_empty: false
+      run: npm test
+
+    # Мёртвый код: экспорты без импортёров, неиспользуемые файлы и зависимости.
+    # Смотрит граф целиком, поэтому не per-file.
+    - name: knip
+      glob: "{src/**/*.ts,package.json,knip.json}"
+      run: npm run lint:dead
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: npx commitlint --edit {1}
