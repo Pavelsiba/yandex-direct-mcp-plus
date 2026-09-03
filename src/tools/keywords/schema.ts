@@ -7,7 +7,7 @@ import { pageFields } from "#shared/lib/pagination"
 export const listKeywordsSchema = z.object({
   ad_group_ids: z
     .array(idField("ID группы объявлений"))
-    .min(1, { error: "Укажите хотя бы одну группу" })
+    .check(z.minLength(1, { error: "Укажите хотя бы одну группу" }))
     .meta({ description: "Группы, ключевые фразы которых нужно выбрать" }),
   ...pageFields
 })
@@ -15,15 +15,15 @@ export const listKeywordsSchema = z.object({
 export const addKeywordsSchema = z.object({
   ad_group_id: idField("ID группы, в которую добавляются фразы"),
   keywords: z
-    .array(z.string().min(1, { error: "Ключевая фраза не может быть пустой" }))
-    .min(1, { error: "Список фраз пуст" })
+    .array(z.string().check(z.minLength(1, { error: "Ключевая фраза не может быть пустой" })))
+    .check(z.minLength(1, { error: "Список фраз пуст" }))
     .meta({ description: "Ключевые фразы; минус-слова внутри фразы записываются через дефис" })
 })
 
 export const manageKeywordsSchema = z.object({
   keyword_ids: z
     .array(idField("ID ключевой фразы"))
-    .min(1, { error: "Список фраз пуст" })
+    .check(z.minLength(1, { error: "Список фраз пуст" }))
     .meta({ description: "Фразы, над которыми выполняется действие" }),
   action: z.literal(KEYWORD_ACTIONS).meta({ description: "Действие: suspend, resume или delete (необратимо)" })
 })

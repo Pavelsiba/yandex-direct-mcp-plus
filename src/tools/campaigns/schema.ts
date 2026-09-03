@@ -27,14 +27,17 @@ export const getCampaignSchema = z.object({
 })
 
 export const createCampaignSchema = z.object({
-  name: z.string().min(1, { error: "Название не может быть пустым" }).meta({ description: "Название кампании" }),
+  name: z
+    .string()
+    .check(z.minLength(1, { error: "Название не может быть пустым" }))
+    .meta({ description: "Название кампании" }),
   type: z
     .literal(CAMPAIGN_TYPES_CREATABLE)
     .default("TEXT_CAMPAIGN")
     .meta({ description: "Тип кампании: текстово-графическая или динамические объявления" }),
   start_date: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Формат даты YYYY-MM-DD" })
+    .check(z.regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Формат даты YYYY-MM-DD" }))
     .meta({ description: "Дата начала показов, YYYY-MM-DD" }),
   daily_budget: rublesField("Дневной бюджет в рублях, например 1000 — это 1000 ₽").optional(),
   search_strategy: z
@@ -61,7 +64,7 @@ export const updateCampaignSchema = z.object({
   campaign_id: idField("ID кампании, десятичная строка"),
   name: z
     .string()
-    .min(1, { error: "Название не может быть пустым" })
+    .check(z.minLength(1, { error: "Название не может быть пустым" }))
     .optional()
     .meta({ description: "Новое название" }),
   daily_budget: rublesField("Новый дневной бюджет в рублях").optional(),
@@ -74,8 +77,10 @@ export const updateCampaignSchema = z.object({
 export const manageCampaignsSchema = z.object({
   campaign_ids: z
     .array(idField("ID кампании, десятичная строка"))
-    .min(1, { error: "Список кампаний пуст" })
-    .max(1000, { error: "За один вызов допустимо не больше 1000 кампаний" })
+    .check(
+      z.minLength(1, { error: "Список кампаний пуст" }),
+      z.maxLength(1000, { error: "За один вызов допустимо не больше 1000 кампаний" })
+    )
     .meta({ description: "ID кампаний, над которыми выполняется действие" }),
   action: z.literal(CAMPAIGN_ACTIONS).meta({ description: "Действие: suspend, resume, archive, unarchive" })
 })
@@ -97,10 +102,8 @@ export const setStrategySchema = z.object({
   weekly_spend_limit: rublesField("Недельный бюджет в рублях; обязателен для WB_MAXIMUM_CLICKS").optional(),
   bid_ceiling: rublesField("Максимальная ставка в рублях для WB_MAXIMUM_CLICKS").optional(),
   network_limit_percent: z
-    .number()
     .int()
-    .min(1, { error: "Доля расходов не меньше 1%" })
-    .max(100, { error: "Доля расходов не больше 100%" })
+    .check(z.gte(1, { error: "Доля расходов не меньше 1%" }), z.lte(100, { error: "Доля расходов не больше 100%" }))
     .optional()
     .meta({ description: "Доля расходов в сетях для NETWORK_DEFAULT, проценты" })
 })

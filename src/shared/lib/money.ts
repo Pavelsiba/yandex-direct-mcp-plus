@@ -15,11 +15,13 @@ export function microsToRubles(micros: number): number {
 // и рано или поздно случится дважды.
 // allowZero нужен ставкам, где ноль — осмысленное значение «не задана».
 export function rublesField(description: string, opts: { allowZero?: boolean } = {}) {
-  const amount = opts.allowZero
-    ? z
-        .number({ error: "Сумма указывается числом в рублях" })
-        .nonnegative({ error: "Сумма не может быть отрицательной" })
-    : z.number({ error: "Сумма указывается числом в рублях" }).positive({ error: "Сумма должна быть больше нуля" })
+  const amount = z
+    .number({ error: "Сумма указывается числом в рублях" })
+    .check(
+      opts.allowZero
+        ? z.nonnegative({ error: "Сумма не может быть отрицательной" })
+        : z.positive({ error: "Сумма должна быть больше нуля" })
+    )
 
   return amount.transform(rublesToMicros).meta({ description })
 }
