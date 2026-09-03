@@ -14,17 +14,21 @@ import { pageFields } from "#shared/lib/pagination"
 export const listDynamicTargetsSchema = z.object({
   dynamic_target_ids: z
     .array(idField("ID динамической цели"))
-    .max(MAX_IDS_PER_CALL, { error: `Не больше ${MAX_IDS_PER_CALL} целей за вызов` })
+    .check(z.maxLength(MAX_IDS_PER_CALL, { error: `Не больше ${MAX_IDS_PER_CALL} целей за вызов` }))
     .optional()
     .meta({ description: "Конкретные динамические цели" }),
   ad_group_ids: z
     .array(idField("ID группы объявлений"))
-    .max(MAX_AD_GROUPS_PER_CALL, { error: `Не больше ${MAX_AD_GROUPS_PER_CALL} групп за вызов` })
+    .check(z.maxLength(MAX_AD_GROUPS_PER_CALL, { error: `Не больше ${MAX_AD_GROUPS_PER_CALL} групп за вызов` }))
     .optional()
     .meta({ description: "Цели выбранных групп" }),
   campaign_ids: z
     .array(idField("ID кампании"))
-    .max(MAX_CAMPAIGNS_PER_AUDIENCE_CALL, { error: `Не больше ${MAX_CAMPAIGNS_PER_AUDIENCE_CALL} кампаний за вызов` })
+    .check(
+      z.maxLength(MAX_CAMPAIGNS_PER_AUDIENCE_CALL, {
+        error: `Не больше ${MAX_CAMPAIGNS_PER_AUDIENCE_CALL} кампаний за вызов`
+      })
+    )
     .optional()
     .meta({ description: "Цели выбранных кампаний" }),
   states: z
@@ -43,17 +47,20 @@ const webpageCondition = z.object({
     description: "Как сравнивать: EQUALS_ANY, NOT_EQUALS_ALL, CONTAINS_ANY или NOT_CONTAINS_ALL"
   }),
   arguments: z
-    .array(z.string().min(1, { error: "Аргумент условия не может быть пустым" }))
-    .min(1, { error: "Условие без аргументов" })
+    .array(z.string().check(z.minLength(1, { error: "Аргумент условия не может быть пустым" })))
+    .check(z.minLength(1, { error: "Условие без аргументов" }))
     .meta({ description: "Значения, с которыми сравнивается свойство страницы" })
 })
 
 const dynamicTarget = z.object({
   ad_group_id: idField("ID группы динамических объявлений"),
-  name: z.string().min(1, { error: "Название не может быть пустым" }).meta({ description: "Название цели" }),
+  name: z
+    .string()
+    .check(z.minLength(1, { error: "Название не может быть пустым" }))
+    .meta({ description: "Название цели" }),
   conditions: z
     .array(webpageCondition)
-    .min(1, { error: "Цель без условий" })
+    .check(z.minLength(1, { error: "Цель без условий" }))
     .meta({ description: "Условия отбора страниц; между собой соединяются логическим И" }),
   bid: rublesField("Ставка на поиске в рублях; 0 — снять ставку", { allowZero: true }).optional(),
   context_bid: rublesField("Ставка в сетях в рублях; 0 — снять ставку", { allowZero: true }).optional(),
@@ -81,20 +88,26 @@ export const manageDynamicTargetsSchema = z.object({
   }),
   targets: z
     .array(dynamicTarget)
-    .min(1, { error: "Список целей пуст" })
-    .max(MAX_AD_GROUPS_PER_CALL, { error: `Не больше ${MAX_AD_GROUPS_PER_CALL} целей за вызов` })
+    .check(
+      z.minLength(1, { error: "Список целей пуст" }),
+      z.maxLength(MAX_AD_GROUPS_PER_CALL, { error: `Не больше ${MAX_AD_GROUPS_PER_CALL} целей за вызов` })
+    )
     .optional()
     .meta({ description: "Цели для добавления; обязателен при action=add" }),
   bids: z
     .array(dynamicBid)
-    .min(1, { error: "Список ставок пуст" })
-    .max(MAX_IDS_PER_CALL, { error: `Не больше ${MAX_IDS_PER_CALL} ставок за вызов` })
+    .check(
+      z.minLength(1, { error: "Список ставок пуст" }),
+      z.maxLength(MAX_IDS_PER_CALL, { error: `Не больше ${MAX_IDS_PER_CALL} ставок за вызов` })
+    )
     .optional()
     .meta({ description: "Новые ставки и приоритеты; обязателен при action=set_bids" }),
   dynamic_target_ids: z
     .array(idField("ID динамической цели"))
-    .min(1, { error: "Список целей пуст" })
-    .max(MAX_IDS_PER_CALL, { error: `Не больше ${MAX_IDS_PER_CALL} целей за вызов` })
+    .check(
+      z.minLength(1, { error: "Список целей пуст" }),
+      z.maxLength(MAX_IDS_PER_CALL, { error: `Не больше ${MAX_IDS_PER_CALL} целей за вызов` })
+    )
     .optional()
     .meta({ description: "Цели для suspend, resume или delete" })
 })

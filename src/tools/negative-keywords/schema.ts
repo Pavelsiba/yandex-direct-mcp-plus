@@ -13,17 +13,23 @@ import {
 import { idField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
 
+const negativeKeyword = z.string().check(z.minLength(1, { error: "Минус-фраза не может быть пустой" }))
+
 export const getCampaignNegativeKeywordsSchema = z.object({
   campaign_ids: z
     .array(idField("ID кампании"))
-    .min(1, { error: "Список кампаний пуст" })
-    .max(MAX_CAMPAIGNS_PER_CALL, { error: `За один вызов допустимо не больше ${MAX_CAMPAIGNS_PER_CALL} кампаний` })
+    .check(
+      z.minLength(1, { error: "Список кампаний пуст" }),
+      z.maxLength(MAX_CAMPAIGNS_PER_CALL, {
+        error: `За один вызов допустимо не больше ${MAX_CAMPAIGNS_PER_CALL} кампаний`
+      })
+    )
     .meta({ description: "Кампании, минус-фразы которых нужно прочитать" })
 })
 
 export const setCampaignNegativeKeywordsSchema = z.object({
   campaign_id: idField("ID кампании"),
-  negative_keywords: z.array(z.string().min(1, { error: "Минус-фраза не может быть пустой" })).meta({
+  negative_keywords: z.array(negativeKeyword).meta({
     description:
       "Полный новый список минус-фраз кампании — прежний затирается целиком. Пустой массив очищает минус-фразы"
   })
@@ -31,7 +37,7 @@ export const setCampaignNegativeKeywordsSchema = z.object({
 
 export const setAdGroupNegativeKeywordsSchema = z.object({
   ad_group_id: idField("ID группы объявлений"),
-  negative_keywords: z.array(z.string().min(1, { error: "Минус-фраза не может быть пустой" })).meta({
+  negative_keywords: z.array(negativeKeyword).meta({
     description: "Полный новый список минус-фраз группы — прежний затирается целиком. Пустой массив очищает"
   })
 })
@@ -39,7 +45,11 @@ export const setAdGroupNegativeKeywordsSchema = z.object({
 export const listNegativeKeywordSharedSetsSchema = z.object({
   set_ids: z
     .array(idField("ID общего набора минус-фраз"))
-    .max(MAX_SHARED_SETS_PER_CALL, { error: `За один вызов допустимо не больше ${MAX_SHARED_SETS_PER_CALL} наборов` })
+    .check(
+      z.maxLength(MAX_SHARED_SETS_PER_CALL, {
+        error: `За один вызов допустимо не больше ${MAX_SHARED_SETS_PER_CALL} наборов`
+      })
+    )
     .optional()
     .meta({ description: "Конкретные наборы; без них возвращаются все наборы аккаунта" }),
   ...pageFields
@@ -47,14 +57,16 @@ export const listNegativeKeywordSharedSetsSchema = z.object({
 
 const sharedSetName = z
   .string()
-  .min(1, { error: "Название не может быть пустым" })
-  .max(SHARED_SET_NAME_MAX, { error: `Название длиннее ${SHARED_SET_NAME_MAX} символов` })
+  .check(
+    z.minLength(1, { error: "Название не может быть пустым" }),
+    z.maxLength(SHARED_SET_NAME_MAX, { error: `Название длиннее ${SHARED_SET_NAME_MAX} символов` })
+  )
 
 const addSharedSet = z.object({
   name: sharedSetName.meta({ description: "Название набора" }),
   negative_keywords: z
-    .array(z.string().min(1, { error: "Минус-фраза не может быть пустой" }))
-    .min(1, { error: "Набор не может быть пустым" })
+    .array(negativeKeyword)
+    .check(z.minLength(1, { error: "Набор не может быть пустым" }))
     .meta({ description: "Минус-фразы набора" })
 })
 
@@ -62,10 +74,15 @@ const updateSharedSet = z.object({
   set_id: idField("ID изменяемого набора"),
   name: sharedSetName.optional().meta({ description: "Новое название набора" }),
   negative_keywords: z
-    .array(z.string().min(1, { error: "Минус-фраза не может быть пустой" }))
+    .array(negativeKeyword)
     .optional()
     .meta({ description: "Полный новый список минус-фраз набора — прежний затирается целиком" })
 })
+
+// Функция, а не готовая проверка: один и тот же объект проверки не переиспользуется
+// тремя схемами — каждая получает свой.
+const sharedSetsPerCall = () =>
+  z.maxLength(MAX_SHARED_SETS_PER_CALL, { error: `Не больше ${MAX_SHARED_SETS_PER_CALL} наборов за вызов` })
 
 export const manageNegativeKeywordSharedSetsSchema = z.object({
   action: z.literal(NEGATIVE_KEYWORD_SET_ACTIONS).meta({
@@ -73,20 +90,17 @@ export const manageNegativeKeywordSharedSetsSchema = z.object({
   }),
   add_sets: z
     .array(addSharedSet)
-    .min(1, { error: "Список наборов пуст" })
-    .max(MAX_SHARED_SETS_PER_CALL, { error: `Не больше ${MAX_SHARED_SETS_PER_CALL} наборов за вызов` })
+    .check(z.minLength(1, { error: "Список наборов пуст" }), sharedSetsPerCall())
     .optional()
     .meta({ description: "Наборы для создания; обязателен при action=add" }),
   update_sets: z
     .array(updateSharedSet)
-    .min(1, { error: "Список наборов пуст" })
-    .max(MAX_SHARED_SETS_PER_CALL, { error: `Не больше ${MAX_SHARED_SETS_PER_CALL} наборов за вызов` })
+    .check(z.minLength(1, { error: "Список наборов пуст" }), sharedSetsPerCall())
     .optional()
     .meta({ description: "Наборы для изменения; обязателен при action=update" }),
   set_ids: z
     .array(idField("ID общего набора минус-фраз"))
-    .min(1, { error: "Список наборов пуст" })
-    .max(MAX_SHARED_SETS_PER_CALL, { error: `Не больше ${MAX_SHARED_SETS_PER_CALL} наборов за вызов` })
+    .check(z.minLength(1, { error: "Список наборов пуст" }), sharedSetsPerCall())
     .optional()
     .meta({ description: "Наборы для удаления; обязателен при action=delete" })
 })
@@ -94,14 +108,20 @@ export const manageNegativeKeywordSharedSetsSchema = z.object({
 export const linkNegativeKeywordSetsSchema = z.object({
   ad_group_ids: z
     .array(idField("ID группы объявлений"))
-    .min(1, { error: "Список групп пуст" })
-    .max(MAX_AD_GROUPS_PER_CALL, { error: `За один вызов допустимо не больше ${MAX_AD_GROUPS_PER_CALL} групп` })
+    .check(
+      z.minLength(1, { error: "Список групп пуст" }),
+      z.maxLength(MAX_AD_GROUPS_PER_CALL, {
+        error: `За один вызов допустимо не больше ${MAX_AD_GROUPS_PER_CALL} групп`
+      })
+    )
     .meta({ description: "Группы, которым назначаются наборы" }),
   set_ids: z
     .array(idField("ID общего набора минус-фраз"))
-    .max(MAX_SHARED_SETS_PER_AD_GROUP, {
-      error: `К группе привязывается не больше ${MAX_SHARED_SETS_PER_AD_GROUP} наборов`
-    })
+    .check(
+      z.maxLength(MAX_SHARED_SETS_PER_AD_GROUP, {
+        error: `К группе привязывается не больше ${MAX_SHARED_SETS_PER_AD_GROUP} наборов`
+      })
+    )
     .meta({
       description: "Полный новый список наборов группы — прежние привязки затираются. Пустой массив снимает все"
     })

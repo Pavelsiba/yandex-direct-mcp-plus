@@ -5,16 +5,13 @@ import { PAGE_MAX_LIMIT } from "#shared/config/limits"
 
 export const pageFields = {
   limit: z
-    .number()
     .int()
-    .positive()
-    .max(PAGE_MAX_LIMIT)
+    .check(z.positive(), z.lte(PAGE_MAX_LIMIT))
     .optional()
     .meta({ description: `Сколько объектов вернуть (максимум ${PAGE_MAX_LIMIT})` }),
   offset: z
-    .number()
     .int()
-    .nonnegative()
+    .check(z.nonnegative())
     .optional()
     .meta({ description: "Смещение выборки: сюда передаётся LimitedBy предыдущей страницы" })
 }

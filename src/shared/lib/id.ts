@@ -13,7 +13,7 @@ export function idField(description: string) {
           ? "ID обязателен"
           : "ID пришёл числом и уже потерял точность: 19-значные ID Директа не помещаются в число JavaScript. Передавайте строкой."
     })
-    .regex(DECIMAL_ID, { error: "ID должен быть положительным целым числом в виде строки" })
+    .check(z.regex(DECIMAL_ID, { error: "ID должен быть положительным целым числом в виде строки" }))
     .meta({ description })
 }
 
