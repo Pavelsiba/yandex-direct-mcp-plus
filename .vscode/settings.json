@@ -1,0 +1,26 @@
+{
+  "cSpell.words": ["bigint", "yandex", "vitest", "knip", "lefthook"],
+  "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.format.enable": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  "files.exclude": {
+    "**/dist": true
+  },
+  "terminal.integrated.fontFamily": "Cascadia Mono, Consolas, monospace",
+  "terminal.integrated.gpuAcceleration": "off"
+}

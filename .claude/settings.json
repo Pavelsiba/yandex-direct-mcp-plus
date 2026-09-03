@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{let c='';try{c=JSON.parse(s).tool_input.command||''}catch{};const t=c.replace(/--env-file[= ]\S+/g,'');if(/\.env(?![A-Za-z0-9])/.test(t))console.log(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Команды с .env запрещены — там OAuth-токен Директа (хук в .claude/settings.json)'}}))})\"",
+            "shell": "bash",
+            "statusMessage": "Проверка команды на доступ к .env"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {}
+}

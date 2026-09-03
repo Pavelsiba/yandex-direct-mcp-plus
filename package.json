@@ -20,7 +20,9 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --project unit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
