@@ -132,3 +132,8 @@ export const CHANGES_FIELD_NAMES = ["CampaignIds", "AdGroupIds", "AdIds", "Campa
 // хендлер собирает настройки только для WbMaximumClicks и NetworkDefault.
 export const SETTABLE_SEARCH_STRATEGIES = ["HIGHEST_POSITION", "WB_MAXIMUM_CLICKS", "SERVING_OFF"] as const
 export const SETTABLE_NETWORK_STRATEGIES = ["NETWORK_DEFAULT", "WB_MAXIMUM_CLICKS", "SERVING_OFF"] as const
+
+// Дни недели расписания показов. В API день — первое число строки Schedule
+// (1 — понедельник … 7 — воскресенье); наружу отдаются буквенные коды: число
+// модель путает с часом, а порядок дней в неделе Директа не совпадает с ISO-датой.
+export const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const

@@ -210,3 +210,19 @@ describe("схемы кампаний", () => {
     expect(updateCampaignSchema.safeParse({ campaign_id: "123", status: "DELETE" }).success).toBe(false)
   })
 })
+
+describe("часовой пояс кампании", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("уходит в TimeZone только когда задан", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
+    await handleCreateCampaign(createCampaignSchema.parse({ name: "Улов", start_date: "2026-09-10" }))
+    expect(lastBody().params.Campaigns[0].TimeZone).toBeUndefined()
+
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
+    await handleCreateCampaign(
+      createCampaignSchema.parse({ name: "Улов", start_date: "2026-09-10", time_zone: "Asia/Yekaterinburg" })
+    )
+    expect(lastBody().params.Campaigns[0].TimeZone).toBe("Asia/Yekaterinburg")
+  })
+})

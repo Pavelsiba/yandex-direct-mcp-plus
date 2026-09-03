@@ -51,6 +51,7 @@ export async function handleCreateCampaign(params: z.infer<typeof createCampaign
   if (params.daily_budget !== undefined) {
     campaign.DailyBudget = { Amount: params.daily_budget, Mode: "STANDARD" }
   }
+  if (params.time_zone !== undefined) campaign.TimeZone = params.time_zone
 
   const biddingStrategy = {
     Search: { BiddingStrategyType: params.search_strategy },

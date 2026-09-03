@@ -1,7 +1,7 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleGetRegions } from "./handler.js"
+import { handleGetRegions, handleListTimeZones } from "./handler.js"
 
 installFetchMock()
 
@@ -52,5 +52,39 @@ describe("get_regions", () => {
     const output = await handleGetRegions({ limit: 50 })
 
     expect(JSON.parse(output)).toHaveLength(4)
+  })
+})
+
+const TIME_ZONES = {
+  result: {
+    TimeZones: [
+      { TimeZone: "Europe/Moscow", TimeZoneName: "Москва", UtcOffset: 10800 },
+      { TimeZone: "Asia/Yekaterinburg", TimeZoneName: "Екатеринбург", UtcOffset: 18000 },
+      { TimeZone: "Asia/Vladivostok", TimeZoneName: "Владивосток", UtcOffset: 36000 }
+    ]
+  }
+}
+
+describe("list_time_zones", () => {
+  beforeEach(() => {
+    mockFetch.mockReset()
+    mockFetch.mockResolvedValue(okResponse(TIME_ZONES))
+  })
+
+  // Модель приходит то с кодом пояса, то с русским названием города.
+  it("ищет и по коду пояса, и по названию", async () => {
+    expect(await handleListTimeZones({ search: "moscow", limit: 50 })).toContain("Europe/Moscow")
+    expect(await handleListTimeZones({ search: "екатеринбург", limit: 50 })).toContain("Asia/Yekaterinburg")
+  })
+
+  it("забирает TimeZones своим запросом и кэширует его отдельно от регионов", async () => {
+    vi.resetModules()
+    const { handleListTimeZones: freshListTimeZones } = await import("./handler.js")
+
+    await freshListTimeZones({ limit: 50 })
+    await freshListTimeZones({ limit: 50 })
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(lastRawBody()).params).toEqual({ DictionaryNames: ["TimeZones"] })
   })
 })

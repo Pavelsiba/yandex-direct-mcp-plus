@@ -58,3 +58,14 @@ export const MAX_ADS_PER_CHANGES_CALL = 50_000
 // Выдача справочника регионов: сколько строк отдавать модели за раз.
 export const REGIONS_DEFAULT_LIMIT = 50
 export const REGIONS_MAX_LIMIT = 500
+
+// Временной таргетинг: почасовой коэффициент задаётся в процентах от текущей ставки,
+// шаг 10, ноль — показов в этот час нет. Праздничный коэффициент начинается с 10:
+// ноль там запрещён, показы в праздники отключает отдельный флаг.
+export const HOURS_IN_DAY = 24
+export const HOURLY_BID_RANGE = { min: 0, max: 200, step: 10 } as const
+export const HOLIDAY_BID_RANGE = { min: 10, max: 200, step: 10 } as const
+
+// Выдача справочника часовых поясов: сколько строк отдавать модели за раз.
+export const TIME_ZONES_DEFAULT_LIMIT = 50
+export const TIME_ZONES_MAX_LIMIT = 500

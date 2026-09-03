@@ -44,7 +44,17 @@ export const createCampaignSchema = z.object({
   network_strategy: z
     .literal(NETWORK_STRATEGIES)
     .default("SERVING_OFF")
-    .meta({ description: "Стратегия показов в сетях (РСЯ); SERVING_OFF отключает показы в сетях" })
+    .meta({ description: "Стратегия показов в сетях (РСЯ); SERVING_OFF отключает показы в сетях" }),
+  // Не литерал: в WSDL это xsd:string, закрытого списка нет — значения живут
+  // в справочнике TimeZones, его отдаёт list_time_zones.
+  time_zone: z
+    .string()
+    .check(z.minLength(1, { error: "Часовой пояс не может быть пустым" }))
+    .optional()
+    .meta({
+      description:
+        "Часовой пояс показов, например Europe/Moscow (по умолчанию). Список — в справочнике list_time_zones; на даты отчётов не влияет, они всегда по Москве"
+    })
 })
 
 export const updateCampaignSchema = z.object({
