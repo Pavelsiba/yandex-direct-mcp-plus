@@ -7,10 +7,14 @@
     "moduleResolution": "NodeNext",
     "types": ["node"],
 
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "declaration": true,
-    "sourceMap": true,
+    // Этот конфиг ничего не собирает — он обслуживает typecheck и редактор и
+    // покрывает весь репозиторий. Сборка вынесена в tsconfig.build.json:
+    // ей нужны rootDir/outDir и исключённые тесты, проверке типов — наоборот.
+    "noEmit": true,
+
+    // Конфиги проекта на .js. Проверку каждый включает себе сам строкой
+    // // @ts-check, поэтому checkJs не задаём.
+    "allowJs": true,
 
     "strict": true,
     "noUnusedLocals": true,
@@ -22,9 +26,10 @@
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+  // Тесты и конфиги проверяются наравне с src. Vitest срезает типы через esbuild
+  // без проверки, так что вне этого списка они не проверяются ничем.
+  "include": ["src/**/*", "*.config.ts", "*.config.js"],
+  "exclude": ["node_modules", "dist"]
 }

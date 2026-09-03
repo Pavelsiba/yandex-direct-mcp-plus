@@ -30,3 +30,16 @@ jobs:
 
       - name: Test
         run: npm test
+
+  # Единая точка для required status check: имена матричных джоб меняются
+  # вместе с матрицей, имя этой — нет.
+  ci-ok:
+    name: ci-ok
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: always()
+    steps:
+      - name: Проверить результат матрицы
+        run: |
+          echo "build-test: ${{ needs.build-test.result }}"
+          test "${{ needs.build-test.result }}" = "success"
