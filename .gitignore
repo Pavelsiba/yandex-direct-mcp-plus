@@ -1,4 +1,44 @@
+# Зависимости
 node_modules/
+
+# Сборка
 dist/
+*.tsbuildinfo
+
+# Тесты
+coverage/
+.vitest-reports/
+
+# Окружение — здесь OAuth-токен Директа, в git ему нельзя ни в каком виде
+.env
+.env.*
+!.env.example
+
+# Артефакты npm
 *.tgz
+.npm/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE
+.idea/
+*.swp
+*.swo
+# .vscode/settings.json отслеживается намеренно: в публичном репозитории он
+# даёт контрибьютору форматирование по eslint из коробки. Остальное — личное.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Claude Code — локальное, у каждого своё
 CLAUDE.local.md
+.claude/settings.local.json
+
+# ОС
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Логи
+*.log
