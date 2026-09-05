@@ -50,10 +50,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # registry-url не задаём: он ломает публикацию через semantic-release
-      # (об этом прямо предупреждает документация). Пригодится, когда включим
-      # публикацию — тогда же вернутся NPM_TOKEN и permissions: id-token: write
-      # под provenance.
+      # registry-url не задаём даже теперь, когда публикация включена: setup-node
+      # пишет собственный .npmrc, а @semantic-release/npm — свой, и они конфликтуют
+      # (об этом прямо предупреждает документация плагина). Аутентификацию несёт
+      # переменная NPM_TOKEN на шаге Release, файл настройки для этого не нужен.
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -72,9 +72,15 @@ jobs:
       # Личность релизного коммита задаётся явно. По умолчанию semantic-release
       # подписывает его semantic-release-bot, а GitHub строит список
       # контрибьюторов по полю author — и бот оседает там наравне с людьми.
+      #
+      # NPM_TOKEN — публикация пакета. Токен нужен типа Automation: у обычного
+      # publish упирается в 2FA, подтвердить которую в CI некому. Сборку перед
+      # публикацией запускает не workflow, а хук prepublishOnly в package.json —
+      # npm publish вызывает его сам, поэтому отдельного шага build здесь нет.
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GIT_AUTHOR_NAME: Pavelsiba
           GIT_AUTHOR_EMAIL: 105110809+Pavelsiba@users.noreply.github.com
           GIT_COMMITTER_NAME: Pavelsiba
