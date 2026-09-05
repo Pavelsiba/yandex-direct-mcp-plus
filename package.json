@@ -43,7 +43,7 @@
     "start": "node --env-file-if-exists=.env dist/app/index.js",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
-    "test:int": "vitest run --project int",
+    "test:int": "node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run --project int",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
     "lint": "biome check",

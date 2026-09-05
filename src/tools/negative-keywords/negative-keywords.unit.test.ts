@@ -9,7 +9,11 @@ import {
   handleSetAdGroupNegativeKeywords,
   handleSetCampaignNegativeKeywords
 } from "./handler.js"
-import { setAdGroupNegativeKeywordsSchema, setCampaignNegativeKeywordsSchema } from "./schema.js"
+import {
+  linkNegativeKeywordSetsSchema,
+  setAdGroupNegativeKeywordsSchema,
+  setCampaignNegativeKeywordsSchema
+} from "./schema.js"
 
 installFetchMock()
 
@@ -71,12 +75,12 @@ describe("set_campaign_negative_keywords", () => {
     expect(lastBody().params.Campaigns[0].NegativeKeywords).toEqual({ Items: ["бесплатно", "своими руками"] })
   })
 
-  it("очищает минус-фразы пустым списком, а не пропуском поля", async () => {
+  it("очищает минус-фразы значением null, а не пустым Items", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
 
     await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: [], mode: "replace" })
 
-    expect(lastBody().params.Campaigns[0].NegativeKeywords).toEqual({ Items: [] })
+    expect(lastBody().params.Campaigns[0].NegativeKeywords).toBeNull()
   })
 
   it("в режиме replace не читает текущий список — вызов один", async () => {
@@ -292,6 +296,66 @@ describe("link_negative_keyword_sets", () => {
 
     await handleLinkNegativeKeywordSets({ ad_group_ids: ["123"], set_ids: [] })
 
-    expect(lastBody().params.AdGroups[0].NegativeKeywordSharedSetIds).toEqual({ Items: [] })
+    expect(lastBody().params.AdGroups[0].NegativeKeywordSharedSetIds).toBeNull()
+  })
+
+  it("перед записью в кампанию читает её тип", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123, Type: "TEXT_CAMPAIGN" }] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleLinkNegativeKeywordSets({ campaign_ids: ["123"], set_ids: ["789"] })
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(lastBody().params.Campaigns).toEqual([
+      { Id: 123, TextCampaign: { NegativeKeywordSharedSetIds: { Items: [789] } } }
+    ])
+  })
+
+  it("кладёт наборы в объект настроек по типу каждой кампании", async () => {
+    mockFetch
+      .mockResolvedValueOnce(
+        okResponse({
+          result: {
+            Campaigns: [
+              { Id: 123, Type: "TEXT_CAMPAIGN" },
+              { Id: 456, Type: "UNIFIED_CAMPAIGN" }
+            ]
+          }
+        })
+      )
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleLinkNegativeKeywordSets({ campaign_ids: ["123", "456"], set_ids: ["789"] })
+
+    expect(lastBody().params.Campaigns).toEqual([
+      { Id: 123, TextCampaign: { NegativeKeywordSharedSetIds: { Items: [789] } } },
+      { Id: 456, UnifiedCampaign: { NegativeKeywordSharedSetIds: { Items: [789] } } }
+    ])
+  })
+
+  it("не пишет ничего, если тип кампании общих наборов не поддерживает", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123, Type: "SMART_CAMPAIGN" }] } }))
+
+    await expect(handleLinkNegativeKeywordSets({ campaign_ids: ["123"], set_ids: ["789"] })).rejects.toThrow(
+      /SMART_CAMPAIGN/
+    )
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("кампании и группы обновляет разными вызовами", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123, Type: "TEXT_CAMPAIGN" }] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleLinkNegativeKeywordSets({ campaign_ids: ["123"], ad_group_ids: ["456"], set_ids: ["789"] })
+
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+    expect(lastBody().params.AdGroups).toEqual([{ Id: 456, NegativeKeywordSharedSetIds: { Items: [789] } }])
+  })
+
+  it("отклоняет вызов без кампаний и без групп", () => {
+    expect(linkNegativeKeywordSetsSchema.safeParse({ set_ids: ["789"] }).success).toBe(false)
   })
 })
