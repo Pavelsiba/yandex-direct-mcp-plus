@@ -81,4 +81,8 @@ describe("клиент v5", () => {
     await expect(apiPost("campaigns", "get")).rejects.toThrow(/HTTP 400/)
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
+
+  it("не пускает unit-тест в сеть мимо подменённого транспорта", () => {
+    expect(() => fetch("https://api.direct.yandex.com/json/v5/campaigns")).toThrow(/в обход/)
+  })
 })

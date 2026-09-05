@@ -1,7 +1,7 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleGetRegions, handleListTimeZones } from "./handler.js"
+import { clearDictionaryCache, handleGetRegions, handleListTimeZones } from "./handler.js"
 
 installFetchMock()
 
@@ -18,6 +18,7 @@ const REGIONS = {
 
 describe("get_regions", () => {
   beforeEach(() => {
+    clearDictionaryCache()
     mockFetch.mockReset()
     mockFetch.mockResolvedValue(okResponse(REGIONS))
   })
@@ -29,14 +30,9 @@ describe("get_regions", () => {
     expect(output).not.toContain("Новосибирск")
   })
 
-  // Кэш живёт в переменной модуля, поэтому запрос проверяется на свежем импорте:
-  // иначе тест зависел бы от того, загрузил ли справочник кто-то до него.
   it("забирает GeoRegions одним запросом и дальше в сеть не ходит", async () => {
-    vi.resetModules()
-    const { handleGetRegions: freshHandleGetRegions } = await import("./handler.js")
-
-    await freshHandleGetRegions({ limit: 50 })
-    await freshHandleGetRegions({ limit: 50 })
+    await handleGetRegions({ limit: 50 })
+    await handleGetRegions({ limit: 50 })
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(JSON.parse(lastRawBody()).params).toEqual({ DictionaryNames: ["GeoRegions"] })
@@ -53,6 +49,22 @@ describe("get_regions", () => {
 
     expect(JSON.parse(output)).toHaveLength(4)
   })
+
+  // Директ добавляет поля без предупреждения: схема нестрогая, и новое поле обязано
+  // доехать до вывода, а не отвалиться на разборе.
+  it("пропускает наружу поля, которых нет в схеме", async () => {
+    mockFetch.mockResolvedValue(
+      okResponse({ result: { GeoRegions: [{ GeoRegionId: 225, GeoRegionName: "Россия", GeoRegionType: "COUNTRY" }] } })
+    )
+
+    expect(await handleGetRegions({ limit: 50 })).toContain("COUNTRY")
+  })
+
+  it("сообщает, когда в записи справочника нет поля, на которое опирается инструмент", async () => {
+    mockFetch.mockResolvedValue(okResponse({ result: { GeoRegions: [{ GeoRegionName: "Россия" }] } }))
+
+    await expect(handleGetRegions({ limit: 50 })).rejects.toThrow(/GeoRegions в неожиданной форме/)
+  })
 })
 
 const TIME_ZONES = {
@@ -67,6 +79,7 @@ const TIME_ZONES = {
 
 describe("list_time_zones", () => {
   beforeEach(() => {
+    clearDictionaryCache()
     mockFetch.mockReset()
     mockFetch.mockResolvedValue(okResponse(TIME_ZONES))
   })
@@ -78,11 +91,8 @@ describe("list_time_zones", () => {
   })
 
   it("забирает TimeZones своим запросом и кэширует его отдельно от регионов", async () => {
-    vi.resetModules()
-    const { handleListTimeZones: freshListTimeZones } = await import("./handler.js")
-
-    await freshListTimeZones({ limit: 50 })
-    await freshListTimeZones({ limit: 50 })
+    await handleListTimeZones({ limit: 50 })
+    await handleListTimeZones({ limit: 50 })
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(JSON.parse(lastRawBody()).params).toEqual({ DictionaryNames: ["TimeZones"] })

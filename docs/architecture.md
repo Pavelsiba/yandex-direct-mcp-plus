@@ -35,10 +35,10 @@ src/
     tool.ts         дескриптор: имя, заголовок, описание, аннотации, схема, хендлер
     *.unit.test.ts  тесты рядом с кодом
   shared/
-    api/            json, errors, fetch, client (v5), reports, v4
+    api/            json, errors, parse, fetch, client (v5), reports, v4
     lib/            money, id, pagination, format, date, report, tool
     config/         endpoints, env, limits, enums
-  testing/        подмена fetch для тестов; в сборку не попадает
+  testing/        подмена транспорта для тестов; в сборку не попадает
 ```
 
 **`defineTool` и аннотации живут в `shared/lib/tool.ts`, а не в `app/`.** Их импортирует
@@ -280,8 +280,23 @@ curl -s "https://api.direct.yandex.com/v5/<service>?wsdl"   # campaigns, adgroup
 
 Рядом с кодом, `*.unit.test.ts`, по домену, а не тремя общими файлами, названными по
 истории появления (`remaining-tools`, `lossless-and-new-tools` — так было). Сеть не
-трогаем: `fetch` подменяется через `src/testing/fetch-mock.ts`, проверяем тело запроса
-к Директу и разбор ответа — именно там живут ошибки маппинга.
+трогаем: `installFetchMock()` из `src/testing/fetch-mock.ts` подменяет транспорт,
+проверяем тело запроса к Директу и разбор ответа — именно там живут ошибки маппинга.
+
+### Шов транспорта
+
+Подменяется не `globalThis.fetch`, а переменная модуля `shared/api/fetch.ts`: сеть
+трогает единственная строка `let transport = (url, options) => fetch(url, options)`,
+и тест переставляет её через `setTransport`. Глобал остаётся нетронутым — раньше
+подмена задевала всё, что в нём живёт, включая SDK.
+
+У шва есть цена, и она была оплачена 05.09.2026: `vi.resetModules()` создаёт свежую
+копию модуля транспорта — с дефолтным значением, — и тест `dictionaries` молча ушёл
+в боевой API. Отсюда два следствия. Первое: модульный кэш сбрасывается своим
+экспортом (`clearDictionaryCache`), а не сбросом графа модулей; динамические импорты
+в тестах не нужны. Второе: `installFetchMock` заодно кладёт в глобальный `fetch`
+заглушку, которая бросает исключение, — любой обход шва теперь валит тест, а не
+уходит в сеть.
 
 Состояние на 03.09.2026: покрыты `shared` (api, id, money, format, pagination, report),
 реестр и домен `campaigns` — 45 тестов. Прежние три файла удалены вместе с плоской
