@@ -50,7 +50,8 @@ export const createCampaignTool = defineTool({
 export const updateCampaignTool = defineTool({
   name: "update_campaign",
   title: "Обновить кампанию",
-  description: "Обновить кампанию: название, бюджет (руб) и/или статус (SUSPEND/RESUME/ARCHIVE/UNARCHIVE).",
+  description:
+    "Обновить кампанию: название, бюджет (руб), UTM-разметку и/или статус (SUSPEND/RESUME/ARCHIVE/UNARCHIVE). Разметка действует на ссылки всех объявлений кампании.",
   annotations: IDEMPOTENT,
   schema: updateCampaignSchema,
   handler: handleUpdateCampaign

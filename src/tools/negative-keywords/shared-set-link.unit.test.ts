@@ -1,25 +1,24 @@
 import { describe, expect, it } from "vitest"
-import { buildCampaignLink, getCampaignSettingsKey } from "./shared-set-link.js"
+import { buildCampaignLink } from "./shared-set-link.js"
 
-describe("getCampaignSettingsKey", () => {
+describe("buildCampaignLink", () => {
   it.each([
     ["TEXT_CAMPAIGN", "TextCampaign"],
     ["DYNAMIC_TEXT_CAMPAIGN", "DynamicTextCampaign"],
     ["MOBILE_APP_CAMPAIGN", "MobileAppCampaign"],
     ["UNIFIED_CAMPAIGN", "UnifiedCampaign"]
-  ])("для %s отдаёт %s", (type, key) => {
-    expect(getCampaignSettingsKey(type)).toBe(key)
+  ])("для %s кладёт наборы в %s", (type, key) => {
+    expect(buildCampaignLink("1", type, { Items: [5n] })).toHaveProperty(`${key}.NegativeKeywordSharedSetIds.Items`, [
+      5n
+    ])
   })
 
-  it.each(["CPM_BANNER_CAMPAIGN", "SMART_CAMPAIGN", "CAMPAIGN_TYPE_ИЗ_БУДУЩЕГО", undefined])(
-    "для %s не отдаёт ключа",
-    (type) => {
-      expect(getCampaignSettingsKey(type)).toBeUndefined()
-    }
-  )
-})
+  // SMART_CAMPAIGN поддерживает UTM-разметку, но не общие наборы — списки типов у полей
+  // разные, и общий на них один не годится.
+  it.each(["CPM_BANNER_CAMPAIGN", "SMART_CAMPAIGN"])("тип %s отвергает", (type) => {
+    expect(() => buildCampaignLink("1", type, { Items: [5n] })).toThrow(type)
+  })
 
-describe("buildCampaignLink", () => {
   it("кладёт наборы внутрь объекта настроек, а не на верхний уровень", () => {
     expect(buildCampaignLink("714159718", "TEXT_CAMPAIGN", { Items: [1n, 2n] })).toEqual({
       Id: 714159718n,
@@ -43,10 +42,6 @@ describe("buildCampaignLink", () => {
       "TextCampaign.NegativeKeywordSharedSetIds",
       null
     )
-  })
-
-  it("падает на типе, который общих наборов не поддерживает, а не пропускает кампанию молча", () => {
-    expect(() => buildCampaignLink("1", "SMART_CAMPAIGN", { Items: [5n] })).toThrow(/SMART_CAMPAIGN/)
   })
 
   it("падает, если тип прочитать не удалось", () => {

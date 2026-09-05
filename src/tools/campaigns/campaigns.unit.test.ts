@@ -119,6 +119,93 @@ describe("update_campaign", () => {
   })
 })
 
+describe("UTM-разметка кампании", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("на создании кладёт разметку в объект настроек рядом со стратегией", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
+    const params = createCampaignSchema.parse({
+      name: "Кампания",
+      start_date: "2026-09-10",
+      tracking_params: "utm_source=yandex&utm_campaign={campaign_id}"
+    })
+
+    await handleCreateCampaign(params)
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.TrackingParams).toBe(
+      "utm_source=yandex&utm_campaign={campaign_id}"
+    )
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy).toBeDefined()
+  })
+
+  it("на создании динамической кампании кладёт разметку в DynamicTextCampaign", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
+    const params = createCampaignSchema.parse({
+      name: "Кампания",
+      type: "DYNAMIC_TEXT_CAMPAIGN",
+      start_date: "2026-09-10",
+      tracking_params: "utm_source=yandex"
+    })
+
+    await handleCreateCampaign(params)
+
+    expect(lastBody().params.Campaigns[0].DynamicTextCampaign.TrackingParams).toBe("utm_source=yandex")
+  })
+
+  it("на обновлении сначала читает тип кампании, потом пишет в нужный объект", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123, Type: "UNIFIED_CAMPAIGN" }] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 123 }] } }))
+
+    await handleUpdateCampaign(updateCampaignSchema.parse({ campaign_id: "123", tracking_params: "utm_source=ya" }))
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body).params.FieldNames).toEqual(["Id", "Type"])
+    expect(lastBody().params.Campaigns[0].UnifiedCampaign.TrackingParams).toBe("utm_source=ya")
+  })
+
+  it("на обновлении без разметки типа не читает — лишнего вызова нет", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 123 }] } }))
+
+    await handleUpdateCampaign(updateCampaignSchema.parse({ campaign_id: "123", name: "Имя" }))
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("null снимает разметку", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123, Type: "TEXT_CAMPAIGN" }] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 123 }] } }))
+
+    await handleUpdateCampaign(updateCampaignSchema.parse({ campaign_id: "123", tracking_params: null }))
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.TrackingParams).toBeNull()
+  })
+
+  it("на типе без поддержки разметки не пишет ничего", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123, Type: "MOBILE_APP_CAMPAIGN" }] } }))
+
+    await expect(
+      handleUpdateCampaign(updateCampaignSchema.parse({ campaign_id: "123", tracking_params: "utm_source=ya" }))
+    ).rejects.toThrow("MOBILE_APP_CAMPAIGN")
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("get_campaign запрашивает разметку у всех поддерживающих типов", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleGetCampaign(getCampaignSchema.parse({ campaign_id: "123" }))
+
+    const sent = lastBody().params
+    expect(sent.TextCampaignFieldNames).toEqual(["TrackingParams"])
+    expect(sent.UnifiedCampaignFieldNames).toEqual(["TrackingParams"])
+  })
+
+  it("пустую строку схема отвергает: снятие — это null", () => {
+    expect(updateCampaignSchema.safeParse({ campaign_id: "123", tracking_params: "" }).success).toBe(false)
+  })
+})
+
 describe("manage_campaigns", () => {
   beforeEach(() => mockFetch.mockReset())
 

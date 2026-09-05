@@ -2,6 +2,7 @@
 // ошибки разбирает shared/api — здесь только последовательность вызовов.
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { type CampaignSettingsKey, getCampaignSettingsKey } from "#shared/lib/campaign-type"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -17,6 +18,31 @@ import type {
 
 const LIST_FIELDS = ["Id", "Name", "Status", "State", "DailyBudget", "StartDate", "Type", "Statistics"]
 const DETAIL_FIELDS = [...LIST_FIELDS, "EndDate"]
+
+// TrackingParams поддерживают не все типы: сверено с WSDL campaigns 05.09.2026 — поле есть
+// в Text, DynamicText, Smart и Unified, но не в MobileApp и не в CpmBanner. Набор не тот
+// же, что у общих наборов минус-фраз, поэтому список свой, а не общий.
+const TRACKING_PARAMS_TYPES = ["TEXT_CAMPAIGN", "DYNAMIC_TEXT_CAMPAIGN", "SMART_CAMPAIGN", "UNIFIED_CAMPAIGN"]
+
+async function readTrackingParamsKey(campaignId: string): Promise<CampaignSettingsKey> {
+  const data = await apiPost("campaigns", "get", {
+    SelectionCriteria: { Ids: [apiId(campaignId)] },
+    FieldNames: ["Id", "Type"]
+  })
+
+  const campaign = (data as { result?: { Campaigns?: { Type?: string }[] } }).result?.Campaigns?.[0]
+  if (!campaign) throw new Error(`Кампания ${campaignId} не найдена или недоступна.`)
+
+  const type = campaign.Type
+  const settingsKey = type && TRACKING_PARAMS_TYPES.includes(type) ? getCampaignSettingsKey(type) : undefined
+  if (!settingsKey) {
+    throw new Error(
+      `Кампания ${campaignId} имеет тип ${type ?? "неизвестный"}, а UTM-разметку поддерживают только ${TRACKING_PARAMS_TYPES.join(", ")}.`
+    )
+  }
+
+  return settingsKey
+}
 
 // Действие со статусом — отдельный метод API, а не поле update.
 const STATUS_METHODS: Record<string, string> = {
@@ -38,10 +64,18 @@ export async function handleListCampaigns(params: z.infer<typeof listCampaignsSc
   return formatResult(await apiPost("campaigns", "get", requestParams))
 }
 
+// TrackingParams лежит внутри объекта настроек, поэтому в общий FieldNames не попадает —
+// его запрашивают отдельным type-specific параметром. Заранее тип неизвестен, но лишние
+// *CampaignFieldNames безвредны: Директ наполняет тот объект, который соответствует
+// реальному типу кампании, а остальные просто не возвращает.
 export async function handleGetCampaign(params: z.infer<typeof getCampaignSchema>): Promise<string> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(params.campaign_id)] },
-    FieldNames: DETAIL_FIELDS
+    FieldNames: DETAIL_FIELDS,
+    TextCampaignFieldNames: ["TrackingParams"],
+    DynamicTextCampaignFieldNames: ["TrackingParams"],
+    SmartCampaignFieldNames: ["TrackingParams"],
+    UnifiedCampaignFieldNames: ["TrackingParams"]
   })
   return formatResult(data)
 }
@@ -57,10 +91,15 @@ export async function handleCreateCampaign(params: z.infer<typeof createCampaign
     Search: { BiddingStrategyType: params.search_strategy },
     Network: { BiddingStrategyType: params.network_strategy }
   }
+  // TrackingParams живёт в том же объекте настроек, что и стратегия, поэтому собирается
+  // вместе с ним. На создании тип известен из параметров, читать его неоткуда и не нужно.
+  const settings: Record<string, unknown> = { BiddingStrategy: biddingStrategy }
+  if (params.tracking_params !== undefined) settings.TrackingParams = params.tracking_params
+
   if (params.type === "DYNAMIC_TEXT_CAMPAIGN") {
-    campaign.DynamicTextCampaign = { BiddingStrategy: biddingStrategy }
+    campaign.DynamicTextCampaign = settings
   } else {
-    campaign.TextCampaign = { BiddingStrategy: biddingStrategy }
+    campaign.TextCampaign = settings
   }
 
   return formatResult(await apiPost("campaigns", "add", { Campaigns: [campaign] }))
@@ -78,17 +117,25 @@ export async function handleUpdateCampaign(params: z.infer<typeof updateCampaign
     sections.push(formatResult(data))
   }
 
-  if (params.name !== undefined || params.daily_budget !== undefined) {
+  const changesSettings = params.tracking_params !== undefined
+  if (params.name !== undefined || params.daily_budget !== undefined || changesSettings) {
     const campaign: Record<string, unknown> = { Id: apiId(params.campaign_id) }
     if (params.name !== undefined) campaign.Name = params.name
     if (params.daily_budget !== undefined) {
       campaign.DailyBudget = { Amount: params.daily_budget, Mode: "STANDARD" }
     }
+    // Имя объекта настроек зависит от типа кампании, а в запросе тип не передаётся —
+    // приходится прочитать. Лишний вызов только там, где разметка правда меняется.
+    if (changesSettings) {
+      const settingsKey = await readTrackingParamsKey(params.campaign_id)
+      campaign[settingsKey] = { TrackingParams: params.tracking_params }
+    }
+
     sections.push(formatResult(await apiPost("campaigns", "update", { Campaigns: [campaign] })))
   }
 
   if (sections.length === 0) {
-    throw new Error("Нечего обновлять: укажите status и/или name/daily_budget.")
+    throw new Error("Нечего обновлять: укажите status и/или name/daily_budget/tracking_params.")
   }
   return sections.join("\n\n")
 }
