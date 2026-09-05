@@ -3,6 +3,7 @@ import { apiPost } from "#shared/api/client"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
+import { mergeNegativeKeywords, type NegativeKeywordsMode } from "./merge.js"
 import type {
   getCampaignNegativeKeywordsSchema,
   linkNegativeKeywordSetsSchema,
@@ -25,11 +26,47 @@ export async function handleGetCampaignNegativeKeywords(
   return formatResult(data, NO_MONEY)
 }
 
+// NegativeKeywords обязано быть в FieldNames: без него Директ вернёт существующую
+// кампанию вообще без этого поля, слияние даст один входящий список, а update пройдёт
+// успешно — прежние минус-фразы исчезнут молча. Отсутствие сущности в ответе — ошибка,
+// а не пустой список: сливать не с чем.
+async function readExistingKeywords(
+  service: "campaigns" | "adgroups",
+  collection: "Campaigns" | "AdGroups",
+  label: string,
+  id: string
+): Promise<string[]> {
+  const data = await apiPost(service, "get", {
+    SelectionCriteria: { Ids: apiIds([id]) },
+    FieldNames: ["Id", "NegativeKeywords"]
+  })
+
+  const found = (data as { result?: Record<string, unknown> })?.result?.[collection]
+  const entity = Array.isArray(found) ? found[0] : undefined
+  if (!entity) throw new Error(`${label} ${id} не найдена или недоступна — объединять минус-фразы не с чем.`)
+
+  return (entity as { NegativeKeywords?: { Items?: string[] } }).NegativeKeywords?.Items ?? []
+}
+
+// replace остаётся одним вызовом: читать нечего, прежний список и так затирается.
+async function resolveItems(
+  params: { negative_keywords: string[]; mode: NegativeKeywordsMode },
+  readExisting: () => Promise<string[]>
+): Promise<string[]> {
+  if (params.mode === "replace") return params.negative_keywords
+
+  return mergeNegativeKeywords(await readExisting(), params.negative_keywords, params.mode)
+}
+
 export async function handleSetCampaignNegativeKeywords(
   params: z.infer<typeof setCampaignNegativeKeywordsSchema>
 ): Promise<string> {
+  const items = await resolveItems(params, () =>
+    readExistingKeywords("campaigns", "Campaigns", "Кампания", params.campaign_id)
+  )
+
   const data = await apiPost("campaigns", "update", {
-    Campaigns: [{ Id: apiId(params.campaign_id), NegativeKeywords: { Items: params.negative_keywords } }]
+    Campaigns: [{ Id: apiId(params.campaign_id), NegativeKeywords: { Items: items } }]
   })
   return formatResult(data)
 }
@@ -37,8 +74,12 @@ export async function handleSetCampaignNegativeKeywords(
 export async function handleSetAdGroupNegativeKeywords(
   params: z.infer<typeof setAdGroupNegativeKeywordsSchema>
 ): Promise<string> {
+  const items = await resolveItems(params, () =>
+    readExistingKeywords("adgroups", "AdGroups", "Группа объявлений", params.ad_group_id)
+  )
+
   const data = await apiPost("adgroups", "update", {
-    AdGroups: [{ Id: apiId(params.ad_group_id), NegativeKeywords: { Items: params.negative_keywords } }]
+    AdGroups: [{ Id: apiId(params.ad_group_id), NegativeKeywords: { Items: items } }]
   })
   return formatResult(data)
 }

@@ -46,12 +46,12 @@ claude mcp add yandex-direct -e YANDEX_DIRECT_TOKEN=ваш_токен -- node /�
 | Переменная | Обязательна | Назначение |
 |------------|:-----------:|------------|
 | `YANDEX_DIRECT_TOKEN` | да | OAuth-токен Яндекс.Директ |
-| `YANDEX_DIRECT_SANDBOX` | нет | `1` — работа в [песочнице](https://yandex.ru/dev/direct/doc/concepts/sandbox.html) (изолированные данные, без трат). Тот же токен, отличается только URL |
+| `YANDEX_DIRECT_SANDBOX` | нет | `1` — работа в [песочнице](https://yandex.ru/dev/direct/doc/en/concepts/sandbox) (изолированные данные, без трат). Тот же токен, отличается только URL |
 | `YANDEX_DIRECT_LOGIN` | нет | Логин клиента для агентских токенов (заголовок `Client-Login`). Обязателен, если токен агентский |
 
 ### Как получить токен
 
-OAuth-токен выпускается для приложения, зарегистрированного в [Яндекс OAuth](https://oauth.yandex.ru/), с доступом к API Директа. Подробности — [регистрация приложения и получение токена](https://yandex.ru/dev/direct/doc/start/token.html). Доступ к API нужно [запросить в интерфейсе Директа](https://yandex.ru/dev/direct/doc/start/step1.html).
+OAuth-токен выпускается для приложения, зарегистрированного в [Яндекс OAuth](https://oauth.yandex.ru/), с доступом к API Директа. Подробности — [регистрация приложения и получение токена](https://yandex.ru/dev/direct/doc/ru/token). Доступ к API нужно [запросить в интерфейсе Директа](https://yandex.ru/dev/direct/doc/ru/access-request).
 
 ## ⚠️ Внимание: реальные траты
 
@@ -80,7 +80,7 @@ OAuth-токен выпускается для приложения, зарег�
 | `list_ad_groups` | Группы объявлений выбранных кампаний |
 | `create_ad_group` | Создать группу с таргетингом по регионам |
 | `delete_ad_groups` | Удалить группы по ID |
-| `set_ad_group_negative_keywords` | Задать минус-фразы группы |
+| `set_ad_group_negative_keywords` | Минус-фразы группы: заменить, дописать (`mode=add`) или убрать (`mode=remove`) |
 
 **Объявления**
 
@@ -100,7 +100,7 @@ OAuth-токен выпускается для приложения, зарег�
 | `add_keywords` | Добавить ключевые фразы |
 | `set_keyword_bids` | Установить ставки (поиск/сети, рубли) на фразах/группах/кампаниях |
 | `manage_keywords` | suspend/resume/delete |
-| `set_campaign_negative_keywords` | Задать минус-фразы кампании |
+| `set_campaign_negative_keywords` | Минус-фразы кампании: заменить, дописать (`mode=add`) или убрать (`mode=remove`) |
 | `get_campaign_negative_keywords` | Получить минус-фразы кампаний |
 
 **Быстрые ссылки, уточнения и корректировки**

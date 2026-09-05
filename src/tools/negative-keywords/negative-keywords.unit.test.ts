@@ -35,7 +35,11 @@ describe("set_campaign_negative_keywords", () => {
   it("отправляет присланный список целиком: Директ затирает прежний", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
 
-    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: ["бесплатно", "своими руками"] })
+    await handleSetCampaignNegativeKeywords({
+      campaign_id: "123",
+      negative_keywords: ["бесплатно", "своими руками"],
+      mode: "replace"
+    })
 
     expect(lastBody().params.Campaigns[0].NegativeKeywords).toEqual({ Items: ["бесплатно", "своими руками"] })
   })
@@ -43,9 +47,90 @@ describe("set_campaign_negative_keywords", () => {
   it("очищает минус-фразы пустым списком, а не пропуском поля", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
 
-    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: [] })
+    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: [], mode: "replace" })
 
     expect(lastBody().params.Campaigns[0].NegativeKeywords).toEqual({ Items: [] })
+  })
+
+  it("в режиме replace не читает текущий список — вызов один", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: ["дёшево"], mode: "replace" })
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("в режиме add читает текущие фразы и отправляет объединённый список", async () => {
+    mockFetch
+      .mockResolvedValueOnce(
+        okResponse({ result: { Campaigns: [{ Id: 123, NegativeKeywords: { Items: ["бесплатно", "отзывы"] } }] } })
+      )
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: ["дёшево"], mode: "add" })
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(lastBody().params.Campaigns[0].NegativeKeywords).toEqual({
+      Items: ["бесплатно", "отзывы", "дёшево"]
+    })
+  })
+
+  it("запрашивает NegativeKeywords в FieldNames — без этого поля слияние стёрло бы список", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123, NegativeKeywords: { Items: [] } }] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: ["дёшево"], mode: "add" })
+
+    const readBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(readBody.method).toBe("get")
+    expect(readBody.params.FieldNames).toContain("NegativeKeywords")
+  })
+
+  it("в режиме remove отправляет список без названных фраз", async () => {
+    mockFetch
+      .mockResolvedValueOnce(
+        okResponse({ result: { Campaigns: [{ Id: 123, NegativeKeywords: { Items: ["бесплатно", "отзывы"] } }] } })
+      )
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: ["отзывы"], mode: "remove" })
+
+    expect(lastBody().params.Campaigns[0].NegativeKeywords).toEqual({ Items: ["бесплатно"] })
+  })
+
+  it("считает кампанию без поля NegativeKeywords кампанией без минус-фраз", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 123 }] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: ["дёшево"], mode: "add" })
+
+    expect(lastBody().params.Campaigns[0].NegativeKeywords).toEqual({ Items: ["дёшево"] })
+  })
+
+  it("падает, не отправляя update, если кампании нет в ответе", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Campaigns: [] } }))
+
+    await expect(
+      handleSetCampaignNegativeKeywords({ campaign_id: "123", negative_keywords: ["дёшево"], mode: "add" })
+    ).rejects.toThrow("не найдена или недоступна")
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("читает по тому же 19-значному ID, что и пишет", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { Campaigns: [{ Id: 1, NegativeKeywords: { Items: [] } }] } }))
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleSetCampaignNegativeKeywords({
+      campaign_id: "1915016273214320641",
+      negative_keywords: ["дёшево"],
+      mode: "add"
+    })
+
+    expect(mockFetch.mock.calls[0][1].body).toContain('"Ids":[1915016273214320641]')
+    expect(lastRawBody()).toContain('"Id":1915016273214320641')
   })
 })
 
@@ -55,10 +140,36 @@ describe("set_ad_group_negative_keywords", () => {
   it("правит группу, а не кампанию", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
 
-    await handleSetAdGroupNegativeKeywords({ ad_group_id: "1915016273214320641", negative_keywords: ["дёшево"] })
+    await handleSetAdGroupNegativeKeywords({
+      ad_group_id: "1915016273214320641",
+      negative_keywords: ["дёшево"],
+      mode: "replace"
+    })
 
     expect(lastBody().params.AdGroups[0].NegativeKeywords).toEqual({ Items: ["дёшево"] })
     expect(lastRawBody()).toContain('"Id":1915016273214320641')
+  })
+
+  it("в режиме add читает группы сервисом adgroups, а не campaigns", async () => {
+    mockFetch
+      .mockResolvedValueOnce(
+        okResponse({ result: { AdGroups: [{ Id: 123, NegativeKeywords: { Items: ["бесплатно"] } }] } })
+      )
+      .mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleSetAdGroupNegativeKeywords({ ad_group_id: "123", negative_keywords: ["дёшево"], mode: "add" })
+
+    expect(mockFetch.mock.calls[0][0]).toContain("adgroups")
+    expect(lastBody().params.AdGroups[0].NegativeKeywords).toEqual({ Items: ["бесплатно", "дёшево"] })
+  })
+
+  it("падает, не отправляя update, если группы нет в ответе", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AdGroups: [] } }))
+
+    await expect(
+      handleSetAdGroupNegativeKeywords({ ad_group_id: "123", negative_keywords: ["дёшево"], mode: "remove" })
+    ).rejects.toThrow("не найдена или недоступна")
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })
 

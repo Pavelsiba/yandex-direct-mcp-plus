@@ -1,6 +1,8 @@
 // Минус-фразы Директа перезаписываются целиком: и NegativeKeywords.Items, и привязки
 // наборов. Инструменты этого домена названы set_*/link_* именно поэтому — они задают
-// новое значение, а не дополняют старое. Чтобы добавить фразу, её читают и шлют слитой.
+// новое значение, а не дополняют старое. Режимы add и remove у set_*_negative_keywords
+// прячут чтение и слияние внутрь сервера, чтобы «добавить одну фразу» не оборачивалось
+// стёртым списком; link_* и наборы по-прежнему только заменяют.
 import { z } from "zod"
 import { NEGATIVE_KEYWORD_SET_ACTIONS } from "#shared/config/enums"
 import {
@@ -13,7 +15,20 @@ import {
 import { idField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
 
-const negativeKeyword = z.string().check(z.minLength(1, { error: "Минус-фраза не может быть пустой" }))
+const negativeKeyword = z
+  .string()
+  .check(
+    z.minLength(1, { error: "Минус-фраза не может быть пустой" }),
+    z.regex(/\S/, { error: "Минус-фраза не может состоять из одних пробелов" })
+  )
+
+// Режим общий для кампании и группы: снаружи это один и тот же вопрос «заменить,
+// дописать или убрать». replace по умолчанию — прежнее поведение инструментов.
+const negativeKeywordsMode = () =>
+  z.literal(["replace", "add", "remove"]).default("replace").meta({
+    description:
+      "replace — заменить список целиком (пустой массив очищает), add — дописать к текущим, remove — убрать перечисленные. add и remove сначала читают текущий список, это дополнительный вызов API; фразы сравниваются без учёта регистра и краевых пробелов"
+  })
 
 export const getCampaignNegativeKeywordsSchema = z.object({
   campaign_ids: z
@@ -31,15 +46,18 @@ export const setCampaignNegativeKeywordsSchema = z.object({
   campaign_id: idField("ID кампании"),
   negative_keywords: z.array(negativeKeyword).meta({
     description:
-      "Полный новый список минус-фраз кампании — прежний затирается целиком. Пустой массив очищает минус-фразы"
-  })
+      "Минус-фразы кампании: при mode=replace — полный новый список взамен прежнего, при add — что дописать, при remove — что убрать"
+  }),
+  mode: negativeKeywordsMode()
 })
 
 export const setAdGroupNegativeKeywordsSchema = z.object({
   ad_group_id: idField("ID группы объявлений"),
   negative_keywords: z.array(negativeKeyword).meta({
-    description: "Полный новый список минус-фраз группы — прежний затирается целиком. Пустой массив очищает"
-  })
+    description:
+      "Минус-фразы группы: при mode=replace — полный новый список взамен прежнего, при add — что дописать, при remove — что убрать"
+  }),
+  mode: negativeKeywordsMode()
 })
 
 export const listNegativeKeywordSharedSetsSchema = z.object({
