@@ -27,6 +27,24 @@ export const getCampaignSchema = z.object({
   campaign_id: idField("ID рекламной кампании, десятичная строка")
 })
 
+// UTM-разметка кампании. Директ дописывает эту строку к ссылке каждого объявления, поэтому
+// метки задаются один раз на кампанию, а не вписываются в href руками. Знак «?» не нужен:
+// его подставляет Директ, а присланный превратился бы в «??».
+//
+// Не литерал и без разбора на пары: набор меток открытый, а в значениях живут подстановки
+// Директа ({campaign_id}, {keyword} и прочие) — проверка вида «ключ=значение» отвергала бы
+// их. В WSDL это xsd:string без ограничения длины, поэтому проверяем только непустоту.
+const trackingParamsField = () =>
+  z
+    .string()
+    .check(z.minLength(1, { error: "Разметка не может быть пустой строкой — чтобы снять её, передайте null" }))
+    .nullable()
+    .optional()
+    .meta({
+      description:
+        "UTM-разметка, дописывается к ссылкам всех объявлений кампании. Без ведущего «?»: utm_source=yandex&utm_campaign={campaign_id}. Допустимы подстановки Директа в фигурных скобках. null снимает разметку"
+    })
+
 export const createCampaignSchema = z.object({
   name: z
     .string()
@@ -55,7 +73,8 @@ export const createCampaignSchema = z.object({
     .meta({
       description:
         "Часовой пояс показов, например Europe/Moscow (по умолчанию). Список — в справочнике list_time_zones; на даты отчётов не влияет, они всегда по Москве"
-    })
+    }),
+  tracking_params: trackingParamsField()
 })
 
 export const updateCampaignSchema = z.object({
@@ -69,7 +88,8 @@ export const updateCampaignSchema = z.object({
   status: z
     .literal(CAMPAIGN_STATUS_ACTIONS)
     .optional()
-    .meta({ description: "Действие со статусом показов: SUSPEND (остановить), RESUME, ARCHIVE, UNARCHIVE" })
+    .meta({ description: "Действие со статусом показов: SUSPEND (остановить), RESUME, ARCHIVE, UNARCHIVE" }),
+  tracking_params: trackingParamsField()
 })
 
 export const manageCampaignsSchema = z.object({
