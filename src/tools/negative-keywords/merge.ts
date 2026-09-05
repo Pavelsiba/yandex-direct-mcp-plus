@@ -7,8 +7,8 @@ export type NegativeKeywordsMode = "replace" | "add" | "remove"
 
 // Сравнение без учёта регистра и краевых пробелов. Иначе remove «Бесплатно» не нашёл бы
 // сохранённое «бесплатно» и вернул успех, ничего не удалив, — молчаливый отказ вместо
-// молчаливого затирания. Пробой в песочнице, который подтвердил бы, нормализует ли фразы
-// сам Директ, отложен: доступ к API не выдан (заявка 05.09.2026).
+// молчаливого затирания. Нормализует ли фразы сам Директ, пробой пока не подтверждён:
+// песочницы нет с июля 2026, проверять придётся записью на кампанию-полигон.
 const normalize = (keyword: string): string => keyword.trim().toLowerCase()
 
 export function mergeNegativeKeywords(existing: string[], incoming: string[], mode: NegativeKeywordsMode): string[] {

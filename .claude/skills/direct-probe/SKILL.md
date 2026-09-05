@@ -58,22 +58,22 @@ ID полигона держится в разговоре или в `CLAUDE.loc
 
 Читающим вызовом, глазами по ответу:
 
-```bash
-npx tsx --conditions=development -e "
-  const { apiPost } = await import('./src/shared/api/client.ts')
-  console.error(await apiPost('campaigns', 'get', {
+Скриптом в скретчпаде, запущенным через `npm run probe` (см. ниже):
+
+```ts
+import { apiPost } from "#shared/api/client"
+
+console.error(
+  await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [/* ID полигона */] },
-    FieldNames: ['Id', 'Name', 'Status', 'State']
-  }))
-"
+    FieldNames: ["Id", "Name", "Status", "State"]
+  })
+)
 ```
 
 Ждём ровно `Status: "DRAFT"` и `State: "OFF"`. Любой другой ответ — включая пустой
 результат, `ACCEPTED`, `MODERATION` — **остановка**: цель не та, о которой договаривались.
 Скажи пользователю, что увидел, и не пиши ничего.
-
-Флаг `--conditions=development` обязателен и здесь, и дальше: без него `tsx` резолвит
-`#shared/*` в `dist/` и исполняет прошлую сборку вместо исходников.
 
 ### Правила, которые не обсуждаются
 
@@ -97,7 +97,7 @@ npx tsx --conditions=development -e "
 
 ```ts
 // <scratchpad>/probe.ts
-import { apiPost } from "../src/shared/api/client.js"
+import { apiPost } from "#shared/api/client"
 
 const raw = await apiPost("keywords", "get", {
   SelectionCriteria: { CampaignIds: [/* ID полигона */] },
@@ -108,7 +108,14 @@ const raw = await apiPost("keywords", "get", {
 console.error(JSON.stringify(raw, null, 2))
 ```
 
-Запуск: `npx tsx --conditions=development <scratchpad>/probe.ts`.
+Запуск: **`npm run probe -- <scratchpad>/probe.ts`**.
+
+Скрипт `probe` в `package.json` несёт `--env-file-if-exists=.env` и
+`--conditions=development`. Оба флага живут там, а не в твоей команде, и это не деталь
+удобства: `--env-file` в тексте шелл-команды законно отбивает `deny-secrets.mjs`, а без
+`--conditions=development` подпути `#shared/*` резолвятся в `dist/` и исполняется прошлая
+сборка вместо исходников. Токен при этом ты не видишь и не печатаешь — его подставляет
+Node.
 
 **Почему `console.error`, а не `log`:** stdout занят транспортом MCP. В пробе это не
 критично, но привычка полезная — в сервере вывод в stdout ломает протокол.

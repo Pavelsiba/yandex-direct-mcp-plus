@@ -20,9 +20,11 @@ MCP-сервер (stdio) поверх API Яндекс.Директа v5: 51 и�
 
 ```bash
 npm run build        # clean + tsc -p tsconfig.build.json → dist/
-npm test             # vitest run
+npm test             # vitest run --project unit (без сети)
 npm run test:watch
+npm run test:int     # сетевые тесты по боевому API — только осознанно
 npm run dev          # tsx src/app/index.ts, без сборки
+npm run probe        # разовый скрипт с окружением: npm run probe -- <файл>.ts
 npm run lint         # biome check (формат + линт)
 npm run lint:fix     # biome check --write
 npm run typecheck    # tsc --noEmit: src, тесты и конфиги
@@ -127,10 +129,9 @@ src/
 
 - `YANDEX_DIRECT_TOKEN` — обязателен.
 - `YANDEX_DIRECT_LOGIN` — Client-Login, нужен для агентских токенов.
-- `YANDEX_DIRECT_SANDBOX=1` — песочница (`api-sandbox.direct.yandex.com`), тот же
-  токен, реальных трат нет.
 
-Локально значения живут в `.env` (закрыт `.gitignore`, образец — в `.env.example`).
+Локально значения живут в `.env` (закрыт `.gitignore`; образца нет, переменные
+перечислены таблицей в README).
 Читают его `npm run dev`, `npm start` и сервер из `.mcp.json` — все через флаг Node
 `--env-file-if-exists=.env`. Сам код `.env` не знает: `shared/config/env.ts` берёт
 только `process.env`, и это намеренно. Опубликованный пакет запускается MCP-клиентом
@@ -140,8 +141,12 @@ src/
 Секрет в отслеживаемый файл не кладётся ни при каких условиях: 03.09.2026 боевой
 OAuth-токен уехал в `.mcp.json` и двое суток пролежал в публичном репозитории.
 
-Пишущие инструменты тратят реальные деньги на боевом аккаунте. Проверять их —
-только в песочнице и только по явной просьбе.
+**Тестовой среды нет.** Песочница Директа отключена с июля 2026 (ответ поддержки
+05.09.2026), `api-sandbox` контуром не является — любой вызов идёт по боевому аккаунту.
+Пишущие инструменты проверяются только на кампании-полигоне, оставленной черновиком
+(`Status: DRAFT`, `State: OFF`), и только по явной просьбе: показов такая кампания не
+даёт и бюджета не тратит, пока не пройдёт модерацию. `moderate_ads` на полигон не
+звать. Процедура — скилл `direct-probe`, ID полигона — в `CLAUDE.local.md`.
 
 ## Git
 

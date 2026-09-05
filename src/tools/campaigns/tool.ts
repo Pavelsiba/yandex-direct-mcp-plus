@@ -41,7 +41,7 @@ export const createCampaignTool = defineTool({
   name: "create_campaign",
   title: "Создать кампанию",
   description:
-    "Создать новую рекламную кампанию. Бюджет в рублях. ⚠️ Тратит реальные деньги — используйте sandbox для теста.",
+    "Создать новую рекламную кампанию. Бюджет в рублях. ⚠️ Тестовой среды у Директа нет: кампания создаётся в боевом аккаунте. Деньги она начнёт тратить после модерации и включения, поэтому созданную для проверки оставляйте черновиком.",
   annotations: WRITE,
   schema: createCampaignSchema,
   handler: handleCreateCampaign
