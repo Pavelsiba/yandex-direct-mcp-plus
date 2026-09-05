@@ -49,6 +49,7 @@
     "lint": "biome check",
     "lint:fix": "biome check --write",
     "lint:dead": "knip",
+    "api:snapshot": "node scripts/wsdl-snapshot.mjs",
     "prepare": "lefthook install"
   },
   "dependencies": {

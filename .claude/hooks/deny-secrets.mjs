@@ -1,3 +1,4 @@
+// biome-ignore-all lint/plugin: протокол хуков Claude Code, 64-битных ID здесь нет
 // Запрет шелл-командам трогать секреты. Вызывается из .claude/settings.json на
 // PreToolUse для Bash и PowerShell: читает JSON с stdin, смотрит на текст команды.
 //
