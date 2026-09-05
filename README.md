@@ -80,7 +80,7 @@ OAuth-токен выпускается для приложения, зарег�
 | `list_ad_groups` | Группы объявлений выбранных кампаний |
 | `create_ad_group` | Создать группу с таргетингом по регионам |
 | `delete_ad_groups` | Удалить группы по ID |
-| `set_ad_group_negative_keywords` | Минус-фразы группы: заменить, дописать (`mode=add`) или убрать (`mode=remove`) |
+| `set_ad_group_negative_keywords` | Минус-фразы группы: `mode` обязателен — `replace`, `add` или `remove` |
 
 **Объявления**
 
@@ -100,7 +100,7 @@ OAuth-токен выпускается для приложения, зарег�
 | `add_keywords` | Добавить ключевые фразы |
 | `set_keyword_bids` | Установить ставки (поиск/сети, рубли) на фразах/группах/кампаниях |
 | `manage_keywords` | suspend/resume/delete |
-| `set_campaign_negative_keywords` | Минус-фразы кампании: заменить, дописать (`mode=add`) или убрать (`mode=remove`) |
+| `set_campaign_negative_keywords` | Минус-фразы кампании: `mode` обязателен — `replace`, `add` или `remove` |
 | `get_campaign_negative_keywords` | Получить минус-фразы кампаний |
 
 **Быстрые ссылки, уточнения и корректировки**

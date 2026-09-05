@@ -29,8 +29,8 @@ export const setCampaignNegativeKeywordsTool = defineTool({
   name: "set_campaign_negative_keywords",
   title: "Минус-фразы кампании",
   description:
-    "Минус-фразы на уровне кампании. mode=replace заменяет список целиком (пустой массив очищает), add дописывает к текущим, remove убирает названные — читать список перед этим не нужно, add и remove делают это сами.",
-  annotations: IDEMPOTENT,
+    "Минус-фразы на уровне кампании. Режим mode обязателен: replace заменяет список целиком (прежние фразы теряются, пустой массив очищает), add дописывает к текущим, remove убирает названные — читать список перед этим не нужно, add и remove делают это сами. Чтобы добавить фразу к существующим, нужен add: replace с одной фразой сотрёт остальные.",
+  annotations: DESTRUCTIVE,
   schema: setCampaignNegativeKeywordsSchema,
   handler: handleSetCampaignNegativeKeywords
 })
@@ -39,8 +39,8 @@ export const setAdGroupNegativeKeywordsTool = defineTool({
   name: "set_ad_group_negative_keywords",
   title: "Минус-фразы группы",
   description:
-    "Минус-фразы на уровне группы объявлений. mode=replace заменяет список целиком (пустой массив очищает), add дописывает к текущим, remove убирает названные — читать список перед этим не нужно, add и remove делают это сами.",
-  annotations: IDEMPOTENT,
+    "Минус-фразы на уровне группы объявлений. Режим mode обязателен: replace заменяет список целиком (прежние фразы теряются, пустой массив очищает), add дописывает к текущим, remove убирает названные — читать список перед этим не нужно, add и remove делают это сами. Чтобы добавить фразу к существующим, нужен add: replace с одной фразой сотрёт остальные.",
+  annotations: DESTRUCTIVE,
   schema: setAdGroupNegativeKeywordsSchema,
   handler: handleSetAdGroupNegativeKeywords
 })

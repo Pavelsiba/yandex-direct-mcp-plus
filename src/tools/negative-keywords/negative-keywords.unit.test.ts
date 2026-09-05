@@ -9,6 +9,7 @@ import {
   handleSetAdGroupNegativeKeywords,
   handleSetCampaignNegativeKeywords
 } from "./handler.js"
+import { setAdGroupNegativeKeywordsSchema, setCampaignNegativeKeywordsSchema } from "./schema.js"
 
 installFetchMock()
 
@@ -26,6 +27,32 @@ describe("get_campaign_negative_keywords", () => {
 
     expect(lastBody().params.FieldNames).toEqual(["Id", "Name", "NegativeKeywords"])
     expect(lastRawBody()).toContain('"Ids":[123,456]')
+  })
+})
+
+// Пропуск mode когда-то означал replace по умолчанию — то есть «добавь одну фразу»
+// без указания режима стирало весь список молча и с успешным ответом. Режим обязателен
+// именно поэтому, и проверяется это на схеме: хендлер режим уже получает готовым.
+describe("режим минус-фраз", () => {
+  it("не даёт умолчания: без mode запрос отклоняется до вызова API", () => {
+    const params = { campaign_id: "123", negative_keywords: ["дёшево"] }
+
+    expect(setCampaignNegativeKeywordsSchema.safeParse(params).success).toBe(false)
+    expect(
+      setAdGroupNegativeKeywordsSchema.safeParse({ ad_group_id: "123", negative_keywords: ["дёшево"] }).success
+    ).toBe(false)
+  })
+
+  it("принимает все три режима", () => {
+    for (const mode of ["replace", "add", "remove"]) {
+      const parsed = setCampaignNegativeKeywordsSchema.safeParse({
+        campaign_id: "123",
+        negative_keywords: ["дёшево"],
+        mode
+      })
+
+      expect(parsed.success).toBe(true)
+    }
   })
 })
 
