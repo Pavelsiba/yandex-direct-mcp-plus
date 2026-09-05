@@ -63,10 +63,19 @@ description: Релизный конвейер yd-mcp — PR dev→main, semanti
 `registry-url` в setup-node **не задавать**: setup-node пишет свой `.npmrc`, плагин —
 свой, и они конфликтуют. Токена в переменной достаточно.
 
-Provenance (значок «Built and signed on GitHub Actions») пока не включён. Для него нужны
-`permissions: id-token: write` у джобы `release` и `NPM_CONFIG_PROVENANCE: true` в env шага
-Release; остальные условия уже выполнены — репозиторий публичный, `repository` в
-`package.json` совпадает с реальным.
+**Provenance включён** (`id-token: write` у джобы + `NPM_CONFIG_PROVENANCE: true` в env):
+npm обменивает OIDC-токен прогона на аттестацию Sigstore, связывающую тарбол с этим
+репозиторием, коммитом и прогоном. На странице пакета появляется значок «Built and signed
+on GitHub Actions», проверяется командой `npm audit signatures`.
+
+Из этого следует ограничение: **публиковать пакет руками нельзя**. Ручной `npm publish`
+аттестации не даст, и версия выйдет без провенанса, хотя соседние его имеют. Публикация —
+только через этот workflow.
+
+Если появится `[secure]` вместо имени владельца — в ссылках CHANGELOG, в логе, где угодно —
+значит в `NPM_TOKEN` лежит не токен. `hideSensitive` маскирует значения переменных, чьё имя
+матчит `/token|password|credential|secret|private/i`; 05.09.2026 так вскрылось, что в секрет
+попало имя пользователя, и это же дало `E403` с обманчивым текстом про 2FA.
 
 **Тип коммита → релиз.** Своей политики нет: в `.releaserc.json` не задано ни `preset`,
 ни `releaseRules`, работают дефолты semantic-release (Angular-конвенция).
