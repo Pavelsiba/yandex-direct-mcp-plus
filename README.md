@@ -27,7 +27,7 @@ npm ci && npm run build
   "mcpServers": {
     "yandex-direct": {
       "command": "node",
-      "args": ["/путь/к/yandex-direct-mcp-plus/dist/index.js"],
+      "args": ["/путь/к/yandex-direct-mcp-plus/dist/app/index.js"],
       "env": {
         "YANDEX_DIRECT_TOKEN": "ваш_токен"
       }
@@ -39,7 +39,7 @@ npm ci && npm run build
 ### Claude Code
 
 ```bash
-claude mcp add yandex-direct -e YANDEX_DIRECT_TOKEN=ваш_токен -- node /путь/к/yandex-direct-mcp-plus/dist/index.js
+claude mcp add yandex-direct -e YANDEX_DIRECT_TOKEN=ваш_токен -- node /путь/к/yandex-direct-mcp-plus/dist/app/index.js
 ```
 ## Конфигурация (переменные окружения)
 

@@ -22,7 +22,7 @@ MCP-сервер (stdio) поверх API Яндекс.Директа v5: 51 и�
 npm run build        # clean + tsc -p tsconfig.build.json → dist/
 npm test             # vitest run
 npm run test:watch
-npm run dev          # tsx src/index.ts, без сборки
+npm run dev          # tsx src/app/index.ts, без сборки
 npm run lint         # biome check (формат + линт)
 npm run lint:fix     # biome check --write
 npm run typecheck    # tsc --noEmit: src, тесты и конфиги
@@ -30,7 +30,7 @@ npm run lint:dead    # knip
 ```
 
 После правок исходников — `npm run build`: MCP-клиенты запускают собранный
-`dist/index.js`, а не TypeScript.
+`dist/app/index.js`, а не TypeScript.
 
 Два конфига TypeScript, и это не дублирование: `tsconfig.json` ничего не собирает
 и покрывает всё (`src`, тесты, конфиги) — по нему идёт `typecheck` и живёт редактор;
@@ -113,6 +113,16 @@ src/
 - `YANDEX_DIRECT_LOGIN` — Client-Login, нужен для агентских токенов.
 - `YANDEX_DIRECT_SANDBOX=1` — песочница (`api-sandbox.direct.yandex.com`), тот же
   токен, реальных трат нет.
+
+Локально значения живут в `.env` (закрыт `.gitignore`, образец — в `.env.example`).
+Читают его `npm run dev`, `npm start` и сервер из `.mcp.json` — все через флаг Node
+`--env-file-if-exists=.env`. Сам код `.env` не знает: `shared/config/env.ts` берёт
+только `process.env`, и это намеренно. Опубликованный пакет запускается MCP-клиентом
+с непредсказуемым рабочим каталогом, поэтому переменные ему передаёт клиент, а не
+файл рядом.
+
+Секрет в отслеживаемый файл не кладётся ни при каких условиях: 03.09.2026 боевой
+OAuth-токен уехал в `.mcp.json` и двое суток пролежал в публичном репозитории.
 
 Пишущие инструменты тратят реальные деньги на боевом аккаунте. Проверять их —
 только в песочнице и только по явной просьбе.

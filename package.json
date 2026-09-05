@@ -38,8 +38,8 @@
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.build.json",
-    "dev": "tsx --conditions=development src/app/index.ts",
-    "start": "node dist/app/index.js",
+    "dev": "tsx --env-file-if-exists=.env --conditions=development src/app/index.ts",
+    "start": "node --env-file-if-exists=.env dist/app/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build",
