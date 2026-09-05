@@ -44,6 +44,24 @@ describe("mergeNegativeKeywords", () => {
     })
   })
 
+  describe("правило сравнения повторяет Директ", () => {
+    it("считает ё и е одной буквой", () => {
+      expect(mergeNegativeKeywords(["дешево"], ["дёшево"], "remove")).toEqual([])
+    })
+
+    it("игнорирует оператор ! , который Директ сам приписывает стоп-слову", () => {
+      expect(mergeNegativeKeywords(["!своими руками"], ["своими руками"], "remove")).toEqual([])
+    })
+
+    it("игнорирует оператор + ", () => {
+      expect(mergeNegativeKeywords(["ремонт"], ["+ремонт"], "add")).toEqual(["ремонт"])
+    })
+
+    it("считает повторный пробел внутри фразы одним", () => {
+      expect(mergeNegativeKeywords(["весло двойное"], ["весло  двойное"], "remove")).toEqual([])
+    })
+  })
+
   describe("remove", () => {
     it("убирает названные фразы, остальные оставляет в прежнем порядке", () => {
       expect(mergeNegativeKeywords(["бесплатно", "отзывы", "дёшево"], ["отзывы"], "remove")).toEqual([

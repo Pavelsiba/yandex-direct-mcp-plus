@@ -23,7 +23,11 @@ export default defineConfig({
           environment: "node",
           include: ["src/**/*.int.test.ts"],
           // Аккаунт один на прогон, параллельные файлы мешали бы друг другу.
-          fileParallelism: false
+          fileParallelism: false,
+          // Дефолтных 5 с не хватает: один кейс — несколько круговых вызовов к API,
+          // а add и remove вдобавок читают текущий список перед записью.
+          testTimeout: 60_000,
+          hookTimeout: 60_000
         }
       }
     ],

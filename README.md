@@ -47,6 +47,7 @@ claude mcp add yandex-direct -e YANDEX_DIRECT_TOKEN=ваш_токен -- node /�
 |------------|:-----------:|------------|
 | `YANDEX_DIRECT_TOKEN` | да | OAuth-токен Яндекс.Директ |
 | `YANDEX_DIRECT_LOGIN` | нет | Логин клиента для агентских токенов (заголовок `Client-Login`). Обязателен, если токен агентский |
+| `YANDEX_DIRECT_POLYGON_CAMPAIGN_ID` | нет | Только для `npm run test:int`: ID кампании-полигона, оставленной черновиком. Сетевые тесты пишут в неё и ни во что другое; без переменной они пропускаются |
 
 ### Как получить токен
 
@@ -130,7 +131,7 @@ OAuth-токен выпускается для приложения, зарег�
 | `list_feeds` | Получить товарные фиды |
 | `list_negative_keyword_shared_sets` | Получить общие наборы минус-фраз |
 | `manage_negative_keyword_shared_sets` | add/update/delete общих наборов |
-| `link_negative_keyword_sets` | Привязать общие наборы к группам объявлений |
+| `link_negative_keyword_sets` | Привязать общие наборы к кампаниям и группам объявлений |
 
 **Статистика, аккаунт, справочники**
 

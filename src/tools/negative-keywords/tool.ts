@@ -66,7 +66,8 @@ export const manageNegativeKeywordSharedSetsTool = defineTool({
 export const linkNegativeKeywordSetsTool = defineTool({
   name: "link_negative_keyword_sets",
   title: "Привязать общие минус-фразы",
-  description: "Заменить привязки общих наборов минус-фраз у групп объявлений. Пустой set_ids очищает привязки.",
+  description:
+    "Заменить привязки общих наборов минус-фраз у кампаний и/или групп объявлений. Привязка к кампании действует на все её группы. Пустой set_ids очищает привязки.",
   annotations: IDEMPOTENT,
   schema: linkNegativeKeywordSetsSchema,
   handler: handleLinkNegativeKeywordSets

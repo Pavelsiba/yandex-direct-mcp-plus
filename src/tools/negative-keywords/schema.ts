@@ -1,3 +1,8 @@
+// В домене две разные сущности, отсюда и два набора инструментов. Собственные минус-фразы
+// кампании или группы — список, живущий внутри неё. Общий набор — именованный список
+// уровня аккаунта: он заводится один раз и переиспользуется, поэтому у него свой сервис,
+// своя форма поля (голый массив, не { Items: [...] }) и отдельная привязка к объекту.
+//
 // Минус-фразы Директа перезаписываются целиком: и NegativeKeywords.Items, и привязки
 // наборов. Инструменты этого домена названы set_*/link_* именно поэтому — они задают
 // новое значение, а не дополняют старое. Режимы add и remove у set_*_negative_keywords
@@ -30,7 +35,7 @@ const negativeKeyword = z
 const negativeKeywordsMode = () =>
   z.literal(["replace", "add", "remove"]).meta({
     description:
-      "Обязателен. replace — заменить список целиком (пустой массив очищает, прежние фразы теряются), add — дописать к текущим, remove — убрать перечисленные. add и remove сначала читают текущий список, это дополнительный вызов API; фразы сравниваются без учёта регистра и краевых пробелов"
+      "Обязателен. replace — заменить список целиком (пустой массив очищает, прежние фразы теряются), add — дописать к текущим, remove — убрать перечисленные. add и remove сначала читают текущий список, это дополнительный вызов API. Фразы сравниваются так же, как их сравнивает Директ: без учёта регистра, буквы ё и е равны, краевые и повторные пробелы не учитываются, операторы закрепления ! и + игнорируются"
   })
 
 export const getCampaignNegativeKeywordsSchema = z.object({
@@ -126,24 +131,50 @@ export const manageNegativeKeywordSharedSetsSchema = z.object({
     .meta({ description: "Наборы для удаления; обязателен при action=delete" })
 })
 
-export const linkNegativeKeywordSetsSchema = z.object({
-  ad_group_ids: z
-    .array(idField("ID группы объявлений"))
-    .check(
-      z.minLength(1, { error: "Список групп пуст" }),
-      z.maxLength(MAX_AD_GROUPS_PER_CALL, {
-        error: `За один вызов допустимо не больше ${MAX_AD_GROUPS_PER_CALL} групп`
+// Набор привязывается и к группе, и к кампании — это одно и то же действие над разными
+// объектами, поэтому инструмент один. Оба списка необязательны по отдельности, но пустым
+// вызов быть не может: проверку несёт сам объект, иначе «ничего не сделал» вернулось бы
+// успехом.
+export const linkNegativeKeywordSetsSchema = z
+  .object({
+    ad_group_ids: z
+      .array(idField("ID группы объявлений"))
+      .check(
+        z.maxLength(MAX_AD_GROUPS_PER_CALL, {
+          error: `За один вызов допустимо не больше ${MAX_AD_GROUPS_PER_CALL} групп`
+        })
+      )
+      .optional()
+      .meta({ description: "Группы, которым назначаются наборы" }),
+    campaign_ids: z
+      .array(idField("ID кампании"))
+      .check(
+        z.maxLength(MAX_CAMPAIGNS_PER_CALL, {
+          error: `За один вызов допустимо не больше ${MAX_CAMPAIGNS_PER_CALL} кампаний`
+        })
+      )
+      .optional()
+      .meta({
+        description:
+          "Кампании, которым назначаются наборы. Привязка на уровне кампании действует на все её группы. Тип кампании сервер читает сам — это дополнительный вызов API; общие наборы поддерживают TEXT_CAMPAIGN, DYNAMIC_TEXT_CAMPAIGN, MOBILE_APP_CAMPAIGN и UNIFIED_CAMPAIGN"
+      }),
+    set_ids: z
+      .array(idField("ID общего набора минус-фраз"))
+      .check(
+        z.maxLength(MAX_SHARED_SETS_PER_AD_GROUP, {
+          error: `К объекту привязывается не больше ${MAX_SHARED_SETS_PER_AD_GROUP} наборов`
+        })
+      )
+      .meta({
+        description: "Полный новый список наборов объекта — прежние привязки затираются. Пустой массив снимает все"
       })
-    )
-    .meta({ description: "Группы, которым назначаются наборы" }),
-  set_ids: z
-    .array(idField("ID общего набора минус-фраз"))
-    .check(
-      z.maxLength(MAX_SHARED_SETS_PER_AD_GROUP, {
-        error: `К группе привязывается не больше ${MAX_SHARED_SETS_PER_AD_GROUP} наборов`
-      })
-    )
-    .meta({
-      description: "Полный новый список наборов группы — прежние привязки затираются. Пустой массив снимает все"
+  })
+  .check((ctx) => {
+    if (ctx.value.ad_group_ids?.length || ctx.value.campaign_ids?.length) return
+
+    ctx.issues.push({
+      code: "custom",
+      input: ctx.value,
+      message: "Укажите ad_group_ids и/или campaign_ids — кому назначаются наборы"
     })
-})
+  })
