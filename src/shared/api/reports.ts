@@ -3,7 +3,7 @@
 // Док: https://yandex.ru/dev/direct/doc/en/codes
 import { commonHeaders, fetchWithRetry, logUnits } from "#shared/api/fetch"
 import { stringifyJson } from "#shared/api/json"
-import { reportUrl } from "#shared/config/endpoints"
+import { REPORT_URL } from "#shared/config/endpoints"
 import { REPORT_DEFAULT_RETRY_IN_SEC, REPORT_MAX_POLLS, REPORT_MAX_RETRY_IN_SEC } from "#shared/config/limits"
 
 export type ReportOptions = {
@@ -35,7 +35,7 @@ export async function apiReport(params: Record<string, unknown>, opts: ReportOpt
   const body = stringifyJson({ params })
 
   for (let poll = 0; poll <= REPORT_MAX_POLLS; poll++) {
-    const response = await fetchWithRetry(reportUrl(), { method: "POST", headers, body })
+    const response = await fetchWithRetry(REPORT_URL, { method: "POST", headers, body })
     logUnits(response)
 
     if (response.status === 200) return response.text()

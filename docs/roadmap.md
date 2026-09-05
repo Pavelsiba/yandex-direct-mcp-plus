@@ -1,6 +1,6 @@
 # Пробелы в покрытии API и план доработки
 
-Разобрано чтением исходников, а не README. Актуально на 03.09.2026, версия кода —
+Разобрано чтением исходников, а не README. Актуально на 05.09.2026, версия кода —
 51 инструмент.
 
 ## Что уже покрыто
@@ -15,52 +15,74 @@
 
 ## P1 — критично
 
-1. ~~**Часовой пояс и временной таргетинг (`TimeTargeting`)**~~ — сделано 03.09.2026,
+1. [x] ~~**Часовой пояс и временной таргетинг (`TimeTargeting`)**~~ — сделано 03.09.2026,
    `feat/time-targeting`: домен `tools/time-targeting` (`get_time_targeting`,
    `set_time_targeting`), справочник `list_time_zones` и `time_zone` в
    `create_campaign`. Наружу расписание задаётся правилами «дни + часы +
    коэффициент», строки из 25 чисел собирает хендлер.
 
-2. ~~**Смена стратегии на существующей кампании.**~~ — сделано 03.09.2026,
+2. [x] ~~**Смена стратегии на существующей кампании.**~~ — сделано 03.09.2026,
    `chore/zod4-conventions`: `set_strategy` принимает `AVERAGE_CPC`, `AVERAGE_CPA`
    и `PAY_FOR_CONVERSION` (плюс `MAXIMUM_COVERAGE` в сетях), настройки собираются
    в `AverageCpc` / `AverageCpa` / `PayForConversion`, цель Метрики приходит
    параметром `goal_id`. Сочетание сторон схемой не проверяется: таблица
-   совместимости живёт у Директа. Не покрыты стратегии с несколькими целями,
-   `AVERAGE_ROI`, `AVERAGE_CRR`, `MAX_PROFIT` и недельный пакет кликов.
+   совместимости живёт у Директа.
 
-3. **Минус-фразы — только полная замена.** `set_campaign_negative_keywords` и
-   `set_ad_group_negative_keywords` отправляют `NegativeKeywords.Items` целиком.
-   Чтение (`get_campaign_negative_keywords`) есть, объединения нет — чтобы добавить
-   одну фразу, клиент обязан сам прочитать, слить и отправить весь список.
+   - [ ] Остаток: стратегии с несколькими целями, `AVERAGE_ROI`, `AVERAGE_CRR`,
+     `MAX_PROFIT`, недельный пакет кликов.
+
+3. [x] ~~**Минус-фразы — только полная замена.**~~ — сделано 05.09.2026,
+   `feat/negative-keywords-merge`: у `set_campaign_negative_keywords` и
+   `set_ad_group_negative_keywords` появился обязательный `mode` — `replace`,
+   `add`, `remove`. Умолчания нет намеренно: `replace` затирает список целиком, и
+   пропуск поля на просьбе «добавь фразу» стирал бы остальные молча. Чтение и
+   слияние ушли внутрь сервера:
+   `add`/`remove` сначала читают текущий список, поэтому стоят двух вызовов API.
+   Сравнение фраз — без учёта регистра и краевых пробелов.
+
+   - [ ] Подтвердить пробоем, нормализует ли фразы сам Директ: `npm run probe`,
+     цель — кампания-полигон. Если нормализует, `toLowerCase()` в `merge.ts` лишний.
+   - [ ] Общие наборы (`update` в `manage_negative_keyword_shared_sets`) и привязки
+     (`link_negative_keyword_sets`) остались только на замену — та же семантика,
+     тот же вопрос.
 
 ## P2 — заметно ограничивает
 
-4. **`get_statistics` — `ReportType` зашит в `CAMPAIGN_PERFORMANCE_REPORT`.**
+4. [ ] **`get_statistics` — `ReportType` зашит в `CAMPAIGN_PERFORMANCE_REPORT`.**
    Из отчётов Директа доступен только он; `get_search_queries` отдельно закрывает
    `SEARCH_QUERY_PERFORMANCE_REPORT`. Недоступны `ADGROUP_PERFORMANCE_REPORT`,
    `AD_PERFORMANCE_REPORT`, `CRITERIA_PERFORMANCE_REPORT`,
    `ACCOUNT_PERFORMANCE_REPORT`, `CUSTOM_REPORT`,
    `REACH_AND_FREQUENCY_PERFORMANCE_REPORT`.
 
-5. **UTM-разметка (`TrackingParams`)** — не поддержана ни на кампании, ни на
+5. [ ] **UTM-разметка (`TrackingParams`)** — не поддержана ни на кампании, ни на
    объявлении. Метки можно только вписать руками в `href` при создании объявления.
 
-6. **Автотаргетинг в группах.** `create_ad_group` принимает только `Name`,
+6. [ ] **Автотаргетинг в группах.** `create_ad_group` принимает только `Name`,
    `CampaignId`, `RegionIds`. Категории автотаргетинга (`RelevantKeywords`)
    недоступны ни на чтение, ни на запись.
 
+9. [ ] **Средства кампании (`Funds`).** Поле есть в `CampaignFieldEnum`, но не
+   запрашивается нигде: остаток, бонусы и сумма к переводу через сервер не видны.
+   `FundsParam` — `Mode` (`CAMPAIGN_FUNDS` \| `SHARED_ACCOUNT_FUNDS`) плюс
+   `CampaignFunds` {`Sum`, `Balance`, `BalanceBonus`, `SumAvailableForTransfer`} или
+   `SharedAccountFunds` {`Refund`, `Spend`}; суммы в микроединицах, наружу — рубли.
+   Сверено с WSDL 05.09.2026. Баланс общего счёта сюда не входит — он только в v4
+   (`get_account_balance`).
+
 ## P3 — по мере необходимости
 
-7. **Фиды — только чтение** (`list_feeds`). `Feeds.add/update/delete` не покрыты,
+7. [ ] **Фиды — только чтение** (`list_feeds`). `Feeds.add/update/delete` не покрыты,
    товарные кампании настраиваются вручную.
 
-8. **Комбинаторные объявления.** `create_text_ad` / `update_text_ad` работают только
+8. [ ] **Комбинаторные объявления.** `create_text_ad` / `update_text_ad` работают только
    с классическим `TextAd`. Отдельный ли это `AdType` в сервисе `Ads` или другая
    модель данных (ассеты ЕПК) — требует исследования до написания кода.
 
-9. Не трогаем без явного запроса: `AgencyClients`, `Clients`, `Creatives`,
-   `AdVideos`, `TurboPages`, `Leads`, `KeywordsResearch`, портфельные `Strategies`.
+- Не трогаем без явного запроса: `AgencyClients`, `Clients`, `Creatives`,
+  `AdVideos`, `TurboPages`, `Leads`, `KeywordsResearch`, портфельные `Strategies`.
+- Нумерация сквозная и не переставляется — на неё ссылаются как «P2.4». Новый пункт
+  получает следующий свободный номер, даже если садится в раздел выше.
 
 ## Инфраструктура
 

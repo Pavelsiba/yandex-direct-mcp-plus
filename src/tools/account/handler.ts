@@ -1,4 +1,6 @@
-// Баланс живёт только в Live API v4 (AccountManagement.Get): в v5 финансов нет.
+// Сумма на общем счёте есть только в Live API v4 (AccountManagement.Get). В v5 финансы
+// per-кампания (Campaigns.get, поле Funds) и per-клиент (Bonuses, OverdraftSumAvailable),
+// баланса счёта среди них нет — сверено с WSDL 05.09.2026.
 import type { z } from "zod"
 import { apiV4 } from "#shared/api/v4"
 import { getClientLogin } from "#shared/config/env"
