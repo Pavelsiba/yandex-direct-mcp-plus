@@ -32,7 +32,7 @@ const VCARD_FIELDS = [
 
 type AdsResponse = { result?: { Ads?: Array<{ TextAd?: { VCardId?: unknown } }> } }
 
-// VCardId приезжает строкой (json-bigint) либо числом на коротких ID песочницы.
+// VCardId приезжает строкой (json-bigint) либо числом, если ID короткий.
 // Чистая функция, поэтому проверяется без сети.
 function collectVCardIds(response: AdsResponse): string[] {
   const ids = new Set<string>()

@@ -52,9 +52,21 @@ description: Релизный конвейер yd-mcp — PR dev→main, semanti
    `chore(release): x.y.z [skip ci]`;
 4. ставит тег и создаёт GitHub release.
 
-**`npmPublish: false`** — в npm пакет сейчас не публикуется. Когда включим: вернутся
-`NPM_TOKEN`, `registry-url` в setup-node и `permissions: id-token: write` под provenance.
-Сейчас `registry-url` намеренно не задан — он ломает публикацию через semantic-release.
+**Публикация в npm включена** (`npmPublish: true`): пакет уезжает в реестр тем же прогоном,
+что ставит тег. Аутентификация — `NPM_TOKEN` в env шага Release, токен типа **Automation**:
+у обычного publish упирается в 2FA, подтвердить которую в CI некому.
+
+Сборку перед публикацией запускает не workflow, а хук `prepublishOnly` в `package.json` —
+`npm publish` вызывает его сам. Поэтому шага `npm run build` в релизном workflow нет, и
+добавлять его не нужно: `dist/` соберётся при публикации.
+
+`registry-url` в setup-node **не задавать**: setup-node пишет свой `.npmrc`, плагин —
+свой, и они конфликтуют. Токена в переменной достаточно.
+
+Provenance (значок «Built and signed on GitHub Actions») пока не включён. Для него нужны
+`permissions: id-token: write` у джобы `release` и `NPM_CONFIG_PROVENANCE: true` в env шага
+Release; остальные условия уже выполнены — репозиторий публичный, `repository` в
+`package.json` совпадает с реальным.
 
 **Тип коммита → релиз.** Своей политики нет: в `.releaserc.json` не задано ни `preset`,
 ни `releaseRules`, работают дефолты semantic-release (Angular-конвенция).

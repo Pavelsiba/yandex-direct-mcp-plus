@@ -15,7 +15,6 @@ installFetchMock()
 describe("клиент v5", () => {
   beforeEach(() => {
     mockFetch.mockReset()
-    delete process.env.YANDEX_DIRECT_SANDBOX
     delete process.env.YANDEX_DIRECT_LOGIN
   })
 
@@ -53,13 +52,13 @@ describe("клиент v5", () => {
     expect(mockFetch.mock.calls[0][1].headers["Client-Login"]).toBe("agency-client")
   })
 
-  it("бьёт в песочницу, когда включён YANDEX_DIRECT_SANDBOX", async () => {
-    process.env.YANDEX_DIRECT_SANDBOX = "1"
+  // Контур один: песочницы у Директа нет с июля 2026, переключателя эндпоинта тоже.
+  it("бьёт в боевой эндпоинт v5", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: {} }))
 
     await apiPost("campaigns", "get")
 
-    expect(lastRequestUrl()).toBe("https://api-sandbox.direct.yandex.com/json/v5/campaigns")
+    expect(lastRequestUrl()).toBe("https://api.direct.yandex.com/json/v5/campaigns")
   })
 
   it("повторяет запрос после 500 и отдаёт успешный ответ", async () => {
@@ -81,5 +80,9 @@ describe("клиент v5", () => {
 
     await expect(apiPost("campaigns", "get")).rejects.toThrow(/HTTP 400/)
     expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("не пускает unit-тест в сеть мимо подменённого транспорта", () => {
+    expect(() => fetch("https://api.direct.yandex.com/json/v5/campaigns")).toThrow(/в обход/)
   })
 })

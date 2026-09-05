@@ -1,6 +1,13 @@
+// В домене две разные сущности, отсюда и два набора инструментов. Собственные минус-фразы
+// кампании или группы — список, живущий внутри неё. Общий набор — именованный список
+// уровня аккаунта: он заводится один раз и переиспользуется, поэтому у него свой сервис,
+// своя форма поля (голый массив, не { Items: [...] }) и отдельная привязка к объекту.
+//
 // Минус-фразы Директа перезаписываются целиком: и NegativeKeywords.Items, и привязки
 // наборов. Инструменты этого домена названы set_*/link_* именно поэтому — они задают
-// новое значение, а не дополняют старое. Чтобы добавить фразу, её читают и шлют слитой.
+// новое значение, а не дополняют старое. Режимы add и remove у set_*_negative_keywords
+// прячут чтение и слияние внутрь сервера, чтобы «добавить одну фразу» не оборачивалось
+// стёртым списком; link_* и наборы по-прежнему только заменяют.
 import { z } from "zod"
 import { NEGATIVE_KEYWORD_SET_ACTIONS } from "#shared/config/enums"
 import {
@@ -13,7 +20,23 @@ import {
 import { idField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
 
-const negativeKeyword = z.string().check(z.minLength(1, { error: "Минус-фраза не может быть пустой" }))
+const negativeKeyword = z
+  .string()
+  .check(
+    z.minLength(1, { error: "Минус-фраза не может быть пустой" }),
+    z.regex(/\S/, { error: "Минус-фраза не может состоять из одних пробелов" })
+  )
+
+// Режим общий для кампании и группы: снаружи это один и тот же вопрос «заменить,
+// дописать или убрать». Значения по умолчанию нет намеренно: replace затирает список
+// целиком, и пропуск поля на просьбе «добавь одну фразу» стёр бы всё остальное молча —
+// Директ ответил бы успехом. Обязательное поле превращает пропуск в ошибку валидации
+// до записи, то есть требует назвать намерение вслух.
+const negativeKeywordsMode = () =>
+  z.literal(["replace", "add", "remove"]).meta({
+    description:
+      "Обязателен. replace — заменить список целиком (пустой массив очищает, прежние фразы теряются), add — дописать к текущим, remove — убрать перечисленные. add и remove сначала читают текущий список, это дополнительный вызов API. Фразы сравниваются так же, как их сравнивает Директ: без учёта регистра, буквы ё и е равны, краевые и повторные пробелы не учитываются, операторы закрепления ! и + игнорируются"
+  })
 
 export const getCampaignNegativeKeywordsSchema = z.object({
   campaign_ids: z
@@ -31,15 +54,18 @@ export const setCampaignNegativeKeywordsSchema = z.object({
   campaign_id: idField("ID кампании"),
   negative_keywords: z.array(negativeKeyword).meta({
     description:
-      "Полный новый список минус-фраз кампании — прежний затирается целиком. Пустой массив очищает минус-фразы"
-  })
+      "Минус-фразы кампании: при mode=replace — полный новый список взамен прежнего, при add — что дописать, при remove — что убрать"
+  }),
+  mode: negativeKeywordsMode()
 })
 
 export const setAdGroupNegativeKeywordsSchema = z.object({
   ad_group_id: idField("ID группы объявлений"),
   negative_keywords: z.array(negativeKeyword).meta({
-    description: "Полный новый список минус-фраз группы — прежний затирается целиком. Пустой массив очищает"
-  })
+    description:
+      "Минус-фразы группы: при mode=replace — полный новый список взамен прежнего, при add — что дописать, при remove — что убрать"
+  }),
+  mode: negativeKeywordsMode()
 })
 
 export const listNegativeKeywordSharedSetsSchema = z.object({
@@ -105,24 +131,50 @@ export const manageNegativeKeywordSharedSetsSchema = z.object({
     .meta({ description: "Наборы для удаления; обязателен при action=delete" })
 })
 
-export const linkNegativeKeywordSetsSchema = z.object({
-  ad_group_ids: z
-    .array(idField("ID группы объявлений"))
-    .check(
-      z.minLength(1, { error: "Список групп пуст" }),
-      z.maxLength(MAX_AD_GROUPS_PER_CALL, {
-        error: `За один вызов допустимо не больше ${MAX_AD_GROUPS_PER_CALL} групп`
+// Набор привязывается и к группе, и к кампании — это одно и то же действие над разными
+// объектами, поэтому инструмент один. Оба списка необязательны по отдельности, но пустым
+// вызов быть не может: проверку несёт сам объект, иначе «ничего не сделал» вернулось бы
+// успехом.
+export const linkNegativeKeywordSetsSchema = z
+  .object({
+    ad_group_ids: z
+      .array(idField("ID группы объявлений"))
+      .check(
+        z.maxLength(MAX_AD_GROUPS_PER_CALL, {
+          error: `За один вызов допустимо не больше ${MAX_AD_GROUPS_PER_CALL} групп`
+        })
+      )
+      .optional()
+      .meta({ description: "Группы, которым назначаются наборы" }),
+    campaign_ids: z
+      .array(idField("ID кампании"))
+      .check(
+        z.maxLength(MAX_CAMPAIGNS_PER_CALL, {
+          error: `За один вызов допустимо не больше ${MAX_CAMPAIGNS_PER_CALL} кампаний`
+        })
+      )
+      .optional()
+      .meta({
+        description:
+          "Кампании, которым назначаются наборы. Привязка на уровне кампании действует на все её группы. Тип кампании сервер читает сам — это дополнительный вызов API; общие наборы поддерживают TEXT_CAMPAIGN, DYNAMIC_TEXT_CAMPAIGN, MOBILE_APP_CAMPAIGN и UNIFIED_CAMPAIGN"
+      }),
+    set_ids: z
+      .array(idField("ID общего набора минус-фраз"))
+      .check(
+        z.maxLength(MAX_SHARED_SETS_PER_AD_GROUP, {
+          error: `К объекту привязывается не больше ${MAX_SHARED_SETS_PER_AD_GROUP} наборов`
+        })
+      )
+      .meta({
+        description: "Полный новый список наборов объекта — прежние привязки затираются. Пустой массив снимает все"
       })
-    )
-    .meta({ description: "Группы, которым назначаются наборы" }),
-  set_ids: z
-    .array(idField("ID общего набора минус-фраз"))
-    .check(
-      z.maxLength(MAX_SHARED_SETS_PER_AD_GROUP, {
-        error: `К группе привязывается не больше ${MAX_SHARED_SETS_PER_AD_GROUP} наборов`
-      })
-    )
-    .meta({
-      description: "Полный новый список наборов группы — прежние привязки затираются. Пустой массив снимает все"
+  })
+  .check((ctx) => {
+    if (ctx.value.ad_group_ids?.length || ctx.value.campaign_ids?.length) return
+
+    ctx.issues.push({
+      code: "custom",
+      input: ctx.value,
+      message: "Укажите ad_group_ids и/или campaign_ids — кому назначаются наборы"
     })
-})
+  })

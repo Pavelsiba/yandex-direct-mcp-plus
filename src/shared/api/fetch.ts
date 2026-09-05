@@ -24,13 +24,24 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+export type Transport = (url: string, options: RequestInit) => Promise<Response>
+
+// Шов для тестов. Раньше они подменяли globalThis.fetch — глобал один на процесс, и
+// подмена задевала всё, что в нём живёт, включая SDK. Здесь шов свой, объявлен типом
+// и виден в коде; сеть трогает единственная строка ниже.
+let transport: Transport = (url, options) => fetch(url, options)
+
+export function setTransport(next: Transport): void {
+  transport = next
+}
+
 export async function fetchWithRetry(url: string, options: RequestInit = {}, retries = MAX_RETRIES): Promise<Response> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
     try {
-      const response = await fetch(url, { ...options, signal: controller.signal })
+      const response = await transport(url, { ...options, signal: controller.signal })
       clearTimeout(timer)
 
       if (response.ok) return response

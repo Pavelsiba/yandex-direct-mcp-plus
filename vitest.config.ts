@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config"
 
 // Два уровня, уровень зашит в имя файла:
 //   *.unit.test.ts — без сети: fetch подменён, проверяем тело запроса и разбор ответа.
-//   *.int.test.ts  — против песочницы Директа (YANDEX_DIRECT_SANDBOX=1), сеть настоящая.
+//   *.int.test.ts  — против боевого API, сеть настоящая: писать только на кампанию-полигон.
 // Пока существуют только unit; проект int заведён заранее, чтобы сетевые тесты нельзя
 // было случайно подмешать в общий прогон.
 export default defineConfig({
@@ -22,8 +22,12 @@ export default defineConfig({
           globals: true,
           environment: "node",
           include: ["src/**/*.int.test.ts"],
-          // Песочница одна на прогон, параллельные файлы мешали бы друг другу.
-          fileParallelism: false
+          // Аккаунт один на прогон, параллельные файлы мешали бы друг другу.
+          fileParallelism: false,
+          // Дефолтных 5 с не хватает: один кейс — несколько круговых вызовов к API,
+          // а add и remove вдобавок читают текущий список перед записью.
+          testTimeout: 60_000,
+          hookTimeout: 60_000
         }
       }
     ],

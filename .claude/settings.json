@@ -1,4 +1,5 @@
 {
+  "includeCoAuthoredBy": false,
   "permissions": {
     "deny": [
       "Read(./.env)",
@@ -14,9 +15,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{let c='';try{c=JSON.parse(s).tool_input.command||''}catch{};const t=c.replace(/--env-file[= ]\\S+/g,'');if(/\\.env(?![A-Za-z0-9])/.test(t))console.log(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Команды с .env запрещены — там OAuth-токен Директа (хук в .claude/settings.json)'}}))})\"",
+            "command": "node .claude/hooks/deny-secrets.mjs",
             "shell": "bash",
-            "statusMessage": "Проверка команды на доступ к .env"
+            "statusMessage": "Проверка команды на доступ к секретам"
           }
         ]
       }
