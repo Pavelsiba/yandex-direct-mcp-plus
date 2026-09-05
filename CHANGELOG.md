@@ -4,6 +4,20 @@
 `theYahia/yandex-direct-mcp`) — в
 [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
 
+# [1.2.0](https://github.com/[secure]/yandex-direct-mcp-plus/compare/v1.1.0...v1.2.0) (2026-09-05)
+
+
+### Bug Fixes
+
+* **config:** убрана поддержка отключённой песочницы ([e920a40](https://github.com/[secure]/yandex-direct-mcp-plus/commit/e920a408732f05f5dc888e6547cc725c96a50415))
+
+
+### Features
+
+* **negative-keywords:** mode обязателен, без значения по умолчанию ([d77210f](https://github.com/[secure]/yandex-direct-mcp-plus/commit/d77210f51007c43f94a2d55c591cfd5a1c1343aa))
+* **negative-keywords:** общие наборы привязываются к кампании ([9b47573](https://github.com/[secure]/yandex-direct-mcp-plus/commit/9b475733a2359efedd9b60047c0aba13ad19edac))
+* **negative-keywords:** режимы add и remove у set_*_negative_keywords ([6d492a1](https://github.com/[secure]/yandex-direct-mcp-plus/commit/6d492a1a8e4ba129283c499359dbc6e8c76a5012))
+
 # [1.1.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.0.0...v1.1.0) (2026-09-03)
 
 
