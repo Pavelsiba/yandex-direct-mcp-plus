@@ -1,6 +1,13 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса
 import { beforeEach, describe, expect, it } from "vitest"
-import { installFetchMock, lastRawBody, lastRequestUrl, mockFetch, okResponse } from "#testing/fetch-mock"
+import {
+  errorResponse,
+  installFetchMock,
+  lastRawBody,
+  lastRequestUrl,
+  mockFetch,
+  okResponse
+} from "#testing/fetch-mock"
 import { handleGetStatistics } from "./handler.js"
 
 installFetchMock()
@@ -74,5 +81,22 @@ describe("get_statistics", () => {
     })
 
     expect(lastBody().params.FieldNames).toEqual(["Date", "Conversions"])
+  })
+
+  // Reports отвечает HTTP 400 и XML: без разбора наружу уходило бы «HTTP 400: Error»
+  // с XML-простынёй в хвосте, из которой причина не видна.
+  it("на недействительный токен объясняет причину, а не показывает HTTP 400 с XML", async () => {
+    mockFetch.mockResolvedValueOnce(
+      errorResponse(
+        400,
+        `<?xml version="1.0" encoding="UTF-8"?><reports:reportDownloadError xmlns:reports="http://api.direct.yandex.com/v5/reports">` +
+          `<reports:ApiError><reports:errorCode>53</reports:errorCode>` +
+          `<reports:errorMessage>Ошибка авторизации</reports:errorMessage></reports:ApiError></reports:reportDownloadError>`
+      )
+    )
+
+    await expect(
+      handleGetStatistics({ campaign_ids: ["123"], date_from: "2026-09-01", date_to: "2026-09-02" })
+    ).rejects.toThrow(/YANDEX_DIRECT_TOKEN/)
   })
 })
