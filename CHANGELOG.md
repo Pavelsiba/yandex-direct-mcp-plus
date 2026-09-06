@@ -4,6 +4,18 @@
 `theYahia/yandex-direct-mcp`) — в
 [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
 
+# [1.4.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.3.0...v1.4.0) (2026-09-06)
+
+
+### Bug Fixes
+
+* **api:** понятная ошибка вместо кода 53 на недействительном токене ([d8de34c](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/d8de34caf85c1fff0573a1e2c9dd3d89453c0ece))
+
+
+### Features
+
+* **tools:** закрыты пробелы в покрытии методов API — семь инструментов ([0b6de10](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/0b6de10414b644e843fd3a31cc00fb793d78acf9))
+
 # [1.3.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.2.0...v1.3.0) (2026-09-05)
 
 
