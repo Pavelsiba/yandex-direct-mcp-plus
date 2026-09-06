@@ -4,12 +4,12 @@
 `theYahia/yandex-direct-mcp`) — в
 [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
 
-# [1.3.0](https://github.com/[secure]/yandex-direct-mcp-plus/compare/v1.2.0...v1.3.0) (2026-09-05)
+# [1.3.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.2.0...v1.3.0) (2026-09-05)
 
 
 ### Features
 
-* **campaigns:** разметка UTM у кампании через tracking_params ([f640e24](https://github.com/[secure]/yandex-direct-mcp-plus/commit/f640e24baca5a0f9df8a8d5f8d7a4ed157002c16))
+* **campaigns:** разметка UTM у кампании через tracking_params ([f640e24](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/f640e24baca5a0f9df8a8d5f8d7a4ed157002c16))
 
 # [1.2.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.1.0...v1.2.0) (2026-09-05)
 

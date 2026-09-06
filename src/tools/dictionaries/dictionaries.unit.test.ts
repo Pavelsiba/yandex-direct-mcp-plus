@@ -65,6 +65,34 @@ describe("get_regions", () => {
 
     await expect(handleGetRegions({ limit: 50 })).rejects.toThrow(/GeoRegions в неожиданной форме/)
   })
+
+  it("за вложенностью идёт в getGeoRegions, а не в кэшированный справочник", async () => {
+    mockFetch.mockResolvedValue(
+      okResponse({
+        result: {
+          GeoRegions: [
+            { GeoRegionId: 65, GeoRegionName: "Новосибирск", ParentGeoRegionNames: ["Новосибирская область", "Россия"] }
+          ]
+        }
+      })
+    )
+
+    const output = await handleGetRegions({ search: "Новосибирск", with_parents: true, limit: 10 })
+
+    const { method, params } = JSON.parse(lastRawBody())
+    expect(method).toBe("getGeoRegions")
+    expect(params).toEqual({
+      SelectionCriteria: { Name: "Новосибирск" },
+      FieldNames: ["GeoRegionId", "GeoRegionName", "ParentGeoRegionNames"],
+      Page: { Limit: 10 }
+    })
+    expect(output).toContain("Новосибирская область")
+  })
+
+  it("не спрашивает вложенность без названия: Директ ищет только по имени", async () => {
+    await expect(handleGetRegions({ with_parents: true, limit: 10 })).rejects.toThrow("search")
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
 })
 
 const TIME_ZONES = {

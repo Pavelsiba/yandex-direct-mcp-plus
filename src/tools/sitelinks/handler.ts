@@ -3,7 +3,7 @@ import { apiPost } from "#shared/api/client"
 import { formatResult } from "#shared/lib/format"
 import { apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
-import type { listSitelinksSchema, setSitelinksSchema } from "./schema.js"
+import type { deleteSitelinksSchema, listSitelinksSchema, setSitelinksSchema } from "./schema.js"
 
 const NO_MONEY = { money: false } as const
 
@@ -17,6 +17,13 @@ export async function handleListSitelinks(params: z.infer<typeof listSitelinksSc
   if (page) request.Page = page
 
   return formatResult(await apiPost("sitelinks", "get", request), NO_MONEY)
+}
+
+export async function handleDeleteSitelinks(params: z.infer<typeof deleteSitelinksSchema>): Promise<string> {
+  const data = await apiPost("sitelinks", "delete", {
+    SelectionCriteria: { Ids: apiIds(params.sitelink_set_ids) }
+  })
+  return formatResult(data, NO_MONEY)
 }
 
 export async function handleSetSitelinks(params: z.infer<typeof setSitelinksSchema>): Promise<string> {

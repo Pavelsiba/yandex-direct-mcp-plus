@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { RETARGETING_RULE_OPERATORS, RETARGETING_TYPES } from "#shared/config/enums"
-import { MAX_IDS_PER_CALL, RETARGETING_LIMITS } from "#shared/config/limits"
+import { MAX_IDS_PER_CALL, MAX_RETARGETING_LISTS_PER_CALL, RETARGETING_LIMITS } from "#shared/config/limits"
 import { idField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
 
@@ -41,29 +41,72 @@ const rule = z.object({
     .meta({ description: "Цели и сегменты, на которых строится правило" })
 })
 
+const listName = z
+  .string()
+  .check(
+    z.minLength(1, { error: "Название не может быть пустым" }),
+    z.maxLength(RETARGETING_LIMITS.name, { error: `Название длиннее ${RETARGETING_LIMITS.name} символов` })
+  )
+  .meta({ description: "Название условия ретаргетинга" })
+
+const listDescription = z
+  .string()
+  .check(
+    z.maxLength(RETARGETING_LIMITS.description, {
+      error: `Описание длиннее ${RETARGETING_LIMITS.description} символов`
+    })
+  )
+  .meta({ description: "Описание условия — видно только в интерфейсе, на показы не влияет" })
+
+const listRules = z
+  .array(rule)
+  .check(z.minLength(1, { error: "Условие без правил" }))
+  .meta({ description: "Правила условия; между собой они соединяются логическим И" })
+
 export const addRetargetingListSchema = z.object({
-  name: z
-    .string()
-    .check(
-      z.minLength(1, { error: "Название не может быть пустым" }),
-      z.maxLength(RETARGETING_LIMITS.name, { error: `Название длиннее ${RETARGETING_LIMITS.name} символов` })
-    )
-    .meta({ description: "Название условия ретаргетинга" }),
+  name: listName,
   type: z
     .literal(RETARGETING_TYPES)
     .default("RETARGETING")
     .meta({ description: "RETARGETING — по целям Метрики, AUDIENCE — по сегментам Яндекс.Аудиторий" }),
-  description: z
-    .string()
+  description: listDescription.optional(),
+  rules: listRules
+})
+
+// Правила заменяются целиком: переданный список становится единственным. Чтобы
+// поменять только название, rules не передавать — иначе прежние правила исчезнут.
+const retargetingListUpdate = z.object({
+  retargeting_list_id: idField("ID изменяемого условия ретаргетинга"),
+  name: listName.optional(),
+  description: listDescription
+    .nullable()
+    .optional()
+    .meta({ description: "Новое описание условия; null очищает прежнее" }),
+  rules: listRules.optional().meta({
+    description: "Полный новый набор правил: он заменяет прежний целиком, а не дополняет его"
+  })
+})
+
+export const updateRetargetingListsSchema = z.object({
+  retargeting_lists: z
+    .array(retargetingListUpdate)
     .check(
-      z.maxLength(RETARGETING_LIMITS.description, {
-        error: `Описание длиннее ${RETARGETING_LIMITS.description} символов`
+      z.minLength(1, { error: "Список условий пуст" }),
+      z.maxLength(MAX_RETARGETING_LISTS_PER_CALL, {
+        error: `За один вызов допустимо не больше ${MAX_RETARGETING_LISTS_PER_CALL} условий`
       })
     )
-    .optional()
-    .meta({ description: "Описание условия — видно только в интерфейсе, на показы не влияет" }),
-  rules: z
-    .array(rule)
-    .check(z.minLength(1, { error: "Условие без правил" }))
-    .meta({ description: "Правила условия; между собой они соединяются логическим И" })
+    .meta({ description: "Условия и их новые значения; поля, которые не переданы, остаются прежними" })
+})
+
+export const deleteRetargetingListsSchema = z.object({
+  retargeting_list_ids: z
+    .array(idField("ID условия ретаргетинга"))
+    .check(
+      z.minLength(1, { error: "Список условий пуст" }),
+      z.maxLength(MAX_RETARGETING_LISTS_PER_CALL, {
+        error: `За один вызов допустимо не больше ${MAX_RETARGETING_LISTS_PER_CALL} условий`
+      })
+    )
+    .meta({ description: "Условия, которые нужно удалить; ID берутся из list_retargeting_lists" })
 })

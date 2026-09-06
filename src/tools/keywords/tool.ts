@@ -1,6 +1,18 @@
 import { DESTRUCTIVE, defineTool, IDEMPOTENT, READ, WRITE } from "#shared/lib/tool"
-import { handleAddKeywords, handleListKeywords, handleManageKeywords, handleSetKeywordBids } from "./handler.js"
-import { addKeywordsSchema, listKeywordsSchema, manageKeywordsSchema, setKeywordBidsSchema } from "./schema.js"
+import {
+  handleAddKeywords,
+  handleListKeywords,
+  handleManageKeywords,
+  handleSetKeywordBids,
+  handleUpdateKeywords
+} from "./handler.js"
+import {
+  addKeywordsSchema,
+  listKeywordsSchema,
+  manageKeywordsSchema,
+  setKeywordBidsSchema,
+  updateKeywordsSchema
+} from "./schema.js"
 
 export const listKeywordsTool = defineTool({
   name: "list_keywords",
@@ -18,6 +30,16 @@ export const addKeywordsTool = defineTool({
   annotations: WRITE,
   schema: addKeywordsSchema,
   handler: handleAddKeywords
+})
+
+export const updateKeywordsTool = defineTool({
+  name: "update_keywords",
+  title: "Изменить ключевые слова",
+  description:
+    "Изменить текст ключевых фраз и подстановочные переменные {param1}/{param2}. Правка текста может привести к появлению фразы с новым ID или к её удалению как дубликата — сверьтесь с list_keywords после вызова. Ставки меняет set_keyword_bids, статус — manage_keywords.",
+  annotations: WRITE,
+  schema: updateKeywordsSchema,
+  handler: handleUpdateKeywords
 })
 
 export const manageKeywordsTool = defineTool({

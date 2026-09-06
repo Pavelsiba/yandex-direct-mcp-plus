@@ -25,6 +25,16 @@ export const listVcardsSchema = z.object({
   ...pageFields
 })
 
+export const deleteVcardsSchema = z.object({
+  vcard_ids: z
+    .array(idField("ID визитки"))
+    .check(
+      z.minLength(1, { error: "Список визиток пуст" }),
+      z.maxLength(MAX_IDS_PER_CALL, { error: `За один вызов допустимо не больше ${MAX_IDS_PER_CALL} визиток` })
+    )
+    .meta({ description: "Визитки, которые нужно удалить; ID берутся из list_vcards" })
+})
+
 export const addVcardSchema = z.object({
   campaign_id: idField("ID кампании, к которой привязывается визитка"),
   country: required("Страна обязательна", "Страна, например «Россия»"),

@@ -1,7 +1,7 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса; ID в фикстурах заданы сырой строкой
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleAddVcard, handleListVcards } from "./handler.js"
+import { handleAddVcard, handleDeleteVcards, handleListVcards } from "./handler.js"
 
 installFetchMock()
 
@@ -48,6 +48,19 @@ describe("list_vcards", () => {
   it("отказывается искать вообще без критериев", async () => {
     await expect(handleListVcards({})).rejects.toThrow("vcard_ids и/или campaign_ids")
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+})
+
+describe("delete_vcards", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("удаляет визитки по ID, сохраняя точность длинных ID", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { DeleteResults: [{ Id: 777 }] } }))
+
+    await handleDeleteVcards({ vcard_ids: ["777", "1915016273214320641"] })
+
+    expect(bodyOf(0).method).toBe("delete")
+    expect(lastRawBody()).toContain('"Ids":[777,1915016273214320641]')
   })
 })
 

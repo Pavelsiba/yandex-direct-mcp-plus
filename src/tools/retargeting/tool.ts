@@ -1,6 +1,16 @@
-import { defineTool, READ, WRITE } from "#shared/lib/tool"
-import { handleAddRetargetingList, handleListRetargetingLists } from "./handler.js"
-import { addRetargetingListSchema, listRetargetingListsSchema } from "./schema.js"
+import { DESTRUCTIVE, defineTool, READ, WRITE } from "#shared/lib/tool"
+import {
+  handleAddRetargetingList,
+  handleDeleteRetargetingLists,
+  handleListRetargetingLists,
+  handleUpdateRetargetingLists
+} from "./handler.js"
+import {
+  addRetargetingListSchema,
+  deleteRetargetingListsSchema,
+  listRetargetingListsSchema,
+  updateRetargetingListsSchema
+} from "./schema.js"
 
 export const listRetargetingListsTool = defineTool({
   name: "list_retargeting_lists",
@@ -18,4 +28,24 @@ export const addRetargetingListTool = defineTool({
   annotations: WRITE,
   schema: addRetargetingListSchema,
   handler: handleAddRetargetingList
+})
+
+export const updateRetargetingListsTool = defineTool({
+  name: "update_retargeting_lists",
+  title: "Изменить списки ретаргетинга",
+  description:
+    "Изменить название, описание и правила условий ретаргетинга. Переданные правила заменяют прежние целиком: сначала прочитайте условие через list_retargeting_lists.",
+  annotations: WRITE,
+  schema: updateRetargetingListsSchema,
+  handler: handleUpdateRetargetingLists
+})
+
+export const deleteRetargetingListsTool = defineTool({
+  name: "delete_retargeting_lists",
+  title: "Удалить списки ретаргетинга",
+  description:
+    "Удалить условия ретаргетинга и подбора аудитории по ID; удаление необратимо. Отказ по отдельному условию приходит в ответе списком, а не ошибкой вызова.",
+  annotations: DESTRUCTIVE,
+  schema: deleteRetargetingListsSchema,
+  handler: handleDeleteRetargetingLists
 })

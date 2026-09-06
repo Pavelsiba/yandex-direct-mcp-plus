@@ -81,7 +81,24 @@ function limitedOutput<Item>(matched: Item[], limit: number): string {
   return note + formatResult(limited, { money: false })
 }
 
+// Вложенность региона знает только getGeoRegions, и она не кэшируется: справочник
+// GeoRegions родителей не отдаёт вовсе. Отбор здесь тоже чужой — Name отдаёт регионы
+// «с похожим названием» (док getGeoRegions), а не подстрокой, как фильтр по кэшу.
+async function searchRegionsWithParents(search: string, limit: number): Promise<string> {
+  const data = await apiPost("dictionaries", "getGeoRegions", {
+    SelectionCriteria: { Name: search },
+    FieldNames: ["GeoRegionId", "GeoRegionName", "ParentGeoRegionNames"],
+    Page: { Limit: limit }
+  })
+  return formatResult(data, { money: false })
+}
+
 export async function handleGetRegions(params: z.infer<typeof getRegionsSchema>): Promise<string> {
+  if (params.with_parents) {
+    if (!params.search) throw new Error("Для with_parents=true укажите search: Директ ищет регионы по названию.")
+    return searchRegionsWithParents(params.search, params.limit)
+  }
+
   const regions = await loadDictionary("GeoRegions")
   return limitedOutput(
     filterByName(regions, (region) => [region.GeoRegionName], params.search),

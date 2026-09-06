@@ -15,8 +15,10 @@ export const KEYWORD_ACTIONS = ["suspend", "resume", "delete"] as const
 // Действия над объявлениями: тоже методы сервиса ads.
 export const AD_ACTIONS = ["suspend", "resume", "archive", "unarchive", "moderate", "delete"] as const
 
-// Действия над кампанией: отдельные методы API, набор закрыт.
-export const CAMPAIGN_ACTIONS = ["suspend", "resume", "archive", "unarchive"] as const
+// Действия над кампанией: отдельные методы API, набор закрыт. delete необратим и
+// доступен не всегда: кампанию с накопленной статистикой, поступившими средствами или
+// в статусе CONVERTED Директ удалять отказывается — такую только архивировать.
+export const CAMPAIGN_ACTIONS = ["suspend", "resume", "archive", "unarchive", "delete"] as const
 
 // То же действие в update_campaign исторически принимается в верхнем регистре.
 // Регистр — часть внешнего контракта, менять его нельзя: он зашит в чужие сценарии.
@@ -98,15 +100,31 @@ export const ASSOCIATED_FLAGS = ["YES", "NO"] as const
 export const RETARGETING_TYPES = ["RETARGETING", "AUDIENCE"] as const
 export const RETARGETING_RULE_OPERATORS = ["ALL", "ANY", "NONE"] as const
 
-// Типы корректировок, которые читает get_bid_adjustments. BidModifierTypeEnum шире
-// (регионы, видео, доход, SERP-раскладка) — эти сервер пока не покрывает, см. roadmap.
+// BidModifierTypeEnum целиком: тем же набором фильтрует get_bid_adjustments и выбирает
+// вид корректировки add_bid_adjustments — в API это один список.
 export const BID_ADJUSTMENT_TYPES = [
   "MOBILE_ADJUSTMENT",
   "TABLET_ADJUSTMENT",
   "DESKTOP_ADJUSTMENT",
   "DESKTOP_ONLY_ADJUSTMENT",
-  "DEMOGRAPHICS_ADJUSTMENT"
+  "SMART_TV_ADJUSTMENT",
+  "DEMOGRAPHICS_ADJUSTMENT",
+  "RETARGETING_ADJUSTMENT",
+  "REGIONAL_ADJUSTMENT",
+  "VIDEO_ADJUSTMENT",
+  "SMART_AD_ADJUSTMENT",
+  "SERP_LAYOUT_ADJUSTMENT",
+  "INCOME_GRADE_ADJUSTMENT",
+  "AD_GROUP_ADJUSTMENT"
 ] as const
+
+// Срезы, на которые вешается корректировка: OperatingSystemTypeEnum, GenderEnum,
+// AgeRangeEnum, SerpLayoutEnum и IncomeGradeEnum из general.xsd.
+export const OPERATING_SYSTEM_TYPES = ["IOS", "ANDROID"] as const
+export const GENDERS = ["GENDER_MALE", "GENDER_FEMALE"] as const
+export const AGE_RANGES = ["AGE_0_17", "AGE_18_24", "AGE_25_34", "AGE_35_44", "AGE_45", "AGE_45_54", "AGE_55"] as const
+export const SERP_LAYOUTS = ["ALONE", "SUGGEST"] as const
+export const INCOME_GRADES = ["VERY_HIGH", "HIGH", "ABOVE_AVERAGE"] as const
 
 // BidModifierLevelEnum.
 export const BID_ADJUSTMENT_LEVELS = ["CAMPAIGN", "AD_GROUP"] as const
@@ -124,8 +142,9 @@ export const DYNAMIC_TARGET_ACTIONS = ["add", "set_bids", "suspend", "resume", "
 export const WEBPAGE_CONDITION_OPERANDS = ["URL", "DOMAIN", "PAGE_TITLE", "PAGE_CONTENT", "OFFERS_LIST_URL"] as const
 export const WEBPAGE_CONDITION_OPERATORS = ["EQUALS_ANY", "NOT_EQUALS_ALL", "CONTAINS_ANY", "NOT_CONTAINS_ALL"] as const
 
-// Режимы get_changes (наши имена методов checkCampaigns/check) и CheckFieldEnum.
-export const CHANGES_MODES = ["campaigns", "objects"] as const
+// Режимы get_changes (наши имена методов checkCampaigns/check/checkDictionaries)
+// и CheckFieldEnum.
+export const CHANGES_MODES = ["campaigns", "objects", "dictionaries"] as const
 export const CHANGES_FIELD_NAMES = ["CampaignIds", "AdGroupIds", "AdIds", "CampaignsStat"] as const
 
 // Стратегии, которые умеет выставлять set_strategy. Список по-прежнему уже полного

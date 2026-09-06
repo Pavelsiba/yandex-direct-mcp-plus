@@ -1,7 +1,7 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleListSitelinks, handleSetSitelinks } from "./handler.js"
+import { handleDeleteSitelinks, handleListSitelinks, handleSetSitelinks } from "./handler.js"
 
 installFetchMock()
 
@@ -26,6 +26,26 @@ describe("list_sitelinks", () => {
     await handleListSitelinks({ sitelink_set_ids: ["123"] })
 
     expect(lastBody().params.SelectionCriteria).toEqual({ Ids: [123] })
+  })
+})
+
+describe("delete_sitelinks", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("удаляет наборы по ID и показывает отказ по отдельному набору", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({
+        result: {
+          DeleteResults: [{ Id: 111 }, { Errors: [{ Code: 8800, Message: "Набор используется в объявлении" }] }]
+        }
+      })
+    )
+
+    const output = await handleDeleteSitelinks({ sitelink_set_ids: ["111", "1915016273214320641"] })
+
+    expect(lastBody().method).toBe("delete")
+    expect(lastRawBody()).toContain('"Ids":[111,1915016273214320641]')
+    expect(output).toContain("Набор используется в объявлении")
   })
 })
 

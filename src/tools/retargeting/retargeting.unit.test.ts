@@ -1,7 +1,12 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleAddRetargetingList, handleListRetargetingLists } from "./handler.js"
+import {
+  handleAddRetargetingList,
+  handleDeleteRetargetingLists,
+  handleListRetargetingLists,
+  handleUpdateRetargetingLists
+} from "./handler.js"
 import { addRetargetingListSchema } from "./schema.js"
 
 installFetchMock()
@@ -63,5 +68,63 @@ describe("add_retargeting_list", () => {
     expect(list.Type).toBe("AUDIENCE")
     expect(list.Description).toBe("Сегмент Аудиторий")
     expect(list.Rules[0].Arguments[0]).toEqual({ ExternalId: 12345678, MembershipLifeSpan: 30 })
+  })
+})
+
+describe("update_retargeting_lists", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("меняет только переданные поля и отправляет правила целиком", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleUpdateRetargetingLists({
+      retargeting_lists: [
+        { retargeting_list_id: "1915016273214320641", name: "Были на сайте, 30 дней" },
+        {
+          retargeting_list_id: "222",
+          rules: [{ operator: "ALL", arguments: [{ external_id: "12345678", membership_life_span: 30 }] }]
+        }
+      ]
+    })
+
+    expect(lastBody().method).toBe("update")
+    expect(lastRawBody()).toContain('"Id":1915016273214320641,"Name":"Были на сайте, 30 дней"')
+    expect(lastBody().params.RetargetingLists[1]).toEqual({
+      Id: 222,
+      Rules: [{ Operator: "ALL", Arguments: [{ ExternalId: 12345678, MembershipLifeSpan: 30 }] }]
+    })
+  })
+
+  it("отличает очистку описания от его пропуска", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleUpdateRetargetingLists({ retargeting_lists: [{ retargeting_list_id: "222", description: null }] })
+
+    expect(lastBody().params.RetargetingLists).toEqual([{ Id: 222, Description: null }])
+  })
+
+  it("не ходит в сеть, когда менять нечего", async () => {
+    await expect(handleUpdateRetargetingLists({ retargeting_lists: [{ retargeting_list_id: "222" }] })).rejects.toThrow(
+      "222"
+    )
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+})
+
+describe("delete_retargeting_lists", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("удаляет условия по ID и показывает отказ по отдельному условию", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({
+        result: { DeleteResults: [{ Id: 222 }, { Errors: [{ Code: 8300, Message: "Условие используется" }] }] }
+      })
+    )
+
+    const output = await handleDeleteRetargetingLists({ retargeting_list_ids: ["222", "1915016273214320641"] })
+
+    expect(lastBody().method).toBe("delete")
+    expect(lastRawBody()).toContain('"Ids":[222,1915016273214320641]')
+    expect(output).toContain("Условие используется")
   })
 })

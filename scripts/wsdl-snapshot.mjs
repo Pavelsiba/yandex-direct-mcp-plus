@@ -44,14 +44,20 @@ const SERVICES = [
   "vcards"
 ]
 
+// Общие типы, которые импортирует каждый сервис: GenderEnum, AgeRangeEnum, SerpLayoutEnum,
+// IncomeGradeEnum и прочее живут только здесь. Без этой схемы литералы, собранные из общих
+// перечислений, не с чем сверить: в WSDL сервиса их нет, и drift Яндекса diff не покажет.
+const GENERAL_XSD = "https://soap.direct.yandex.ru/v5/general.xsd"
+
 const OUT = "docs/api-v5.md"
 
-async function fetchWsdl(service) {
-  const url = `https://api.direct.yandex.com/v5/${service}?wsdl`
+async function fetchXml(url, label) {
   const response = await fetch(url)
-  if (!response.ok) throw new Error(`${service}: HTTP ${response.status}`)
+  if (!response.ok) throw new Error(`${label}: HTTP ${response.status}`)
   return response.text()
 }
+
+const fetchWsdl = (service) => fetchXml(`https://api.direct.yandex.com/v5/${service}?wsdl`, service)
 
 function operations(wsdl) {
   const found = new Set()
@@ -97,6 +103,10 @@ const header = [
   "справочника — те отдают неполные списки. WSDL доступен без токена:",
   '`curl -s "https://api.direct.yandex.com/v5/<service>?wsdl"`.',
   "",
+  "Последним разделом идёт `general.xsd` — общие типы, импортируемые всеми сервисами.",
+  "Перечисления оттуда (пол, возраст, платёжеспособность, раскладка выдачи) в WSDL",
+  "самих сервисов не встречаются, но именно на них стоят литералы в схемах.",
+  "",
   "Пересобирать перед тем, как заводить литерал в схеме, и когда Директ начал отклонять",
   "прежде рабочий вызов: `git diff` покажет, что Яндекс добавил или убрал.",
   "",
@@ -116,6 +126,15 @@ for (const service of SERVICES) {
   console.error(`✔ ${service}`)
 }
 
-header.splice(4, 0, `Сервисов: ${SERVICES.length}. Перечислений: ${enumCount}.`, "")
+const general = await fetchXml(GENERAL_XSD, "general.xsd")
+const generalEnums = enumerations(general)
+enumCount += generalEnums.length
+body.push("## general.xsd", "", "Общие типы, импортируемые всеми сервисами. Методов нет.", "")
+for (const { name, values } of generalEnums) {
+  body.push(`### ${name}`, "", values.map((value) => `\`${value}\``).join(", "), "")
+}
+console.error("✔ general.xsd")
+
+header.splice(4, 0, `Сервисов: ${SERVICES.length} плюс общий \`general.xsd\`. Перечислений: ${enumCount}.`, "")
 writeFileSync(OUT, `${header.join("\n")}\n${body.join("\n")}`, "utf8")
-console.error(`\n${OUT}: ${SERVICES.length} сервисов, ${enumCount} перечислений.`)
+console.error(`\n${OUT}: ${SERVICES.length} сервисов + general.xsd, ${enumCount} перечислений.`)

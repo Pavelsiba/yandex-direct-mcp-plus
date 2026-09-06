@@ -5,7 +5,8 @@ import { getRegionsSchema, listTimeZonesSchema } from "./schema.js"
 export const getRegionsTool = defineTool({
   name: "get_regions",
   title: "Справочник регионов",
-  description: "Справочник кодов регионов (GeoRegions) для таргетинга. Фильтр по названию. 225 = Россия.",
+  description:
+    "Справочник кодов регионов (GeoRegions) для таргетинга. Фильтр по названию, 225 = Россия. with_parents=true показывает вложенность и различает одноимённые города.",
   annotations: READ,
   schema: getRegionsSchema,
   handler: handleGetRegions
