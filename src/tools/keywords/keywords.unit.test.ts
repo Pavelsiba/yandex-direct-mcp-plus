@@ -1,7 +1,13 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса; проверка ID сравнивает сырую строку
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleAddKeywords, handleListKeywords, handleManageKeywords, handleSetKeywordBids } from "./handler.js"
+import {
+  handleAddKeywords,
+  handleListKeywords,
+  handleManageKeywords,
+  handleSetKeywordBids,
+  handleUpdateKeywords
+} from "./handler.js"
 import { setKeywordBidsSchema } from "./schema.js"
 
 installFetchMock()
@@ -35,6 +41,38 @@ describe("add_keywords", () => {
     expect(lastBody().params.Keywords).toHaveLength(2)
     expect(lastBody().params.Keywords[1].Keyword).toBe("купить краба")
     expect(lastRawBody()).toContain('"AdGroupId":1915016273214320641')
+  })
+})
+
+describe("update_keywords", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("отправляет только переданные поля: пропущенное остаётся прежним", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleUpdateKeywords({
+      keywords: [
+        { keyword_id: "1915016273214320641", keyword: "купить краба -дешево" },
+        { keyword_id: "222", user_param1: "seafood" }
+      ]
+    })
+
+    expect(lastBody().method).toBe("update")
+    expect(lastRawBody()).toContain('"Id":1915016273214320641,"Keyword":"купить краба -дешево"')
+    expect(lastBody().params.Keywords[1]).toEqual({ Id: 222, UserParam1: "seafood" })
+  })
+
+  it("отличает очистку переменной от её пропуска", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleUpdateKeywords({ keywords: [{ keyword_id: "222", user_param1: null }] })
+
+    expect(lastBody().params.Keywords).toEqual([{ Id: 222, UserParam1: null }])
+  })
+
+  it("не ходит в сеть, когда менять нечего", async () => {
+    await expect(handleUpdateKeywords({ keywords: [{ keyword_id: "222" }] })).rejects.toThrow("222")
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 })
 

@@ -41,8 +41,24 @@ export const MAX_IMAGES_PER_CALL = 100
 // Ретаргетинг: длины полей и срок учёта цели.
 export const RETARGETING_LIMITS = { name: 250, description: 4096, membershipDays: 540 } as const
 
+// Сколько условий ретаргетинга принимают update и delete за вызов.
+export const MAX_RETARGETING_LISTS_PER_CALL = 1_000
+
+// Ключевые фразы: длина фразы, подстановочные переменные {param1} и {param2},
+// размер пакета update.
+export const KEYWORD_TEXT_MAX = 4_096
+export const KEYWORD_USER_PARAM_MAX = 255
+export const MAX_KEYWORDS_PER_UPDATE = 1_000
+
+// Наборов быстрых ссылок за вызов — не больше тысячи. Для визиток такого числа в
+// документации нет (страниц VCards там не осталось вовсе), поэтому у них общий потолок.
+export const MAX_SITELINK_SETS_PER_CALL = 1_000
+
 // Коэффициент корректировки ставки, в процентах.
 export const BID_MODIFIER_RANGE = { min: 0, max: 1300 } as const
+
+// BidModifiers.add: не больше тысячи корректировок за вызов.
+export const MAX_ADJUSTMENTS_PER_CALL = 1_000
 
 // Корректировки читаются не больше чем по десяти кампаниям за вызов.
 export const MAX_CAMPAIGNS_PER_ADJUSTMENT_CALL = 10

@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { MAX_IDS_PER_CALL, SITELINK_LIMITS } from "#shared/config/limits"
+import { MAX_IDS_PER_CALL, MAX_SITELINK_SETS_PER_CALL, SITELINK_LIMITS } from "#shared/config/limits"
 import { idField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
 
@@ -32,6 +32,18 @@ const sitelink = z.object({
     )
     .optional()
     .meta({ description: `Описание ссылки, до ${SITELINK_LIMITS.description} символов` })
+})
+
+export const deleteSitelinksSchema = z.object({
+  sitelink_set_ids: z
+    .array(idField("ID набора быстрых ссылок"))
+    .check(
+      z.minLength(1, { error: "Список наборов пуст" }),
+      z.maxLength(MAX_SITELINK_SETS_PER_CALL, {
+        error: `За один вызов допустимо не больше ${MAX_SITELINK_SETS_PER_CALL} наборов`
+      })
+    )
+    .meta({ description: "Наборы, которые нужно удалить; ID берутся из list_sitelinks" })
 })
 
 // Набор создаётся целиком: Директ не умеет дописать ссылку в существующий набор.

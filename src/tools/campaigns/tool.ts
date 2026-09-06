@@ -1,5 +1,5 @@
 // Дескрипторы инструментов домена: имя, описание и аннотация живут рядом с хендлером.
-import { defineTool, IDEMPOTENT, READ, WRITE } from "#shared/lib/tool"
+import { DESTRUCTIVE, defineTool, IDEMPOTENT, READ, WRITE } from "#shared/lib/tool"
 import {
   handleCreateCampaign,
   handleGetCampaign,
@@ -60,8 +60,9 @@ export const updateCampaignTool = defineTool({
 export const manageCampaignsTool = defineTool({
   name: "manage_campaigns",
   title: "Управление кампаниями",
-  description: "Запустить, остановить, архивировать или разархивировать несколько кампаний.",
-  annotations: IDEMPOTENT,
+  description:
+    "Запустить, остановить, архивировать, разархивировать или удалить кампании. ⚠️ delete необратимо и недоступен кампании с накопленной статистикой — такую только архивировать.",
+  annotations: DESTRUCTIVE,
   schema: manageCampaignsSchema,
   handler: handleManageCampaigns
 })

@@ -12,6 +12,7 @@ import {
   SETTABLE_NETWORK_STRATEGIES,
   SETTABLE_SEARCH_STRATEGIES
 } from "#shared/config/enums"
+import { MAX_CAMPAIGNS_PER_CALL } from "#shared/config/limits"
 import { dateField } from "#shared/lib/date"
 import { idField } from "#shared/lib/id"
 import { rublesField } from "#shared/lib/money"
@@ -97,10 +98,14 @@ export const manageCampaignsSchema = z.object({
     .array(idField("ID кампании, десятичная строка"))
     .check(
       z.minLength(1, { error: "Список кампаний пуст" }),
-      z.maxLength(1000, { error: "За один вызов допустимо не больше 1000 кампаний" })
+      z.maxLength(MAX_CAMPAIGNS_PER_CALL, {
+        error: `За один вызов допустимо не больше ${MAX_CAMPAIGNS_PER_CALL} кампаний`
+      })
     )
     .meta({ description: "ID кампаний, над которыми выполняется действие" }),
-  action: z.literal(CAMPAIGN_ACTIONS).meta({ description: "Действие: suspend, resume, archive, unarchive" })
+  action: z.literal(CAMPAIGN_ACTIONS).meta({
+    description: "Действие: suspend, resume, archive, unarchive или delete (необратимо)"
+  })
 })
 
 export const getStrategySchema = z.object({

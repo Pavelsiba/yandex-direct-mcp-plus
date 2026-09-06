@@ -4,7 +4,7 @@ import { PAGE_MAX_LIMIT } from "#shared/config/limits"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
-import type { addVcardSchema, listVcardsSchema } from "./schema.js"
+import type { addVcardSchema, deleteVcardsSchema, listVcardsSchema } from "./schema.js"
 
 const NO_MONEY = { money: false } as const
 
@@ -78,6 +78,11 @@ export async function handleListVcards(params: z.infer<typeof listVcardsSchema>)
   if (page) request.Page = page
 
   return formatResult(await apiPost("vcards", "get", request), NO_MONEY)
+}
+
+export async function handleDeleteVcards(params: z.infer<typeof deleteVcardsSchema>): Promise<string> {
+  const data = await apiPost("vcards", "delete", { SelectionCriteria: { Ids: apiIds(params.vcard_ids) } })
+  return formatResult(data, NO_MONEY)
 }
 
 // Необязательные поля визитки: имя параметра → имя поля Директа.

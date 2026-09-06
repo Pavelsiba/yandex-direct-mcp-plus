@@ -42,6 +42,26 @@ describe("get_changes", () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
+  it("в режиме dictionaries спрашивает справочники, а без времени — только время сервера", async () => {
+    mockFetch
+      .mockResolvedValueOnce(okResponse({ result: { RegionsChanged: "YES", Timestamp: TIMESTAMP } }))
+      .mockResolvedValueOnce(okResponse({ result: { Timestamp: TIMESTAMP } }))
+
+    const changed = await handleGetChanges({ mode: "dictionaries", timestamp: TIMESTAMP })
+    expect(lastBody().method).toBe("checkDictionaries")
+    expect(lastBody().params).toEqual({ Timestamp: TIMESTAMP })
+    expect(changed).toContain("YES")
+
+    await handleGetChanges({ mode: "dictionaries" })
+    expect(lastBody().params).toEqual({})
+  })
+
+  it("требует момент времени во всех режимах, кроме справочников", async () => {
+    await expect(handleGetChanges({ mode: "campaigns" })).rejects.toThrow("timestamp")
+    await expect(handleGetChanges({ mode: "objects", campaign_ids: ["123"] })).rejects.toThrow("timestamp")
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
   it("отдаёт предпочтение явно названным полям", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { Modified: {} } }))
 

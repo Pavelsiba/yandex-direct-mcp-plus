@@ -10,9 +10,12 @@ import { idField } from "#shared/lib/id"
 
 export const getChangesSchema = z.object({
   mode: z.literal(CHANGES_MODES).meta({
-    description: "campaigns — какие кампании менялись целиком; objects — что изменилось внутри выбранных объектов"
+    description:
+      "campaigns — какие кампании менялись целиком; objects — что изменилось внутри выбранных объектов; dictionaries — менялись ли справочники регионов, часовых поясов и интересов"
   }),
-  timestamp: timestampField("Момент, начиная с которого искать изменения: YYYY-MM-DDThh:mm:ssZ"),
+  timestamp: timestampField(
+    "Момент, начиная с которого искать изменения: YYYY-MM-DDThh:mm:ssZ. Обязателен для campaigns и objects; для dictionaries без него возвращается только текущее время сервера"
+  ).optional(),
   campaign_ids: z
     .array(idField("ID кампании"))
     .check(

@@ -7,7 +7,12 @@ import { createAdGroupTool, deleteAdGroupsTool, listAdGroupsTool } from "#tools/
 import { manageAdImagesTool } from "#tools/ad-images/tool"
 import { createTextAdTool, listAdsTool, manageAdsTool, moderateAdsTool, updateTextAdTool } from "#tools/ads/tool"
 import { listAudienceTargetsTool, setAudienceTargetsTool } from "#tools/audience-targets/tool"
-import { getBidAdjustmentsTool, setBidAdjustmentsTool } from "#tools/bid-adjustments/tool"
+import {
+  addBidAdjustmentsTool,
+  deleteBidAdjustmentsTool,
+  getBidAdjustmentsTool,
+  setBidAdjustmentsTool
+} from "#tools/bid-adjustments/tool"
 import { listBusinessesTool } from "#tools/businesses/tool"
 import {
   createCampaignTool,
@@ -22,7 +27,13 @@ import { getChangesTool } from "#tools/changes/tool"
 import { getRegionsTool, listTimeZonesTool } from "#tools/dictionaries/tool"
 import { listDynamicTargetsTool, manageDynamicTargetsTool } from "#tools/dynamic-targets/tool"
 import { listFeedsTool } from "#tools/feeds/tool"
-import { addKeywordsTool, listKeywordsTool, manageKeywordsTool, setKeywordBidsTool } from "#tools/keywords/tool"
+import {
+  addKeywordsTool,
+  listKeywordsTool,
+  manageKeywordsTool,
+  setKeywordBidsTool,
+  updateKeywordsTool
+} from "#tools/keywords/tool"
 import {
   getCampaignNegativeKeywordsTool,
   linkNegativeKeywordSetsTool,
@@ -31,12 +42,17 @@ import {
   setAdGroupNegativeKeywordsTool,
   setCampaignNegativeKeywordsTool
 } from "#tools/negative-keywords/tool"
-import { addRetargetingListTool, listRetargetingListsTool } from "#tools/retargeting/tool"
+import {
+  addRetargetingListTool,
+  deleteRetargetingListsTool,
+  listRetargetingListsTool,
+  updateRetargetingListsTool
+} from "#tools/retargeting/tool"
 import { getSearchQueriesTool } from "#tools/search-queries/tool"
-import { listSitelinksTool, setSitelinksTool } from "#tools/sitelinks/tool"
+import { deleteSitelinksTool, listSitelinksTool, setSitelinksTool } from "#tools/sitelinks/tool"
 import { getStatisticsTool } from "#tools/statistics/tool"
 import { getTimeTargetingTool, setTimeTargetingTool } from "#tools/time-targeting/tool"
-import { addVcardTool, listVcardsTool } from "#tools/vcards/tool"
+import { addVcardTool, deleteVcardsTool, listVcardsTool } from "#tools/vcards/tool"
 
 export const tools: readonly ToolDescriptor[] = [
   // Кампании и стратегии
@@ -65,6 +81,7 @@ export const tools: readonly ToolDescriptor[] = [
   // Ключевые фразы и ставки
   listKeywordsTool,
   addKeywordsTool,
+  updateKeywordsTool,
   manageKeywordsTool,
   setKeywordBidsTool,
 
@@ -79,12 +96,14 @@ export const tools: readonly ToolDescriptor[] = [
   // Ассеты объявления
   listSitelinksTool,
   setSitelinksTool,
+  deleteSitelinksTool,
   listAdExtensionsTool,
   addAdExtensionsTool,
   deleteAdExtensionsTool,
   manageAdImagesTool,
   listVcardsTool,
   addVcardTool,
+  deleteVcardsTool,
 
   // Таргетинг и корректировки
   listAudienceTargetsTool,
@@ -93,8 +112,12 @@ export const tools: readonly ToolDescriptor[] = [
   manageDynamicTargetsTool,
   listRetargetingListsTool,
   addRetargetingListTool,
+  updateRetargetingListsTool,
+  deleteRetargetingListsTool,
   getBidAdjustmentsTool,
+  addBidAdjustmentsTool,
   setBidAdjustmentsTool,
+  deleteBidAdjustmentsTool,
 
   // Отчёты
   getStatisticsTool,

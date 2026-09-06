@@ -1,6 +1,6 @@
-import { defineTool, READ, WRITE } from "#shared/lib/tool"
-import { handleAddVcard, handleListVcards } from "./handler.js"
-import { addVcardSchema, listVcardsSchema } from "./schema.js"
+import { DESTRUCTIVE, defineTool, READ, WRITE } from "#shared/lib/tool"
+import { handleAddVcard, handleDeleteVcards, handleListVcards } from "./handler.js"
+import { addVcardSchema, deleteVcardsSchema, listVcardsSchema } from "./schema.js"
 
 export const listVcardsTool = defineTool({
   name: "list_vcards",
@@ -18,4 +18,14 @@ export const addVcardTool = defineTool({
   annotations: WRITE,
   schema: addVcardSchema,
   handler: handleAddVcard
+})
+
+export const deleteVcardsTool = defineTool({
+  name: "delete_vcards",
+  title: "Удалить визитки",
+  description:
+    "Удалить визитки по ID; удаление необратимо. Отказ по отдельной визитке приходит в ответе списком, а не ошибкой вызова.",
+  annotations: DESTRUCTIVE,
+  schema: deleteVcardsSchema,
+  handler: handleDeleteVcards
 })
