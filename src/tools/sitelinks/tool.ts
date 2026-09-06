@@ -1,6 +1,6 @@
-import { defineTool, READ, WRITE } from "#shared/lib/tool"
-import { handleListSitelinks, handleSetSitelinks } from "./handler.js"
-import { listSitelinksSchema, setSitelinksSchema } from "./schema.js"
+import { DESTRUCTIVE, defineTool, READ, WRITE } from "#shared/lib/tool"
+import { handleDeleteSitelinks, handleListSitelinks, handleSetSitelinks } from "./handler.js"
+import { deleteSitelinksSchema, listSitelinksSchema, setSitelinksSchema } from "./schema.js"
 
 export const listSitelinksTool = defineTool({
   name: "list_sitelinks",
@@ -18,4 +18,13 @@ export const setSitelinksTool = defineTool({
   annotations: WRITE,
   schema: setSitelinksSchema,
   handler: handleSetSitelinks
+})
+
+export const deleteSitelinksTool = defineTool({
+  name: "delete_sitelinks",
+  title: "Удалить быстрые ссылки",
+  description: "Удалить наборы быстрых ссылок по ID. Набор, привязанный к объявлению, Директ удалить не даст.",
+  annotations: DESTRUCTIVE,
+  schema: deleteSitelinksSchema,
+  handler: handleDeleteSitelinks
 })

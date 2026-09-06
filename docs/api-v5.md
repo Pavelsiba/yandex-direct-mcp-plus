@@ -1,12 +1,16 @@
 # API Яндекс.Директа v5 — снимок WSDL
 
-Сгенерировано `npm run api:snapshot` 2026-09-05. **Руками не править** — перезапишется.
+Сгенерировано `npm run api:snapshot` 2026-09-06. **Руками не править** — перезапишется.
 
-Сервисов: 27. Перечислений: 183.
+Сервисов: 27 плюс общий `general.xsd`. Перечислений: 216.
 
 Первоисточник допустимых значений: `xsd:enumeration` в WSDL сервиса, а не страницы
 справочника — те отдают неполные списки. WSDL доступен без токена:
 `curl -s "https://api.direct.yandex.com/v5/<service>?wsdl"`.
+
+Последним разделом идёт `general.xsd` — общие типы, импортируемые всеми сервисами.
+Перечисления оттуда (пол, возраст, платёжеспособность, раскладка выдачи) в WSDL
+самих сервисов не встречаются, но именно на них стоят литералы в схемах.
 
 Пересобирать перед тем, как заводить литерал в схеме, и когда Директ начал отклонять
 прежде рабочий вызов: `git diff` покажет, что Яндекс добавил или убрал.
@@ -853,3 +857,139 @@
 ### VCardFieldEnum
 
 `Apartment`, `Building`, `CampaignId`, `City`, `CompanyName`, `ContactEmail`, `ContactPerson`, `Country`, `ExtraMessage`, `House`, `Id`, `InstantMessenger`, `MetroStationId`, `Ogrn`, `Phone`, `PointOnMap`, `Street`, `WorkTime`
+
+## general.xsd
+
+Общие типы, импортируемые всеми сервисами. Методов нет.
+
+### AdGroupTypesEnum
+
+`CPM_BANNER_AD_GROUP`, `CPM_VIDEO_AD_GROUP`, `DYNAMIC_TEXT_AD_GROUP`, `MOBILE_APP_AD_GROUP`, `TEXT_AD_GROUP`, `UNIFIED_AD_GROUP`
+
+### AdTargetStateSelectionEnum
+
+`DELETED`, `OFF`, `ON`, `SUSPENDED`
+
+### AgeRangeEnum
+
+`AGE_0_17`, `AGE_18_24`, `AGE_25_34`, `AGE_35_44`, `AGE_45`, `AGE_45_54`, `AGE_55`
+
+### AttributionModelEnum
+
+`AUTO`, `FC`, `FCCD`, `LC`, `LSC`, `LSCCD`, `LYDC`, `LYDCCD`
+
+### AutotargetingBrandOptionsEnum
+
+`WITHOUT_BRANDS`, `WITH_ADVERTISER_BRAND`
+
+### AutotargetingBrandOptionsFieldEnum
+
+`WithAdvertiserBrand`, `WithCompetitorsBrand`, `WithoutBrands`
+
+### AutotargetingCategoriesEnum
+
+`ACCESSORY`, `ALTERNATIVE`, `BROADER`, `COMPETITOR`, `EXACT`
+
+### AutotargetingCategoriesFieldEnum
+
+`Accessory`, `Alternative`, `Broader`, `Exact`, `Narrow`
+
+### ConditionTypeEnum
+
+`ITEMS_ALL`, `ITEMS_SUBSET`
+
+### CountryCodeEnum
+
+`BY`, `KZ`, `RU`, `TR`, `UA`, `US`
+
+### CurrencyEnum
+
+`BYN`, `CHF`, `EUR`, `GBP`, `KZT`, `RUB`, `TRY`, `UAH`, `USD`, `YND_FIXED`
+
+### ExtensionStatusSelectionEnum
+
+`ACCEPTED`, `DRAFT`, `MODERATION`, `REJECTED`
+
+### GenderEnum
+
+`GENDER_FEMALE`, `GENDER_MALE`
+
+### IncomeGradeEnum
+
+`ABOVE_AVERAGE`, `HIGH`, `VERY_HIGH`
+
+### LangEnum
+
+`EN`, `RU`, `TR`, `UK`
+
+### MobileAppAdActionEnum
+
+`BUY_AUTODETECT`, `DOWNLOAD`, `GET`, `INSTALL`, `MORE`, `OPEN`, `PLAY`, `UPDATE`
+
+### MobileOperatingSystemTypeEnum
+
+`ANDROID`, `IOS`, `OS_TYPE_OTHER`, `OS_TYPE_UNKNOWN`
+
+### OperationEnum
+
+`ADD`, `REMOVE`, `SET`
+
+### PositionEnum
+
+`FOOTERBLOCK`, `FOOTERFIRST`, `P11`, `P12`, `P13`, `P14`, `P21`, `P22`, `P23`, `P24`, `PREMIUMBLOCK`, `PREMIUMFIRST`
+
+### PriorityEnum
+
+`HIGH`, `LOW`, `NORMAL`
+
+### RepresentativeRoleEnum
+
+`CHIEF`, `DELEGATE`, `LIMITED`, `READONLY`, `UNKNOWN`
+
+### RoleEnum
+
+`ADMIN`, `USER`
+
+### ScopeEnum
+
+`NETWORK`, `SEARCH`
+
+### SerpLayoutEnum
+
+`ALONE`, `SUGGEST`
+
+### ServingStatusEnum
+
+`ELIGIBLE`, `RARELY_SERVED`
+
+### SortOrderEnum
+
+`ASCENDING`, `DESCENDING`
+
+### StateEnum
+
+`ARCHIVED`, `DELETED`, `OFF`, `OFF_BY_MONITORING`, `ON`, `SUSPENDED`, `UNKNOWN`
+
+### StatusEnum
+
+`ACCEPTED`, `DRAFT`, `MODERATION`, `PREACCEPTED`, `REJECTED`, `UNKNOWN`
+
+### StatusSelectionEnum
+
+`ACCEPTED`, `DRAFT`, `MODERATION`, `PREACCEPTED`, `REJECTED`
+
+### StringConditionOperatorEnum
+
+`CONTAINS_ANY`, `EQUALS_ANY`, `EXISTS`, `GREATER_THAN`, `IN_RANGE`, `LESS_THAN`, `NOT_CONTAINS_ALL`
+
+### VideoTargetEnum
+
+`CLICKS`, `VIEWS`
+
+### YesNoEnum
+
+`NO`, `YES`
+
+### YesNoUnknownEnum
+
+`NO`, `UNKNOWN`, `YES`

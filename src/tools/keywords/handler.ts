@@ -3,7 +3,13 @@ import { apiPost } from "#shared/api/client"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
-import type { addKeywordsSchema, listKeywordsSchema, manageKeywordsSchema, setKeywordBidsSchema } from "./schema.js"
+import type {
+  addKeywordsSchema,
+  listKeywordsSchema,
+  manageKeywordsSchema,
+  setKeywordBidsSchema,
+  updateKeywordsSchema
+} from "./schema.js"
 
 const LIST_FIELDS = ["Id", "Keyword", "CampaignId", "AdGroupId", "Status", "State", "Bid", "ContextBid"]
 
@@ -37,6 +43,27 @@ export async function handleAddKeywords(params: z.infer<typeof addKeywordsSchema
   const data = await apiPost("keywords", "add", {
     Keywords: params.keywords.map((keyword) => ({ AdGroupId: apiId(params.ad_group_id), Keyword: keyword }))
   })
+  return formatResult(data)
+}
+
+type KeywordUpdate = z.infer<typeof updateKeywordsSchema>["keywords"][number]
+
+// null у подстановочной переменной значит «очистить», поэтому от прочих значений
+// его отличает только undefined — сравнение именно с ним, а не проверка на falsy.
+function buildKeywordUpdate(update: KeywordUpdate): Record<string, unknown> {
+  const item: Record<string, unknown> = { Id: apiId(update.keyword_id) }
+  if (update.keyword !== undefined) item.Keyword = update.keyword
+  if (update.user_param1 !== undefined) item.UserParam1 = update.user_param1
+  if (update.user_param2 !== undefined) item.UserParam2 = update.user_param2
+
+  if (Object.keys(item).length === 1) {
+    throw new Error(`Для фразы ${update.keyword_id} не передано ни одного изменения.`)
+  }
+  return item
+}
+
+export async function handleUpdateKeywords(params: z.infer<typeof updateKeywordsSchema>): Promise<string> {
+  const data = await apiPost("keywords", "update", { Keywords: params.keywords.map(buildKeywordUpdate) })
   return formatResult(data)
 }
 

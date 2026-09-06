@@ -5,7 +5,8 @@ import { getChangesSchema } from "./schema.js"
 export const getChangesTool = defineTool({
   name: "get_changes",
   title: "Изменения объектов",
-  description: "Проверить изменения кампаний, групп и объявлений начиная с указанного времени.",
+  description:
+    "Проверить изменения кампаний, групп и объявлений начиная с указанного времени, а также изменения справочников (mode=dictionaries) и текущее время сервера Директа.",
   annotations: READ,
   schema: getChangesSchema,
   handler: handleGetChanges

@@ -217,6 +217,23 @@ describe("manage_campaigns", () => {
     expect(lastBody().method).toBe("archive")
     expect(lastRawBody()).toContain('"Ids":[123,456]')
   })
+
+  it("удаляет кампанию тем же путём и доносит отказ Директа", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({
+        result: {
+          DeleteResults: [
+            { Errors: [{ Code: 8000, Message: "Кампания не может быть удалена", Details: "Есть показы" }] }
+          ]
+        }
+      })
+    )
+
+    const output = await handleManageCampaigns({ campaign_ids: ["123"], action: "delete" })
+
+    expect(lastBody().method).toBe("delete")
+    expect(output).toContain("Кампания не может быть удалена")
+  })
 })
 
 describe("get_strategy", () => {
