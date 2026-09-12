@@ -244,7 +244,44 @@ describe("get_strategy", () => {
 
     await handleGetStrategy({ campaign_id: "123" })
 
-    expect(lastBody().params.TextCampaignFieldNames).toEqual(["BiddingStrategy"])
+    expect(lastBody().params.TextCampaignFieldNames).toEqual([
+      "BiddingStrategy",
+      "PriorityGoals",
+      "CounterIds",
+      "AttributionModel"
+    ])
+  })
+
+  // У максимума конверсий в BiddingStrategy стоит служебный GoalId, а настоящие цели —
+  // в PriorityGoals. Без них ответ читается как «цель не выбрана».
+  it("отдаёт целевые действия с ценностью в рублях", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({
+        result: {
+          Campaigns: [
+            {
+              Id: 123,
+              TextCampaign: {
+                BiddingStrategy: { Search: { BiddingStrategyType: "WB_MAXIMUM_CONVERSION_RATE" } },
+                PriorityGoals: {
+                  Items: [{ GoalId: 601234567, Value: 400000000, IsMetrikaSourceOfValue: "NO" }]
+                }
+              }
+            }
+          ]
+        }
+      })
+    )
+
+    const output = JSON.parse(await handleGetStrategy({ campaign_id: "123" }))
+
+    const goal = output.result.Campaigns[0].TextCampaign.PriorityGoals.Items[0]
+
+    // Тип GoalId здесь не проверяется: приведение ID к строке живёт в format и меняется
+    // независимо от этого инструмента. Здесь важна ценность цели — рубли, не микроединицы.
+    expect(String(goal.GoalId)).toBe("601234567")
+    expect(goal.Value).toBe(400)
+    expect(goal.IsMetrikaSourceOfValue).toBe("NO")
   })
 })
 
@@ -271,6 +308,38 @@ describe("set_strategy", () => {
       },
       Network: { BiddingStrategyType: "NETWORK_DEFAULT", NetworkDefault: { LimitPercent: 30 } }
     })
+  })
+
+  // Дефолт Директа для новых кампаний: именно на нём 12.09.2026 выяснилось, что
+  // прочитать стратегию можно, а записать ту же — нет.
+  it("собирает максимум конверсий с целью и недельным бюджетом", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "WB_MAXIMUM_CONVERSION_RATE",
+      network_type: "SERVING_OFF",
+      weekly_spend_limit: 6000,
+      goal_id: "601234567"
+    })
+
+    await handleSetStrategy(params)
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy.Search).toEqual({
+      BiddingStrategyType: "WB_MAXIMUM_CONVERSION_RATE",
+      WbMaximumConversionRate: { WeeklySpendLimit: 6_000_000_000, GoalId: 601234567 }
+    })
+  })
+
+  it("не даёт включить максимум конверсий без недельного бюджета", async () => {
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "WB_MAXIMUM_CONVERSION_RATE",
+      network_type: "SERVING_OFF",
+      goal_id: "601234567"
+    })
+
+    await expect(handleSetStrategy(params)).rejects.toThrow("weekly_spend_limit")
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it("не даёт включить максимум кликов без недельного бюджета", async () => {

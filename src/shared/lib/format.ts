@@ -7,6 +7,9 @@ import { microsToRubles } from "#shared/lib/money"
 // денежные ключи, иначе под конвертацию попали бы счётчики и ID.
 // Аукционные добавлены 12.09.2026 вместе с get_keyword_auction: CompetitorsBids —
 // массив голых чисел, поэтому ключ и обязан доходить до элементов.
+// Value — ценность цели в PriorityGoals. Имя общее, поэтому оговорка: конвертируются
+// только числа, а строковые Value (`Settings`: YES/NO) проход не проходят. Появится
+// числовое неденежное Value — набор придётся переписать на пары «родитель + ключ».
 const MONEY_KEYS = new Set([
   "Amount",
   "Bid",
@@ -16,7 +19,8 @@ const MONEY_KEYS = new Set([
   "Price",
   "CurrentSearchPrice",
   "MinSearchPrice",
-  "CompetitorsBids"
+  "CompetitorsBids",
+  "Value"
 ])
 
 // json-bigint отдаёт строкой только то, что не помещается в число (16+ знаков), поэтому
