@@ -5,7 +5,19 @@ import { microsToRubles } from "#shared/lib/money"
 
 // Поля v5, приезжающие в микроединицах. Набор консервативный: только заведомо
 // денежные ключи, иначе под конвертацию попали бы счётчики и ID.
-const MONEY_KEYS = new Set(["Amount", "Bid", "ContextBid", "WeeklySpendLimit", "BidCeiling"])
+// Аукционные добавлены 12.09.2026 вместе с get_keyword_auction: CompetitorsBids —
+// массив голых чисел, поэтому ключ и обязан доходить до элементов.
+const MONEY_KEYS = new Set([
+  "Amount",
+  "Bid",
+  "ContextBid",
+  "WeeklySpendLimit",
+  "BidCeiling",
+  "Price",
+  "CurrentSearchPrice",
+  "MinSearchPrice",
+  "CompetitorsBids"
+])
 
 // json-bigint отдаёт строкой только то, что не помещается в число (16+ знаков), поэтому
 // короткие ID — кампании, группы, коды регионов — приезжают числами, и тип поля зависел бы

@@ -1,6 +1,7 @@
 import { DESTRUCTIVE, defineTool, IDEMPOTENT, READ, WRITE } from "#shared/lib/tool"
 import {
   handleAddKeywords,
+  handleGetKeywordAuction,
   handleListKeywords,
   handleManageKeywords,
   handleSetKeywordBids,
@@ -8,6 +9,7 @@ import {
 } from "./handler.js"
 import {
   addKeywordsSchema,
+  getKeywordAuctionSchema,
   listKeywordsSchema,
   manageKeywordsSchema,
   setKeywordBidsSchema,
@@ -51,10 +53,28 @@ export const manageKeywordsTool = defineTool({
   handler: handleManageKeywords
 })
 
+export const getKeywordAuctionTool = defineTool({
+  name: "get_keyword_auction",
+  title: "Аукцион по фразам",
+  description:
+    "Сколько стоит показ: ставки и списываемые цены по позициям, ставки конкурентов, минимальная цена входа. " +
+    "Всё в рублях. Позиции — P11–P14 (спецразмещение над выдачей) и P21–P24 (гарантия под выдачей); у каждой " +
+    "Bid — сколько надо поставить, Price — сколько спишется на деле. Отбор по одному уровню: фразы, группы или " +
+    "кампании. Цену аукциона показывает для любой кампании, но ставкой она управляется только при ручном " +
+    "управлении: на автостратегии (любая WB_*, AVERAGE_CPA, AVERAGE_CPC и прочие) ставки назначает Директ, и " +
+    "set_keyword_bids там ничего не даст. Стратегию кампании проверяйте через get_strategy.",
+  annotations: READ,
+  schema: getKeywordAuctionSchema,
+  handler: handleGetKeywordAuction
+})
+
 export const setKeywordBidsTool = defineTool({
   name: "set_keyword_bids",
   title: "Установить ставки",
-  description: "Установить ставки (поиск/сети, в рублях) на уровне фраз, групп или кампаний (сервис Bids).",
+  description:
+    "Установить ставки (поиск/сети, в рублях) на уровне фраз, групп или кампаний (сервис Bids). Работает только " +
+    "при ручном управлении ставками: на автостратегии Директ назначает ставки сам, вызов пройдёт без ошибки, но " +
+    "на показы не повлияет. Сначала get_strategy, затем get_keyword_auction — сколько стоит нужная позиция.",
   annotations: IDEMPOTENT,
   schema: setKeywordBidsSchema,
   handler: handleSetKeywordBids

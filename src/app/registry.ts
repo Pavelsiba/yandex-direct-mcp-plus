@@ -29,6 +29,7 @@ import { listDynamicTargetsTool, manageDynamicTargetsTool } from "#tools/dynamic
 import { listFeedsTool } from "#tools/feeds/tool"
 import {
   addKeywordsTool,
+  getKeywordAuctionTool,
   listKeywordsTool,
   manageKeywordsTool,
   setKeywordBidsTool,
@@ -84,6 +85,7 @@ export const tools: readonly ToolDescriptor[] = [
   updateKeywordsTool,
   manageKeywordsTool,
   setKeywordBidsTool,
+  getKeywordAuctionTool,
 
   // Минус-фразы
   getCampaignNegativeKeywordsTool,

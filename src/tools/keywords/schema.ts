@@ -85,3 +85,16 @@ export const setKeywordBidsSchema = z.object({
   bid: rublesField("Ставка на поиске в рублях").optional(),
   context_bid: rublesField("Ставка в сетях (РСЯ) в рублях").optional()
 })
+
+export const getKeywordAuctionSchema = z.object({
+  keyword_ids: z.array(idField("ID ключевой фразы")).optional().meta({ description: "Аукцион по указанным фразам" }),
+  ad_group_ids: z
+    .array(idField("ID группы объявлений"))
+    .optional()
+    .meta({ description: "Аукцион по всем фразам указанных групп" }),
+  campaign_ids: z
+    .array(idField("ID кампании"))
+    .optional()
+    .meta({ description: "Аукцион по всем фразам указанных кампаний" }),
+  ...pageFields
+})
