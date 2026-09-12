@@ -32,6 +32,14 @@ describe("create_ad_group", () => {
     expect(lastBody().params.AdGroups[0].Name).toBe("Крабы")
     expect(lastRawBody()).toContain('"RegionIds":[225,213]')
   })
+
+  it("доносит минус-регион до тела запроса, не потеряв знак", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [] } }))
+
+    await handleCreateAdGroup({ campaign_id: "123", name: "Крабы", region_ids: ["225", "-213"] })
+
+    expect(lastRawBody()).toContain('"RegionIds":[225,-213]')
+  })
 })
 
 describe("delete_ad_groups", () => {
