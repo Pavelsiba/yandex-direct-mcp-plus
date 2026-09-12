@@ -14,11 +14,27 @@ import type {
 const LIST_FIELDS = ["Id", "CampaignId", "AdGroupId", "State", "Status"]
 const TEXT_AD_FIELDS = ["Title", "Title2", "Text", "Href", "DisplayDomain"]
 
-// Пустой ответ на живую группу — не обязательно наша ошибка. Пробой 12.09.2026: на
-// откручивающейся кампании `get` вернул пустой `result` и по группе, и по кампании
-// целиком — без `TextAdFieldNames` и с запрошенными `Type`/`Subtype`, при живом
-// контроле. Значит дело не в форме запроса и менять её незачем. Почему пусто —
-// не выяснено, версии в roadmap, пункты 8 и 17.
+// Директ на группу без объявлений отдаёт `{ "result": {} }` — без ключа Ads и без
+// единого слова. Модель читает это как поломку инструмента и принимается гадать
+// (12.09.2026 так и вышло: решила, что архивные скрыты, — хотя они приходят).
+const EMPTY_ADS_NOTICE =
+  "ℹ️ Директ вернул ответ без ключа Ads и без пояснений. Это не сбой инструмента и не ошибка запроса — " +
+  "повторять вызов иначе бесполезно. Причин две: объявлений в этих группах действительно нет, либо они есть, " +
+  "но недоступны через API — так устроены объявления, тексты которых генерирует нейросеть Яндекса. Различить " +
+  "можно по показам: статистика накопительная, поэтому прошлые показы бывают и у группы, из которой объявления " +
+  "удалили, а показы за сегодня при пустом ответе означают второй случай."
+
+function hasAds(data: unknown): boolean {
+  const ads = (data as { result?: { Ads?: unknown } })?.result?.Ads
+  return Array.isArray(ads) && ads.length > 0
+}
+
+// Пустой ответ — не наша ошибка. Пробой 12.09.2026: `get` вернул пустой `result` и по
+// группе, и по кампании целиком, при живом контроле — значит дело не в форме запроса.
+// Тот же день показал и разгадку конкретного случая: объявления, созданные в той самой
+// группе, пришли сразу, а показов у кампании за неделю не было вовсе — то есть прежние
+// удалили, а статистика осталась. Второй случай (нейрообъявления, недоступные через API)
+// в этом аккаунте не наблюдался. Разбор — roadmap, пункт 8.
 export async function handleListAds(params: z.infer<typeof listAdsSchema>): Promise<string> {
   const requestParams: Record<string, unknown> = {
     SelectionCriteria: { AdGroupIds: apiIds(params.ad_group_ids) },
@@ -28,7 +44,9 @@ export async function handleListAds(params: z.infer<typeof listAdsSchema>): Prom
   const page = buildPage(params)
   if (page) requestParams.Page = page
 
-  return formatResult(await apiPost("ads", "get", requestParams))
+  const data = await apiPost("ads", "get", requestParams)
+  const body = formatResult(data)
+  return hasAds(data) ? body : `${EMPTY_ADS_NOTICE}\n\n${body}`
 }
 
 export async function handleCreateTextAd(params: z.infer<typeof createTextAdSchema>): Promise<string> {

@@ -20,6 +20,25 @@ describe("list_ads", () => {
     expect(lastBody().params.TextAdFieldNames).toContain("Title")
     expect(lastBody().params.TextAdFieldNames).toContain("Href")
   })
+
+  // Голый `{ "result": {} }` модель читает как поломку инструмента и додумывает причину.
+  it("объясняет пустой ответ, в котором Директ не прислал даже ключ Ads", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: {} }))
+
+    const output = await handleListAds({ ad_group_ids: ["123"] })
+
+    expect(output).toContain("Причин две")
+    expect(output).toContain("статистика накопительная")
+  })
+
+  it("не подсказывает ничего, когда объявления нашлись", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [{ Id: "1234567890123456789" }] } }))
+
+    const output = await handleListAds({ ad_group_ids: ["123"] })
+
+    expect(output).not.toContain("Причин две")
+    expect(output.trimStart().startsWith("{")).toBe(true)
+  })
 })
 
 describe("create_text_ad", () => {
