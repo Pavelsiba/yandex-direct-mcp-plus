@@ -5,7 +5,10 @@ import { createTextAdSchema, listAdsSchema, manageAdsSchema, moderateAdsSchema, 
 export const listAdsTool = defineTool({
   name: "list_ads",
   title: "Список объявлений",
-  description: "Объявления в группах: заголовки, тексты, ссылки, статусы.",
+  description:
+    "Объявления в группах: заголовки, тексты, ссылки, статусы. Отбор только по группам — по ID объявления не ищет. " +
+    "Архивные приходят наравне с активными. Пустой ответ у кампании, которая откручивается, — известное поведение " +
+    "API, а не сбой инструмента: часть объявлений сервис Ads не отдаёт вовсе.",
   annotations: READ,
   schema: listAdsSchema,
   handler: handleListAds

@@ -14,6 +14,11 @@ import type {
 const LIST_FIELDS = ["Id", "CampaignId", "AdGroupId", "State", "Status"]
 const TEXT_AD_FIELDS = ["Title", "Title2", "Text", "Href", "DisplayDomain"]
 
+// Пустой ответ на живую группу — не обязательно наша ошибка. Пробой 12.09.2026: на
+// откручивающейся кампании `get` вернул пустой `result` и по группе, и по кампании
+// целиком — без `TextAdFieldNames` и с запрошенными `Type`/`Subtype`, при живом
+// контроле. Значит дело не в форме запроса и менять её незачем. Почему пусто —
+// не выяснено, версии в roadmap, пункты 8 и 17.
 export async function handleListAds(params: z.infer<typeof listAdsSchema>): Promise<string> {
   const requestParams: Record<string, unknown> = {
     SelectionCriteria: { AdGroupIds: apiIds(params.ad_group_ids) },
