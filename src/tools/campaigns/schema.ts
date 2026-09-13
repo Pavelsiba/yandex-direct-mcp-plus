@@ -158,7 +158,8 @@ export const setStrategySchema = z.object({
   ).optional(),
   goal_id: idField(
     "ID цели Метрики для AVERAGE_CPA, PAY_FOR_CONVERSION и WB_MAXIMUM_CONVERSION_RATE; для оплаты за конверсию обязателен. " +
-      "Для максимума конверсий необязателен, но без него Директ оптимизируется по вовлечённым сессиям, а не по вашей цели"
+      "Для WB_MAXIMUM_CONVERSION_RATE допустимо служебное 13 — оптимизация по ключевым целям кампании (PriorityGoals); " +
+      "Директ принимает его, только если в PriorityGoals есть цель, кроме 12 «Вовлечённые сессии»"
   ).optional(),
   network_limit_percent: z
     .int()

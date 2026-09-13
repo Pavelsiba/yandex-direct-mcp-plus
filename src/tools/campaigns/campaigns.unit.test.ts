@@ -309,8 +309,8 @@ describe("get_strategy", () => {
     ])
   })
 
-  // У максимума конверсий в BiddingStrategy стоит служебный GoalId, а настоящие цели —
-  // в PriorityGoals. Без них ответ читается как «цель не выбрана».
+  // У максимума конверсий в BiddingStrategy стоит служебный GoalId 13 («ключевые цели»), а
+  // сами цели — в PriorityGoals. Без них ответ читается как «цель не выбрана».
   it("отдаёт целевые действия с ценностью в рублях", async () => {
     mockFetch.mockResolvedValueOnce(
       okResponse({
