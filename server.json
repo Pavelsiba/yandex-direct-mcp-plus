@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Pavelsiba/yandex-direct-mcp-plus",
+  "title": "Яндекс.Директ",
+  "description": "API Яндекс.Директа v5: кампании, объявления, фразы, ставки, минус-фразы, статистика",
+  "repository": {
+    "url": "https://github.com/Pavelsiba/yandex-direct-mcp-plus",
+    "source": "github"
+  },
+  "version": "1.5.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "yandex-direct-mcp-plus",
+      "version": "1.5.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "YANDEX_DIRECT_TOKEN",
+          "description": "OAuth-токен Яндекс.Директа",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "YANDEX_DIRECT_LOGIN",
+          "description": "Логин клиента (Client-Login), нужен для агентского токена"
+        }
+      ]
+    }
+  ]
+}
