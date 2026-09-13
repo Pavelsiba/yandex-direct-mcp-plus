@@ -1,12 +1,13 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { buildPage } from "#shared/lib/pagination"
 import type { manageAdImagesSchema } from "./schema.js"
 
 const NO_MONEY = { money: false } as const
 
-const GET_FIELDS = ["AdImageHash", "OriginalUrl", "PreviewUrl", "Name", "Type", "Subtype", "Associated"]
+const GET_FIELDS = [...API_FIELDS.adimages.AdImageFieldEnum]
 
 type Params = z.infer<typeof manageAdImagesSchema>
 

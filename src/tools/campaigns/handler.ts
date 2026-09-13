@@ -69,7 +69,7 @@ const TRACKING_PARAMS_TYPES = ["TEXT_CAMPAIGN", "DYNAMIC_TEXT_CAMPAIGN", "SMART_
 async function readTrackingParamsKey(campaignId: string): Promise<CampaignSettingsKey> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(campaignId)] },
-    FieldNames: ["Id", "Type"]
+    FieldNames: ["Id", "Type"] satisfies FieldOf<"campaigns", "CampaignFieldEnum">[]
   })
 
   const campaign = (data as { result?: { Campaigns?: { Type?: string }[] } }).result?.Campaigns?.[0]

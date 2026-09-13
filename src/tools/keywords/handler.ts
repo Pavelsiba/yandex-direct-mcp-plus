@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import type { FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -12,7 +13,16 @@ import type {
   updateKeywordsSchema
 } from "./schema.js"
 
-const LIST_FIELDS = ["Id", "Keyword", "CampaignId", "AdGroupId", "Status", "State", "Bid", "ContextBid"]
+const LIST_FIELDS: FieldOf<"keywords", "KeywordFieldEnum">[] = [
+  "Id",
+  "Keyword",
+  "CampaignId",
+  "AdGroupId",
+  "Status",
+  "State",
+  "Bid",
+  "ContextBid"
+]
 
 // Ставки ставятся на один уровень целей за вызов; поле тела зависит от уровня.
 // Чтение аукциона отбирает те же уровни, но именем множественного числа — отсюда две
@@ -37,7 +47,7 @@ function selectBidTarget(params: BidTargetParams): BidTarget {
 // Позиции аукциона Директ отдаёт двумя наборами имён: AuctionBids — кодами P11–P24,
 // SearchPrices — словами (PREMIUMFIRST, FOOTERBLOCK). Проба 12.09.2026: приходят оба,
 // а CurrentSearchPrice и ContextCoverage бывают null у фразы без показов.
-const AUCTION_FIELDS = [
+const AUCTION_FIELDS: FieldOf<"bids", "BidFieldEnum">[] = [
   "KeywordId",
   "CampaignId",
   "AdGroupId",

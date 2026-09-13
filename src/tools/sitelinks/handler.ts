@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -7,10 +8,14 @@ import type { deleteSitelinksSchema, listSitelinksSchema, setSitelinksSchema } f
 
 const NO_MONEY = { money: false } as const
 
+// Sitelinks из SitelinksSetFieldEnum не запрашивается: сами ссылки приезжают
+// отдельным параметром SitelinkFieldNames, набором ниже.
+const SET_FIELDS: FieldOf<"sitelinks", "SitelinksSetFieldEnum">[] = ["Id"]
+
 export async function handleListSitelinks(params: z.infer<typeof listSitelinksSchema>): Promise<string> {
   const request: Record<string, unknown> = {
-    FieldNames: ["Id"],
-    SitelinkFieldNames: ["Title", "Href", "Description", "TurboPageId"]
+    FieldNames: SET_FIELDS,
+    SitelinkFieldNames: [...API_FIELDS.sitelinks.SitelinkFieldEnum]
   }
   if (params.sitelink_set_ids?.length) request.SelectionCriteria = { Ids: apiIds(params.sitelink_set_ids) }
   const page = buildPage(params)
