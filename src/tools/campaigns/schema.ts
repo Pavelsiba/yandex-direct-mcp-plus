@@ -1,6 +1,7 @@
 // Контракт инструментов кампаний. Здесь же граница snake_case → camelCase
 // и конвертация рублей в микроединицы: хендлер получает готовые значения.
 import { z } from "zod"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import {
   CAMPAIGN_ACTIONS,
   CAMPAIGN_STATUS_ACTIONS,
@@ -14,13 +15,31 @@ import {
 } from "#shared/config/enums"
 import { MAX_CAMPAIGNS_PER_CALL } from "#shared/config/limits"
 import { dateField } from "#shared/lib/date"
+import { fieldsField } from "#shared/lib/fields"
 import { idField } from "#shared/lib/id"
 import { rublesField } from "#shared/lib/money"
 import { pageFields } from "#shared/lib/pagination"
 
+// Набор по умолчанию: кампании идут списком десятками, поэтому он узкий и осознанный,
+// а не весь CampaignFieldEnum. StatusClarification — исключение: единственное место, где
+// Директ объясняет, почему кампания отклонена или остановлена, и это короткая строка.
+// Живёт в контракте, а не в хендлере, потому что перечислен в описании параметра fields.
+export const CAMPAIGN_LIST_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [
+  "Id",
+  "Name",
+  "Status",
+  "StatusClarification",
+  "State",
+  "DailyBudget",
+  "StartDate",
+  "Type",
+  "Statistics"
+]
+
 export const listCampaignsSchema = z.object({
   status: z.literal(CAMPAIGN_STATUSES).optional().meta({ description: "Фильтр по статусу модерации кампании" }),
   types: z.array(z.literal(CAMPAIGN_TYPES)).optional().meta({ description: "Фильтр по типам кампаний" }),
+  fields: fieldsField(API_FIELDS.campaigns.CampaignFieldEnum, CAMPAIGN_LIST_FIELDS),
   ...pageFields
 })
 
@@ -120,23 +139,27 @@ export const setStrategySchema = z.object({
   campaign_id: idField("ID текстово-графической кампании"),
   search_type: z.literal(SETTABLE_SEARCH_STRATEGIES).meta({
     description:
-      "Стратегия на поиске: HIGHEST_POSITION (ручная), WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
+      "Стратегия на поиске: HIGHEST_POSITION (ручная), WB_MAXIMUM_CLICKS, WB_MAXIMUM_CONVERSION_RATE (максимум конверсий за недельный бюджет), AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
   }),
   network_type: z.literal(SETTABLE_NETWORK_STRATEGIES).meta({
     description:
-      "Стратегия в сетях: NETWORK_DEFAULT (по настройкам поиска), MAXIMUM_COVERAGE, WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
+      "Стратегия в сетях: NETWORK_DEFAULT (по настройкам поиска), MAXIMUM_COVERAGE, WB_MAXIMUM_CLICKS, WB_MAXIMUM_CONVERSION_RATE, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
   }),
   weekly_spend_limit: rublesField(
-    "Недельный бюджет в рублях; обязателен для WB_MAXIMUM_CLICKS, для остальных автостратегий необязателен"
+    "Недельный бюджет в рублях; обязателен для WB_MAXIMUM_CLICKS и WB_MAXIMUM_CONVERSION_RATE, для остальных автостратегий необязателен"
   ).optional(),
-  bid_ceiling: rublesField("Максимальная ставка в рублях для WB_MAXIMUM_CLICKS и AVERAGE_CPA").optional(),
+  bid_ceiling: rublesField(
+    "Максимальная ставка в рублях для WB_MAXIMUM_CLICKS, WB_MAXIMUM_CONVERSION_RATE и AVERAGE_CPA"
+  ).optional(),
   average_cpc: rublesField("Средняя цена клика в рублях; обязательна для AVERAGE_CPC").optional(),
   average_cpa: rublesField("Средняя цена конверсии в рублях; обязательна для AVERAGE_CPA").optional(),
   conversion_price: rublesField(
     "Цена конверсии в рублях для PAY_FOR_CONVERSION: списывается за конверсию, а не за клик"
   ).optional(),
   goal_id: idField(
-    "ID цели Метрики для AVERAGE_CPA и PAY_FOR_CONVERSION; для оплаты за конверсию обязателен"
+    "ID цели Метрики для AVERAGE_CPA, PAY_FOR_CONVERSION и WB_MAXIMUM_CONVERSION_RATE; для оплаты за конверсию обязателен. " +
+      "Для WB_MAXIMUM_CONVERSION_RATE допустимо служебное 13 — оптимизация по ключевым целям кампании (PriorityGoals); " +
+      "Директ принимает его, только если в PriorityGoals есть цель, кроме 12 «Вовлечённые сессии»"
   ).optional(),
   network_limit_percent: z
     .int()

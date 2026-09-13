@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { idField } from "#shared/lib/id"
+import { idField, regionIdField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
 
 export const listAdGroupsSchema = z.object({
@@ -17,9 +17,13 @@ export const createAdGroupSchema = z.object({
     .check(z.minLength(1, { error: "Название не может быть пустым" }))
     .meta({ description: "Название группы" }),
   region_ids: z
-    .array(idField("ID региона показа"))
+    .array(regionIdField("Код региона показа"))
     .check(z.minLength(1, { error: "Укажите хотя бы один регион" }))
-    .meta({ description: 'Регионы показа, например ["225"] — Россия. Коды берутся из get_regions' })
+    .meta({
+      description:
+        'Регионы показа, коды из get_regions: ["225"] — Россия, ["225","-213"] — Россия кроме Москвы, ["0"] — все регионы. ' +
+        "Минус-регионы нельзя сочетать с 0 и нельзя отправлять одни, без обычного региона"
+    })
 })
 
 export const deleteAdGroupsSchema = z.object({

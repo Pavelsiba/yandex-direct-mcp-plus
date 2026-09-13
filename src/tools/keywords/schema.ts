@@ -1,15 +1,33 @@
 import { z } from "zod"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { KEYWORD_ACTIONS } from "#shared/config/enums"
 import { KEYWORD_TEXT_MAX, KEYWORD_USER_PARAM_MAX, MAX_KEYWORDS_PER_UPDATE } from "#shared/config/limits"
+import { fieldsField } from "#shared/lib/fields"
 import { idField } from "#shared/lib/id"
 import { rublesField } from "#shared/lib/money"
 import { pageFields } from "#shared/lib/pagination"
+
+// Фраз в группе бывают сотни, поэтому по умолчанию берётся минимум, по которому фразу
+// видно и можно поставить ставку. Statistics, Productivity и автотаргетинг за ним —
+// по запросу: на сотне фраз они утраивают ответ. Живёт в контракте, а не в хендлере,
+// потому что перечислен в описании параметра fields.
+export const KEYWORD_LIST_FIELDS: FieldOf<"keywords", "KeywordFieldEnum">[] = [
+  "Id",
+  "Keyword",
+  "CampaignId",
+  "AdGroupId",
+  "Status",
+  "State",
+  "Bid",
+  "ContextBid"
+]
 
 export const listKeywordsSchema = z.object({
   ad_group_ids: z
     .array(idField("ID группы объявлений"))
     .check(z.minLength(1, { error: "Укажите хотя бы одну группу" }))
     .meta({ description: "Группы, ключевые фразы которых нужно выбрать" }),
+  fields: fieldsField(API_FIELDS.keywords.KeywordFieldEnum, KEYWORD_LIST_FIELDS),
   ...pageFields
 })
 
@@ -84,4 +102,17 @@ export const setKeywordBidsSchema = z.object({
     .meta({ description: "Ставки на все фразы указанных кампаний" }),
   bid: rublesField("Ставка на поиске в рублях").optional(),
   context_bid: rublesField("Ставка в сетях (РСЯ) в рублях").optional()
+})
+
+export const getKeywordAuctionSchema = z.object({
+  keyword_ids: z.array(idField("ID ключевой фразы")).optional().meta({ description: "Аукцион по указанным фразам" }),
+  ad_group_ids: z
+    .array(idField("ID группы объявлений"))
+    .optional()
+    .meta({ description: "Аукцион по всем фразам указанных групп" }),
+  campaign_ids: z
+    .array(idField("ID кампании"))
+    .optional()
+    .meta({ description: "Аукцион по всем фразам указанных кампаний" }),
+  ...pageFields
 })

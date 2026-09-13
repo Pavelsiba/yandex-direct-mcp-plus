@@ -1,11 +1,22 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
 import type { addAdExtensionsSchema, deleteAdExtensionsSchema, listAdExtensionsSchema } from "./schema.js"
 
 const NO_MONEY = { money: false } as const
+
+// State в набор не берётся: он приходит фильтром в SelectionCriteria, и дублировать
+// его в выдаче незачем.
+const LIST_FIELDS: FieldOf<"adextensions", "AdExtensionFieldEnum">[] = [
+  "Id",
+  "Type",
+  "Status",
+  "StatusClarification",
+  "Associated"
+]
 
 export async function handleListAdExtensions(params: z.infer<typeof listAdExtensionsSchema>): Promise<string> {
   const selection: Record<string, unknown> = { Types: ["CALLOUT"] }
@@ -15,8 +26,8 @@ export async function handleListAdExtensions(params: z.infer<typeof listAdExtens
 
   const request: Record<string, unknown> = {
     SelectionCriteria: selection,
-    FieldNames: ["Id", "Type", "Status", "StatusClarification", "Associated"],
-    CalloutFieldNames: ["CalloutText"]
+    FieldNames: LIST_FIELDS,
+    CalloutFieldNames: [...API_FIELDS.adextensions.CalloutFieldEnum]
   }
   const page = buildPage(params)
   if (page) request.Page = page

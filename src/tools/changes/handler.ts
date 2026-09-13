@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import type { FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiIds } from "#shared/lib/id"
 import type { getChangesSchema } from "./schema.js"
@@ -8,13 +9,15 @@ const NO_MONEY = { money: false } as const
 
 type Params = z.infer<typeof getChangesSchema>
 
+type CheckField = FieldOf<"changes", "CheckFieldEnum">
+
 // Директ требует ровно один тип селектора: смешивать кампании, группы и объявления нельзя.
-function selectedScope(params: Params): string {
+function selectedScope(params: Params): CheckField {
   const scopes = [
     params.campaign_ids?.length ? "CampaignIds" : undefined,
     params.ad_group_ids?.length ? "AdGroupIds" : undefined,
     params.ad_ids?.length ? "AdIds" : undefined
-  ].filter((scope): scope is string => scope !== undefined)
+  ].filter((scope): scope is CheckField => scope !== undefined)
 
   if (scopes.length !== 1) {
     throw new Error("Для mode=objects передайте ровно один из campaign_ids/ad_group_ids/ad_ids.")

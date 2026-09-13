@@ -3,12 +3,13 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
 import {
   handleAddKeywords,
+  handleGetKeywordAuction,
   handleListKeywords,
   handleManageKeywords,
   handleSetKeywordBids,
   handleUpdateKeywords
 } from "./handler.js"
-import { setKeywordBidsSchema } from "./schema.js"
+import { getKeywordAuctionSchema, listKeywordsSchema, setKeywordBidsSchema } from "./schema.js"
 
 installFetchMock()
 
@@ -27,6 +28,34 @@ describe("list_keywords", () => {
     expect(lastRawBody()).toContain('"AdGroupIds":[1915016273214320641]')
     expect(lastBody().params.FieldNames).toEqual(expect.arrayContaining(["Bid", "ContextBid"]))
     expect(lastBody().params.Page).toEqual({ Limit: 10 })
+  })
+
+  it("отдаёт выбранные вызывающим поля вместо набора по умолчанию", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Keywords: [] } }))
+
+    // Через схему, а не мимо неё: иначе имя поля не проверялось бы ничем и тест прошёл бы
+    // с несуществующим Statistics вместо StatisticsSearch.
+    const params = listKeywordsSchema.parse({
+      ad_group_ids: ["1915016273214320641"],
+      fields: ["Id", "Keyword", "StatisticsSearch"]
+    })
+    await handleListKeywords(params)
+
+    expect(lastBody().params.FieldNames).toEqual(["Id", "Keyword", "StatisticsSearch"])
+  })
+
+  // Имя не из KeywordFieldEnum Директ отбивает ошибкой 8000 на боевом вызове — схема
+  // обязана не пустить его дальше, иначе баллы тратятся на заведомо неверный запрос.
+  it("схема не принимает поле, которого нет в перечислении", () => {
+    const parsed = listKeywordsSchema.safeParse({ ad_group_ids: ["1"], fields: ["Id", "Productvity"] })
+
+    expect(parsed.success).toBe(false)
+  })
+
+  it("схема не принимает пустой список полей", () => {
+    const parsed = listKeywordsSchema.safeParse({ ad_group_ids: ["1"], fields: [] })
+
+    expect(parsed.success).toBe(false)
   })
 })
 
@@ -126,5 +155,61 @@ describe("set_keyword_bids", () => {
 
     await expect(handleSetKeywordBids(params)).rejects.toThrow("bid и/или context_bid")
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+})
+
+describe("get_keyword_auction", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("отбирает по уровню целей именем множественного числа", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Bids: [] } }))
+
+    await handleGetKeywordAuction(getKeywordAuctionSchema.parse({ campaign_ids: ["1915016273214320641"] }))
+
+    expect(lastBody().method).toBe("get")
+    expect(lastRawBody()).toContain('"CampaignIds":[1915016273214320641]')
+    expect(lastBody().params.FieldNames).toContain("AuctionBids")
+    expect(lastBody().params.FieldNames).toContain("MinSearchPrice")
+  })
+
+  it("требует ровно один уровень целей", async () => {
+    await expect(handleGetKeywordAuction(getKeywordAuctionSchema.parse({}))).rejects.toThrow("ровно один уровень")
+
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  // Лесенка приходит микроединицами, а CompetitorsBids — голым массивом чисел: без
+  // переноса ключа вглубь массива ставки конкурентов остались бы в микроединицах.
+  it("переводит в рубли всю аукционную выдачу, включая ставки конкурентов", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({
+        result: {
+          Bids: [
+            {
+              KeywordId: 1234567890,
+              Bid: 300000,
+              MinSearchPrice: 300000,
+              CurrentSearchPrice: null,
+              CompetitorsBids: [45100000, 9700000],
+              AuctionBids: [{ Position: "P11", Bid: 45100000, Price: 16000000 }],
+              SearchPrices: [{ Position: "PREMIUMFIRST", Price: 45100000 }]
+            }
+          ]
+        }
+      })
+    )
+
+    const output = JSON.parse(
+      await handleGetKeywordAuction(getKeywordAuctionSchema.parse({ keyword_ids: ["1234567890"] }))
+    )
+    const bid = output.result.Bids[0]
+
+    expect(bid.Bid).toBe(0.3)
+    expect(bid.MinSearchPrice).toBe(0.3)
+    expect(bid.CurrentSearchPrice).toBeNull()
+    expect(bid.CompetitorsBids).toEqual([45.1, 9.7])
+    expect(bid.AuctionBids[0]).toEqual({ Position: "P11", Bid: 45.1, Price: 16 })
+    expect(bid.SearchPrices[0]).toEqual({ Position: "PREMIUMFIRST", Price: 45.1 })
+    expect(bid.KeywordId).toBe("1234567890")
   })
 })

@@ -10,7 +10,14 @@ import {
   handleSetStrategy,
   handleUpdateCampaign
 } from "./handler.js"
-import { createCampaignSchema, getCampaignSchema, setStrategySchema, updateCampaignSchema } from "./schema.js"
+import {
+  CAMPAIGN_LIST_FIELDS,
+  createCampaignSchema,
+  getCampaignSchema,
+  listCampaignsSchema,
+  setStrategySchema,
+  updateCampaignSchema
+} from "./schema.js"
 
 installFetchMock()
 
@@ -29,6 +36,30 @@ describe("list_campaigns", () => {
     await handleListCampaigns({ status: "DRAFT" })
 
     expect(lastBody().params.SelectionCriteria.Statuses).toEqual(["DRAFT"])
+  })
+
+  it("без fields запрашивает набор по умолчанию", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleListCampaigns({})
+
+    expect(lastBody().params.FieldNames).toEqual(CAMPAIGN_LIST_FIELDS)
+  })
+
+  it("отдаёт выбранные вызывающим поля вместо набора по умолчанию", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    // Через схему, а не мимо неё: иначе имя поля не проверялось бы ничем.
+    await handleListCampaigns(listCampaignsSchema.parse({ fields: ["Id", "Name", "Funds"] }))
+
+    expect(lastBody().params.FieldNames).toEqual(["Id", "Name", "Funds"])
+  })
+
+  // Имя не из CampaignFieldEnum Директ отбивает ошибкой 8000 на боевом вызове — схема
+  // обязана не пустить его дальше, иначе баллы тратятся на заведомо неверный запрос.
+  it("схема не принимает поле, которого нет в перечислении", () => {
+    expect(listCampaignsSchema.safeParse({ fields: ["Id", "DailyBudgets"] }).success).toBe(false)
+    expect(listCampaignsSchema.safeParse({ fields: [] }).success).toBe(false)
   })
 
   it("добавляет Page только когда задан limit или offset", async () => {
@@ -69,6 +100,30 @@ describe("get_campaign", () => {
     const output = await handleGetCampaign({ campaign_id: "1915016273214320641" })
 
     expect(output).toContain('"1915016273214320641"')
+  })
+
+  it("запрашивает цели, счётчики и модель атрибуции вместе с настройками", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleGetCampaign({ campaign_id: "1915016273214320641" })
+
+    const { params } = JSON.parse(lastRawBody())
+    expect(params.TextCampaignFieldNames).toEqual(
+      expect.arrayContaining(["TrackingParams", "PriorityGoals", "CounterIds", "AttributionModel", "Settings"])
+    )
+    expect(params.FieldNames).toContain("StatusClarification")
+  })
+
+  // У смарт-кампаний поле называется CounterId, в единственном числе: множественного
+  // в SmartCampaignFieldEnum нет, и запрос с ним Директ не примет.
+  it("просит у смарт-кампании CounterId, а не CounterIds", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleGetCampaign({ campaign_id: "1915016273214320641" })
+
+    const { params } = JSON.parse(lastRawBody())
+    expect(params.SmartCampaignFieldNames).toContain("CounterId")
+    expect(params.SmartCampaignFieldNames).not.toContain("CounterIds")
   })
 })
 
@@ -197,8 +252,10 @@ describe("UTM-разметка кампании", () => {
     await handleGetCampaign(getCampaignSchema.parse({ campaign_id: "123" }))
 
     const sent = lastBody().params
-    expect(sent.TextCampaignFieldNames).toEqual(["TrackingParams"])
-    expect(sent.UnifiedCampaignFieldNames).toEqual(["TrackingParams"])
+    expect(sent.TextCampaignFieldNames).toContain("TrackingParams")
+    expect(sent.DynamicTextCampaignFieldNames).toContain("TrackingParams")
+    expect(sent.SmartCampaignFieldNames).toContain("TrackingParams")
+    expect(sent.UnifiedCampaignFieldNames).toContain("TrackingParams")
   })
 
   it("пустую строку схема отвергает: снятие — это null", () => {
@@ -244,7 +301,44 @@ describe("get_strategy", () => {
 
     await handleGetStrategy({ campaign_id: "123" })
 
-    expect(lastBody().params.TextCampaignFieldNames).toEqual(["BiddingStrategy"])
+    expect(lastBody().params.TextCampaignFieldNames).toEqual([
+      "BiddingStrategy",
+      "PriorityGoals",
+      "CounterIds",
+      "AttributionModel"
+    ])
+  })
+
+  // У максимума конверсий в BiddingStrategy стоит служебный GoalId 13 («ключевые цели»), а
+  // сами цели — в PriorityGoals. Без них ответ читается как «цель не выбрана».
+  it("отдаёт целевые действия с ценностью в рублях", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({
+        result: {
+          Campaigns: [
+            {
+              Id: 123,
+              TextCampaign: {
+                BiddingStrategy: { Search: { BiddingStrategyType: "WB_MAXIMUM_CONVERSION_RATE" } },
+                PriorityGoals: {
+                  Items: [{ GoalId: 601234567, Value: 400000000, IsMetrikaSourceOfValue: "NO" }]
+                }
+              }
+            }
+          ]
+        }
+      })
+    )
+
+    const output = JSON.parse(await handleGetStrategy({ campaign_id: "123" }))
+
+    const goal = output.result.Campaigns[0].TextCampaign.PriorityGoals.Items[0]
+
+    // Тип GoalId здесь не проверяется: приведение ID к строке живёт в format и меняется
+    // независимо от этого инструмента. Здесь важна ценность цели — рубли, не микроединицы.
+    expect(String(goal.GoalId)).toBe("601234567")
+    expect(goal.Value).toBe(400)
+    expect(goal.IsMetrikaSourceOfValue).toBe("NO")
   })
 })
 
@@ -271,6 +365,38 @@ describe("set_strategy", () => {
       },
       Network: { BiddingStrategyType: "NETWORK_DEFAULT", NetworkDefault: { LimitPercent: 30 } }
     })
+  })
+
+  // Дефолт Директа для новых кампаний: именно на нём 12.09.2026 выяснилось, что
+  // прочитать стратегию можно, а записать ту же — нет.
+  it("собирает максимум конверсий с целью и недельным бюджетом", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [{ Id: 1 }] } }))
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "WB_MAXIMUM_CONVERSION_RATE",
+      network_type: "SERVING_OFF",
+      weekly_spend_limit: 6000,
+      goal_id: "601234567"
+    })
+
+    await handleSetStrategy(params)
+
+    expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy.Search).toEqual({
+      BiddingStrategyType: "WB_MAXIMUM_CONVERSION_RATE",
+      WbMaximumConversionRate: { WeeklySpendLimit: 6_000_000_000, GoalId: 601234567 }
+    })
+  })
+
+  it("не даёт включить максимум конверсий без недельного бюджета", async () => {
+    const params = setStrategySchema.parse({
+      campaign_id: "123",
+      search_type: "WB_MAXIMUM_CONVERSION_RATE",
+      network_type: "SERVING_OFF",
+      goal_id: "601234567"
+    })
+
+    await expect(handleSetStrategy(params)).rejects.toThrow("weekly_spend_limit")
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it("не даёт включить максимум кликов без недельного бюджета", async () => {

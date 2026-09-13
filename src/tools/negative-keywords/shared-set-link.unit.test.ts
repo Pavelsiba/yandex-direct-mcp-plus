@@ -20,8 +20,8 @@ describe("buildCampaignLink", () => {
   })
 
   it("кладёт наборы внутрь объекта настроек, а не на верхний уровень", () => {
-    expect(buildCampaignLink("714159718", "TEXT_CAMPAIGN", { Items: [1n, 2n] })).toEqual({
-      Id: 714159718n,
+    expect(buildCampaignLink("123456789", "TEXT_CAMPAIGN", { Items: [1n, 2n] })).toEqual({
+      Id: 123456789n,
       TextCampaign: { NegativeKeywordSharedSetIds: { Items: [1n, 2n] } }
     })
   })

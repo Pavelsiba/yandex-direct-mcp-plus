@@ -1,18 +1,28 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
 import { tools } from "#app/registry"
+import { idField, regionIdField } from "#shared/lib/id"
 
 const ID_FIELD = /_ids?$/
 
-// Схема поля ID, построенная через idField: строка с regex на десятичное число.
-function isIdField(schema: z.ZodType): boolean {
+function patternOf(schema: z.ZodType): string | undefined {
   const json = z.toJSONSchema(schema, { io: "input", unrepresentable: "any" }) as {
     type?: string
     pattern?: string
     items?: { type?: string; pattern?: string }
   }
   const target = json.type === "array" ? json.items : json
-  return target?.type === "string" && target?.pattern === "^[1-9]\\d*$"
+  return target?.type === "string" ? target.pattern : undefined
+}
+
+// Шаблоны снимаются с самих полей, а не переписываются литералом: иначе правка
+// shared/lib/id разъехалась бы с проверкой молча. Код региона — второй допустимый
+// шаблон: у него легальны минус (исключить регион) и ноль (все регионы).
+const ID_PATTERNS = new Set([patternOf(idField("проба")), patternOf(regionIdField("проба"))])
+
+function isIdField(schema: z.ZodType): boolean {
+  const pattern = patternOf(schema)
+  return pattern !== undefined && ID_PATTERNS.has(pattern)
 }
 
 describe("реестр инструментов", () => {

@@ -1,3 +1,5 @@
+import { API_FIELDS } from "./api-fields.js"
+
 // Перечисления Директа, по набору на предметную область. Схема — единственная
 // документация, которую видит модель: допустимые значения обязаны быть типом.
 //
@@ -142,10 +144,11 @@ export const DYNAMIC_TARGET_ACTIONS = ["add", "set_bids", "suspend", "resume", "
 export const WEBPAGE_CONDITION_OPERANDS = ["URL", "DOMAIN", "PAGE_TITLE", "PAGE_CONTENT", "OFFERS_LIST_URL"] as const
 export const WEBPAGE_CONDITION_OPERATORS = ["EQUALS_ANY", "NOT_EQUALS_ALL", "CONTAINS_ANY", "NOT_CONTAINS_ALL"] as const
 
-// Режимы get_changes (наши имена методов checkCampaigns/check/checkDictionaries)
-// и CheckFieldEnum.
+// Режимы get_changes — наши имена методов checkCampaigns/check/checkDictionaries.
+// Поля же берутся из снимка WSDL: это ровно CheckFieldEnum, и рукописная копия
+// разошлась бы с ним молча.
 export const CHANGES_MODES = ["campaigns", "objects", "dictionaries"] as const
-export const CHANGES_FIELD_NAMES = ["CampaignIds", "AdGroupIds", "AdIds", "CampaignsStat"] as const
+export const CHANGES_FIELD_NAMES = API_FIELDS.changes.CheckFieldEnum
 
 // Стратегии, которые умеет выставлять set_strategy. Список по-прежнему уже полного
 // (в TextCampaignStrategyBase двенадцать структур настроек), но покрывает переход
@@ -158,6 +161,7 @@ export const CHANGES_FIELD_NAMES = ["CampaignIds", "AdGroupIds", "AdIds", "Campa
 export const SETTABLE_SEARCH_STRATEGIES = [
   "HIGHEST_POSITION",
   "WB_MAXIMUM_CLICKS",
+  "WB_MAXIMUM_CONVERSION_RATE",
   "AVERAGE_CPC",
   "AVERAGE_CPA",
   "PAY_FOR_CONVERSION",
@@ -168,6 +172,7 @@ export const SETTABLE_NETWORK_STRATEGIES = [
   "NETWORK_DEFAULT",
   "MAXIMUM_COVERAGE",
   "WB_MAXIMUM_CLICKS",
+  "WB_MAXIMUM_CONVERSION_RATE",
   "AVERAGE_CPC",
   "AVERAGE_CPA",
   "PAY_FOR_CONVERSION",

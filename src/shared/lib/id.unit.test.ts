@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { apiId, apiIds, idField } from "#shared/lib/id"
+import { apiId, apiIds, idField, regionIdField } from "#shared/lib/id"
 
 const campaignId = idField("ID кампании")
+const regionId = regionIdField("Код региона")
 
 describe("idField", () => {
   it("принимает 19-значный ID строкой", () => {
@@ -20,6 +21,20 @@ describe("idField", () => {
   it("отклоняет нулевые, отрицательные и нечисловые строки", () => {
     for (const value of ["0", "-5", "12.5", "abc", ""]) {
       expect(campaignId.safeParse(value).success, value).toBe(false)
+    }
+  })
+})
+
+describe("regionIdField", () => {
+  it("принимает обычный код, минус-регион и ноль", () => {
+    for (const value of ["225", "-213", "0"]) {
+      expect(regionId.parse(value)).toBe(value)
+    }
+  })
+
+  it("отклоняет дробные, нечисловые и пустые значения", () => {
+    for (const value of ["12.5", "-0", "--5", "abc", ""]) {
+      expect(regionId.safeParse(value).success, value).toBe(false)
     }
   })
 })

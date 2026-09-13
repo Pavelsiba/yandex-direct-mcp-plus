@@ -1,23 +1,12 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
 import type { listDynamicTargetsSchema, manageDynamicTargetsSchema } from "./schema.js"
 
-const LIST_FIELDS = [
-  "Id",
-  "AdGroupId",
-  "CampaignId",
-  "Name",
-  "Bid",
-  "ContextBid",
-  "StrategyPriority",
-  "State",
-  "StatusClarification",
-  "Conditions",
-  "ConditionType"
-]
+const LIST_FIELDS = [...API_FIELDS.dynamictextadtargets.WebpageFieldEnum]
 
 type Params = z.infer<typeof manageDynamicTargetsSchema>
 type Target = NonNullable<Params["targets"]>[number]
