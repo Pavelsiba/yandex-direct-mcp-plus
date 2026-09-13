@@ -12,17 +12,7 @@ import type {
   setKeywordBidsSchema,
   updateKeywordsSchema
 } from "./schema.js"
-
-const LIST_FIELDS: FieldOf<"keywords", "KeywordFieldEnum">[] = [
-  "Id",
-  "Keyword",
-  "CampaignId",
-  "AdGroupId",
-  "Status",
-  "State",
-  "Bid",
-  "ContextBid"
-]
+import { KEYWORD_LIST_FIELDS } from "./schema.js"
 
 // Ставки ставятся на один уровень целей за вызов; поле тела зависит от уровня.
 // Чтение аукциона отбирает те же уровни, но именем множественного числа — отсюда две
@@ -66,7 +56,7 @@ const AUCTION_FIELDS: FieldOf<"bids", "BidFieldEnum">[] = [
 export async function handleListKeywords(params: z.infer<typeof listKeywordsSchema>): Promise<string> {
   const requestParams: Record<string, unknown> = {
     SelectionCriteria: { AdGroupIds: apiIds(params.ad_group_ids) },
-    FieldNames: LIST_FIELDS
+    FieldNames: params.fields ?? KEYWORD_LIST_FIELDS
   }
   const page = buildPage(params)
   if (page) requestParams.Page = page

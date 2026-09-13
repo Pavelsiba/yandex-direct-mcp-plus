@@ -9,7 +9,7 @@ import {
   handleSetKeywordBids,
   handleUpdateKeywords
 } from "./handler.js"
-import { getKeywordAuctionSchema, setKeywordBidsSchema } from "./schema.js"
+import { getKeywordAuctionSchema, listKeywordsSchema, setKeywordBidsSchema } from "./schema.js"
 
 installFetchMock()
 
@@ -28,6 +28,34 @@ describe("list_keywords", () => {
     expect(lastRawBody()).toContain('"AdGroupIds":[1915016273214320641]')
     expect(lastBody().params.FieldNames).toEqual(expect.arrayContaining(["Bid", "ContextBid"]))
     expect(lastBody().params.Page).toEqual({ Limit: 10 })
+  })
+
+  it("отдаёт выбранные вызывающим поля вместо набора по умолчанию", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Keywords: [] } }))
+
+    // Через схему, а не мимо неё: иначе имя поля не проверялось бы ничем и тест прошёл бы
+    // с несуществующим Statistics вместо StatisticsSearch.
+    const params = listKeywordsSchema.parse({
+      ad_group_ids: ["1915016273214320641"],
+      fields: ["Id", "Keyword", "StatisticsSearch"]
+    })
+    await handleListKeywords(params)
+
+    expect(lastBody().params.FieldNames).toEqual(["Id", "Keyword", "StatisticsSearch"])
+  })
+
+  // Имя не из KeywordFieldEnum Директ отбивает ошибкой 8000 на боевом вызове — схема
+  // обязана не пустить его дальше, иначе баллы тратятся на заведомо неверный запрос.
+  it("схема не принимает поле, которого нет в перечислении", () => {
+    const parsed = listKeywordsSchema.safeParse({ ad_group_ids: ["1"], fields: ["Id", "Productvity"] })
+
+    expect(parsed.success).toBe(false)
+  })
+
+  it("схема не принимает пустой список полей", () => {
+    const parsed = listKeywordsSchema.safeParse({ ad_group_ids: ["1"], fields: [] })
+
+    expect(parsed.success).toBe(false)
   })
 })
 

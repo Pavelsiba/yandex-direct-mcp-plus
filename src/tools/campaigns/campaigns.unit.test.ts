@@ -10,7 +10,14 @@ import {
   handleSetStrategy,
   handleUpdateCampaign
 } from "./handler.js"
-import { createCampaignSchema, getCampaignSchema, setStrategySchema, updateCampaignSchema } from "./schema.js"
+import {
+  CAMPAIGN_LIST_FIELDS,
+  createCampaignSchema,
+  getCampaignSchema,
+  listCampaignsSchema,
+  setStrategySchema,
+  updateCampaignSchema
+} from "./schema.js"
 
 installFetchMock()
 
@@ -29,6 +36,30 @@ describe("list_campaigns", () => {
     await handleListCampaigns({ status: "DRAFT" })
 
     expect(lastBody().params.SelectionCriteria.Statuses).toEqual(["DRAFT"])
+  })
+
+  it("без fields запрашивает набор по умолчанию", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleListCampaigns({})
+
+    expect(lastBody().params.FieldNames).toEqual(CAMPAIGN_LIST_FIELDS)
+  })
+
+  it("отдаёт выбранные вызывающим поля вместо набора по умолчанию", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    // Через схему, а не мимо неё: иначе имя поля не проверялось бы ничем.
+    await handleListCampaigns(listCampaignsSchema.parse({ fields: ["Id", "Name", "Funds"] }))
+
+    expect(lastBody().params.FieldNames).toEqual(["Id", "Name", "Funds"])
+  })
+
+  // Имя не из CampaignFieldEnum Директ отбивает ошибкой 8000 на боевом вызове — схема
+  // обязана не пустить его дальше, иначе баллы тратятся на заведомо неверный запрос.
+  it("схема не принимает поле, которого нет в перечислении", () => {
+    expect(listCampaignsSchema.safeParse({ fields: ["Id", "DailyBudgets"] }).success).toBe(false)
+    expect(listCampaignsSchema.safeParse({ fields: [] }).success).toBe(false)
   })
 
   it("добавляет Page только когда задан limit или offset", async () => {

@@ -1,6 +1,7 @@
 // Контракт инструментов кампаний. Здесь же граница snake_case → camelCase
 // и конвертация рублей в микроединицы: хендлер получает готовые значения.
 import { z } from "zod"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import {
   CAMPAIGN_ACTIONS,
   CAMPAIGN_STATUS_ACTIONS,
@@ -14,13 +15,31 @@ import {
 } from "#shared/config/enums"
 import { MAX_CAMPAIGNS_PER_CALL } from "#shared/config/limits"
 import { dateField } from "#shared/lib/date"
+import { fieldsField } from "#shared/lib/fields"
 import { idField } from "#shared/lib/id"
 import { rublesField } from "#shared/lib/money"
 import { pageFields } from "#shared/lib/pagination"
 
+// Набор по умолчанию: кампании идут списком десятками, поэтому он узкий и осознанный,
+// а не весь CampaignFieldEnum. StatusClarification — исключение: единственное место, где
+// Директ объясняет, почему кампания отклонена или остановлена, и это короткая строка.
+// Живёт в контракте, а не в хендлере, потому что перечислен в описании параметра fields.
+export const CAMPAIGN_LIST_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [
+  "Id",
+  "Name",
+  "Status",
+  "StatusClarification",
+  "State",
+  "DailyBudget",
+  "StartDate",
+  "Type",
+  "Statistics"
+]
+
 export const listCampaignsSchema = z.object({
   status: z.literal(CAMPAIGN_STATUSES).optional().meta({ description: "Фильтр по статусу модерации кампании" }),
   types: z.array(z.literal(CAMPAIGN_TYPES)).optional().meta({ description: "Фильтр по типам кампаний" }),
+  fields: fieldsField(API_FIELDS.campaigns.CampaignFieldEnum, CAMPAIGN_LIST_FIELDS),
   ...pageFields
 })
 
