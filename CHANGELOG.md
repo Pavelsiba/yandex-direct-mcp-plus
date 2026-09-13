@@ -4,6 +4,18 @@
 `theYahia/yandex-direct-mcp`) — в
 [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
 
+# [1.6.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.5.0...v1.6.0) (2026-09-13)
+
+
+### Bug Fixes
+
+* **campaigns:** описано, что кампании MCBANNER API не отдаёт ([f092e39](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/f092e39015d85b338d4da4ac1888d1e589778d9c))
+
+
+### Features
+
+* **campaigns:** добавлен set_priority_goals для целей стратегии ([7436773](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/74367739cee5cde15e1fe44c318d677fd3fa25f3))
+
 # [1.5.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.4.0...v1.5.0) (2026-09-13)
 
 
