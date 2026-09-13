@@ -20,6 +20,7 @@ import {
   getStrategyTool,
   listCampaignsTool,
   manageCampaignsTool,
+  setPriorityGoalsTool,
   setStrategyTool,
   updateCampaignTool
 } from "#tools/campaigns/tool"
@@ -64,6 +65,7 @@ export const tools: readonly ToolDescriptor[] = [
   manageCampaignsTool,
   getStrategyTool,
   setStrategyTool,
+  setPriorityGoalsTool,
   getTimeTargetingTool,
   setTimeTargetingTool,
 

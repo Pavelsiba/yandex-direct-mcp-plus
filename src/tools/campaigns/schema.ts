@@ -13,7 +13,7 @@ import {
   SETTABLE_NETWORK_STRATEGIES,
   SETTABLE_SEARCH_STRATEGIES
 } from "#shared/config/enums"
-import { MAX_CAMPAIGNS_PER_CALL } from "#shared/config/limits"
+import { MAX_CAMPAIGNS_PER_CALL, MAX_PRIORITY_GOALS } from "#shared/config/limits"
 import { dateField } from "#shared/lib/date"
 import { fieldsField } from "#shared/lib/fields"
 import { idField } from "#shared/lib/id"
@@ -159,11 +159,37 @@ export const setStrategySchema = z.object({
   goal_id: idField(
     "ID цели Метрики для AVERAGE_CPA, PAY_FOR_CONVERSION и WB_MAXIMUM_CONVERSION_RATE; для оплаты за конверсию обязателен. " +
       "Для WB_MAXIMUM_CONVERSION_RATE допустимо служебное 13 — оптимизация по ключевым целям кампании (PriorityGoals); " +
-      "Директ принимает его, только если в PriorityGoals есть цель, кроме 12 «Вовлечённые сессии»"
+      "Директ принимает его, только если в PriorityGoals есть цель, кроме 12 «Вовлечённые сессии»; сами цели задаёт set_priority_goals"
   ).optional(),
   network_limit_percent: z
     .int()
     .check(z.gte(1, { error: "Доля расходов не меньше 1%" }), z.lte(100, { error: "Доля расходов не больше 100%" }))
     .optional()
     .meta({ description: "Доля расходов в сетях для NETWORK_DEFAULT, проценты" })
+})
+
+// Цели стратегии перезаписываются целиком, как минус-фразы, и режим обязателен по той же
+// причине: replace с одной целью на просьбе «добавь цель» стёр бы остальные, а Директ
+// ответил бы успехом. Ценность необязательна в схеме только ради remove — там цель лишь
+// называется; для add и replace её требует хендлер.
+const priorityGoal = z.object({
+  goal_id: idField("ID цели Метрики; служебное 12 — «Вовлечённые сессии». Названия целей есть только в Метрике"),
+  value: rublesField(
+    "Ценность конверсии по цели в рублях; обязательна при mode=add и replace, при remove не нужна"
+  ).optional()
+})
+
+export const setPriorityGoalsSchema = z.object({
+  campaign_id: idField("ID кампании: текстово-графической, динамической, смарт или единой перфоманс-кампании"),
+  goals: z
+    .array(priorityGoal)
+    .check(z.maxLength(MAX_PRIORITY_GOALS, { error: `У кампании не больше ${MAX_PRIORITY_GOALS} целей стратегии` }))
+    .meta({
+      description:
+        "Цели: при mode=replace — полный новый список взамен прежнего (пустой массив очищает), при add — что добавить или чью ценность поменять, при remove — что убрать"
+    }),
+  mode: z.literal(["replace", "add", "remove"]).meta({
+    description:
+      "Обязателен. replace — заменить список целиком (прежние цели теряются), add — добавить цели или поменять ценность уже заданных, remove — убрать перечисленные. Текущий список сервер читает сам, это дополнительный вызов API"
+  })
 })

@@ -7,6 +7,7 @@ import {
   handleGetStrategy,
   handleListCampaigns,
   handleManageCampaigns,
+  handleSetPriorityGoals,
   handleSetStrategy,
   handleUpdateCampaign
 } from "./handler.js"
@@ -15,6 +16,7 @@ import {
   createCampaignSchema,
   getCampaignSchema,
   listCampaignsSchema,
+  setPriorityGoalsSchema,
   setStrategySchema,
   updateCampaignSchema
 } from "./schema.js"
@@ -26,6 +28,119 @@ const emptyResult = { result: { Campaigns: [] } }
 function lastBody() {
   return JSON.parse(lastRawBody())
 }
+
+describe("set_priority_goals", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  const campaignWithGoal = (type: string, settingsKey: string) =>
+    okResponse({
+      result: {
+        Campaigns: [
+          {
+            Id: 123,
+            Type: type,
+            [settingsKey]: {
+              PriorityGoals: { Items: [{ GoalId: 601000001, Value: 200000000, IsMetrikaSourceOfValue: "NO" }] }
+            }
+          }
+        ]
+      }
+    })
+  const updated = () => okResponse({ result: { UpdateResults: [{ Id: 123, Errors: [] }] } })
+
+  it("в режиме add читает текущие цели и отправляет полный список с новой", async () => {
+    mockFetch.mockResolvedValueOnce(campaignWithGoal("TEXT_CAMPAIGN", "TextCampaign")).mockResolvedValueOnce(updated())
+    const params = setPriorityGoalsSchema.parse({
+      campaign_id: "123",
+      mode: "add",
+      goals: [{ goal_id: "601000003", value: 150 }]
+    })
+
+    await handleSetPriorityGoals(params)
+
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body).params.TextCampaignFieldNames).toEqual(["PriorityGoals"])
+    expect(lastBody().params.Campaigns[0]).toEqual({
+      Id: 123,
+      TextCampaign: {
+        PriorityGoals: {
+          Items: [
+            { GoalId: 601000001, Value: 200_000_000, IsMetrikaSourceOfValue: "NO", Operation: "SET" },
+            { GoalId: 601000003, Value: 150_000_000, Operation: "SET" }
+          ]
+        }
+      }
+    })
+  })
+
+  it("пишет цели в объект настроек, названный по типу кампании", async () => {
+    mockFetch
+      .mockResolvedValueOnce(campaignWithGoal("DYNAMIC_TEXT_CAMPAIGN", "DynamicTextCampaign"))
+      .mockResolvedValueOnce(updated())
+    const params = setPriorityGoalsSchema.parse({
+      campaign_id: "123",
+      mode: "replace",
+      goals: [{ goal_id: "601000003", value: 150 }]
+    })
+
+    await handleSetPriorityGoals(params)
+
+    expect(lastBody().params.Campaigns[0]).toEqual({
+      Id: 123,
+      DynamicTextCampaign: { PriorityGoals: { Items: [{ GoalId: 601000003, Value: 150_000_000, Operation: "SET" }] } }
+    })
+  })
+
+  it("убрав последнюю цель, очищает список значением null", async () => {
+    mockFetch.mockResolvedValueOnce(campaignWithGoal("TEXT_CAMPAIGN", "TextCampaign")).mockResolvedValueOnce(updated())
+    const params = setPriorityGoalsSchema.parse({
+      campaign_id: "123",
+      mode: "remove",
+      goals: [{ goal_id: "601000001" }]
+    })
+
+    await handleSetPriorityGoals(params)
+
+    expect(lastBody().params.Campaigns[0]).toEqual({ Id: 123, TextCampaign: { PriorityGoals: null } })
+  })
+
+  it("без ценности в режиме add отказывает, не обращаясь к API", async () => {
+    const params = setPriorityGoalsSchema.parse({ campaign_id: "123", mode: "add", goals: [{ goal_id: "601000003" }] })
+
+    await expect(handleSetPriorityGoals(params)).rejects.toThrow("value обязателен")
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it("на типе кампании без целей стратегии не пишет ничего", async () => {
+    mockFetch.mockResolvedValueOnce(campaignWithGoal("MOBILE_APP_CAMPAIGN", "MobileAppCampaign"))
+    const params = setPriorityGoalsSchema.parse({
+      campaign_id: "123",
+      mode: "add",
+      goals: [{ goal_id: "601000003", value: 150 }]
+    })
+
+    await expect(handleSetPriorityGoals(params)).rejects.toThrow("MOBILE_APP_CAMPAIGN")
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("не найденная кампания — ошибка до записи, а не пустой список", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+    const params = setPriorityGoalsSchema.parse({
+      campaign_id: "123",
+      mode: "add",
+      goals: [{ goal_id: "601000003", value: 150 }]
+    })
+
+    await expect(handleSetPriorityGoals(params)).rejects.toThrow("не найдена")
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("схема не принимает режим, которого нет", () => {
+    expect(
+      setPriorityGoalsSchema.safeParse({ campaign_id: "123", mode: "append", goals: [{ goal_id: "1", value: 1 }] })
+        .success
+    ).toBe(false)
+  })
+})
 
 describe("list_campaigns", () => {
   beforeEach(() => mockFetch.mockReset())
