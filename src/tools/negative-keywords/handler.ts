@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -22,7 +23,7 @@ export async function handleGetCampaignNegativeKeywords(
 ): Promise<string> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: apiIds(params.campaign_ids) },
-    FieldNames: ["Id", "Name", "NegativeKeywords"]
+    FieldNames: ["Id", "Name", "NegativeKeywords"] satisfies FieldOf<"campaigns", "CampaignFieldEnum">[]
   })
   return formatResult(data, NO_MONEY)
 }
@@ -39,7 +40,8 @@ async function readExistingKeywords(
 ): Promise<string[]> {
   const data = await apiPost(service, "get", {
     SelectionCriteria: { Ids: apiIds([id]) },
-    FieldNames: ["Id", "NegativeKeywords"]
+    FieldNames: ["Id", "NegativeKeywords"] satisfies (FieldOf<"campaigns", "CampaignFieldEnum"> &
+      FieldOf<"adgroups", "AdGroupFieldEnum">)[]
   })
 
   const found = (data as { result?: Record<string, unknown> })?.result?.[collection]
@@ -97,7 +99,9 @@ export async function handleSetAdGroupNegativeKeywords(
 export async function handleListNegativeKeywordSharedSets(
   params: z.infer<typeof listNegativeKeywordSharedSetsSchema>
 ): Promise<string> {
-  const request: Record<string, unknown> = { FieldNames: ["Id", "Name", "NegativeKeywords", "Associated"] }
+  const request: Record<string, unknown> = {
+    FieldNames: [...API_FIELDS.negativekeywordsharedsets.NegativeKeywordSharedSetFieldEnum]
+  }
   if (params.set_ids?.length) request.SelectionCriteria = { Ids: apiIds(params.set_ids) }
   const page = buildPage(params)
   if (page) request.Page = page
@@ -160,7 +164,7 @@ export async function handleManageNegativeKeywordSharedSets(
 async function readCampaignTypes(campaignIds: string[]): Promise<Map<string, string | undefined>> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: apiIds(campaignIds) },
-    FieldNames: ["Id", "Type"]
+    FieldNames: ["Id", "Type"] satisfies FieldOf<"campaigns", "CampaignFieldEnum">[]
   })
 
   const campaigns = (data as { result?: { Campaigns?: { Id: string; Type?: string }[] } }).result?.Campaigns ?? []

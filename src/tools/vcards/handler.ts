@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import type { FieldOf } from "#shared/config/api-fields"
 import { PAGE_MAX_LIMIT } from "#shared/config/limits"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
@@ -10,7 +11,9 @@ const NO_MONEY = { money: false } as const
 
 const DECIMAL_ID = /^[1-9]\d*$/
 
-const VCARD_FIELDS = [
+// Весь VCardFieldEnum, кроме PointOnMap: точка на карте — вложенный объект с координатами,
+// в текстовой выдаче нечитаема, а адрес уже приходит полями Country…Apartment.
+const VCARD_FIELDS: FieldOf<"vcards", "VCardFieldEnum">[] = [
   "Id",
   "CampaignId",
   "Country",
@@ -49,8 +52,8 @@ function collectVCardIds(response: AdsResponse): string[] {
 async function findVCardIdsByCampaigns(campaignIds: string[]): Promise<string[]> {
   const response = (await apiPost("ads", "get", {
     SelectionCriteria: { CampaignIds: apiIds(campaignIds) },
-    FieldNames: ["Id"],
-    TextAdFieldNames: ["VCardId"],
+    FieldNames: ["Id"] satisfies FieldOf<"ads", "AdFieldEnum">[],
+    TextAdFieldNames: ["VCardId"] satisfies FieldOf<"ads", "TextAdFieldEnum">[],
     Page: { Limit: PAGE_MAX_LIMIT }
   })) as AdsResponse
 

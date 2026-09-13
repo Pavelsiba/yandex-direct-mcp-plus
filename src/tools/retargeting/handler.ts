@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -12,16 +13,7 @@ import type {
 
 const NO_MONEY = { money: false } as const
 
-const LIST_FIELDS = [
-  "Type",
-  "Id",
-  "Name",
-  "Description",
-  "Rules",
-  "IsAvailable",
-  "Scope",
-  "AvailableForTargetsInAdGroupTypes"
-]
+const LIST_FIELDS = [...API_FIELDS.retargetinglists.RetargetingListFieldEnum]
 
 export async function handleListRetargetingLists(params: z.infer<typeof listRetargetingListsSchema>): Promise<string> {
   const selection: Record<string, unknown> = {}

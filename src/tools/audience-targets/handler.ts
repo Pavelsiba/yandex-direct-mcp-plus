@@ -1,20 +1,12 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
 import type { listAudienceTargetsSchema, setAudienceTargetsSchema } from "./schema.js"
 
-const LIST_FIELDS = [
-  "Id",
-  "AdGroupId",
-  "CampaignId",
-  "RetargetingListId",
-  "InterestId",
-  "ContextBid",
-  "StrategyPriority",
-  "State"
-]
+const LIST_FIELDS = [...API_FIELDS.audiencetargets.AudienceTargetFieldEnum]
 
 type Params = z.infer<typeof setAudienceTargetsSchema>
 type Target = NonNullable<Params["targets"]>[number]

@@ -16,22 +16,10 @@ import type {
   setStrategySchema,
   updateCampaignSchema
 } from "./schema.js"
+import { CAMPAIGN_LIST_FIELDS } from "./schema.js"
 
-// Списком идут кампании десятками, поэтому здесь набор узкий и осознанный, а не весь
-// CampaignFieldEnum. StatusClarification — исключение: единственное место, где Директ
-// объясняет, почему кампания отклонена или остановлена, и это короткая строка.
-const LIST_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [
-  "Id",
-  "Name",
-  "Status",
-  "StatusClarification",
-  "State",
-  "DailyBudget",
-  "StartDate",
-  "Type",
-  "Statistics"
-]
-const DETAIL_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [...LIST_FIELDS, "EndDate"]
+// Набор по умолчанию объявлен в контракте: его перечисляет описание параметра fields.
+const DETAIL_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [...CAMPAIGN_LIST_FIELDS, "EndDate"]
 
 // Цели, счётчики и модель атрибуции лежат не в BiddingStrategy, а рядом с ней: у кампании
 // на максимум конверсий в стратегии стоит служебный GoalId, и по нему кампания выглядит
@@ -69,7 +57,7 @@ const TRACKING_PARAMS_TYPES = ["TEXT_CAMPAIGN", "DYNAMIC_TEXT_CAMPAIGN", "SMART_
 async function readTrackingParamsKey(campaignId: string): Promise<CampaignSettingsKey> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(campaignId)] },
-    FieldNames: ["Id", "Type"]
+    FieldNames: ["Id", "Type"] satisfies FieldOf<"campaigns", "CampaignFieldEnum">[]
   })
 
   const campaign = (data as { result?: { Campaigns?: { Type?: string }[] } }).result?.Campaigns?.[0]
@@ -99,7 +87,10 @@ export async function handleListCampaigns(params: z.infer<typeof listCampaignsSc
   if (params.status) selectionCriteria.Statuses = [params.status]
   if (params.types) selectionCriteria.Types = params.types
 
-  const requestParams: Record<string, unknown> = { SelectionCriteria: selectionCriteria, FieldNames: LIST_FIELDS }
+  const requestParams: Record<string, unknown> = {
+    SelectionCriteria: selectionCriteria,
+    FieldNames: params.fields ?? CAMPAIGN_LIST_FIELDS
+  }
   const page = buildPage(params)
   if (page) requestParams.Page = page
 

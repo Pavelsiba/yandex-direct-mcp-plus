@@ -19,7 +19,8 @@ import {
 export const listKeywordsTool = defineTool({
   name: "list_keywords",
   title: "Список ключевых слов",
-  description: "Ключевые фразы в группах объявлений: фразы, ставки (руб), статусы.",
+  description:
+    "Ключевые фразы в группах объявлений: фразы, ставки (руб), статусы. По умолчанию возвращается узкий набор полей; нужны другие (StatisticsSearch, StatisticsNetwork, Productivity, ServingStatus и прочие из KeywordFieldEnum) — перечислите их в fields.",
   annotations: READ,
   schema: listKeywordsSchema,
   handler: handleListKeywords

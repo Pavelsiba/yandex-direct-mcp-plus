@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { apiPost } from "#shared/api/client"
 import { parseApiResult } from "#shared/api/parse"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import type { getRegionsSchema, listTimeZonesSchema } from "./schema.js"
 
@@ -87,7 +88,7 @@ function limitedOutput<Item>(matched: Item[], limit: number): string {
 async function searchRegionsWithParents(search: string, limit: number): Promise<string> {
   const data = await apiPost("dictionaries", "getGeoRegions", {
     SelectionCriteria: { Name: search },
-    FieldNames: ["GeoRegionId", "GeoRegionName", "ParentGeoRegionNames"],
+    FieldNames: [...API_FIELDS.dictionaries.GeoRegionFieldEnum],
     Page: { Limit: limit }
   })
   return formatResult(data, { money: false })

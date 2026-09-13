@@ -22,7 +22,8 @@ import {
 export const listCampaignsTool = defineTool({
   name: "list_campaigns",
   title: "Список кампаний",
-  description: "Список рекламных кампаний Яндекс.Директ с фильтрацией по статусу и типу. Бюджеты — в рублях.",
+  description:
+    "Список рекламных кампаний Яндекс.Директ с фильтрацией по статусу и типу. Бюджеты — в рублях. По умолчанию возвращается узкий набор полей; нужны другие (Funds, TimeZone, NegativeKeywords и прочие из CampaignFieldEnum) — перечислите их в fields.",
   annotations: READ,
   schema: listCampaignsSchema,
   handler: handleListCampaigns

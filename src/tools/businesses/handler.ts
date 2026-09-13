@@ -1,23 +1,12 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
 import type { listBusinessesSchema } from "./schema.js"
 
-const LIST_FIELDS = [
-  "Id",
-  "Name",
-  "Address",
-  "Phone",
-  "ProfileUrl",
-  "InternalUrl",
-  "IsPublished",
-  "MergedIds",
-  "Rubric",
-  "Urls",
-  "HasOffice"
-]
+const LIST_FIELDS = [...API_FIELDS.businesses.BusinessFieldEnum]
 
 export async function handleListBusinesses(params: z.infer<typeof listBusinessesSchema>): Promise<string> {
   const request: Record<string, unknown> = { FieldNames: LIST_FIELDS }

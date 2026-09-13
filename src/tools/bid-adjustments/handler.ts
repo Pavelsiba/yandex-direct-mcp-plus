@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { MAX_ADJUSTMENTS_PER_CALL } from "#shared/config/limits"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
@@ -14,22 +15,25 @@ import type {
 const NO_MONEY = { money: false } as const
 
 // Значения корректировок лежат в отдельных полях на каждый тип, поэтому запрашиваются
-// все наборы сразу: иначе ответ придёт без самих коэффициентов.
+// все наборы сразу: иначе ответ придёт без самих коэффициентов. Каждый набор берётся
+// целиком — у типовых перечислений от одного до четырёх значений, отбирать нечего.
+const BID_MODIFIERS = API_FIELDS.bidmodifiers
+
 const FIELD_NAMES = {
-  FieldNames: ["Id", "CampaignId", "AdGroupId", "Level", "Type"],
-  MobileAdjustmentFieldNames: ["BidModifier", "OperatingSystemType"],
-  TabletAdjustmentFieldNames: ["BidModifier", "OperatingSystemType"],
-  DesktopAdjustmentFieldNames: ["BidModifier"],
-  DesktopOnlyAdjustmentFieldNames: ["BidModifier"],
-  SmartTvAdjustmentFieldNames: ["BidModifier"],
-  DemographicsAdjustmentFieldNames: ["Gender", "Age", "BidModifier", "Enabled"],
-  RetargetingAdjustmentFieldNames: ["RetargetingConditionId", "BidModifier", "Accessible", "Enabled"],
-  RegionalAdjustmentFieldNames: ["RegionId", "BidModifier", "Enabled"],
-  VideoAdjustmentFieldNames: ["BidModifier"],
-  SmartAdAdjustmentFieldNames: ["BidModifier"],
-  SerpLayoutAdjustmentFieldNames: ["SerpLayout", "BidModifier", "Enabled"],
-  IncomeGradeAdjustmentFieldNames: ["Grade", "BidModifier", "Enabled"],
-  AdGroupAdjustmentFieldNames: ["BidModifier"]
+  FieldNames: [...BID_MODIFIERS.BidModifierFieldEnum],
+  MobileAdjustmentFieldNames: [...BID_MODIFIERS.MobileAdjustmentFieldEnum],
+  TabletAdjustmentFieldNames: [...BID_MODIFIERS.TabletAdjustmentFieldEnum],
+  DesktopAdjustmentFieldNames: [...BID_MODIFIERS.DesktopAdjustmentFieldEnum],
+  DesktopOnlyAdjustmentFieldNames: [...BID_MODIFIERS.DesktopOnlyAdjustmentFieldEnum],
+  SmartTvAdjustmentFieldNames: [...BID_MODIFIERS.SmartTvAdjustmentFieldEnum],
+  DemographicsAdjustmentFieldNames: [...BID_MODIFIERS.DemographicsAdjustmentFieldEnum],
+  RetargetingAdjustmentFieldNames: [...BID_MODIFIERS.RetargetingAdjustmentFieldEnum],
+  RegionalAdjustmentFieldNames: [...BID_MODIFIERS.RegionalAdjustmentFieldEnum],
+  VideoAdjustmentFieldNames: [...BID_MODIFIERS.VideoAdjustmentFieldEnum],
+  SmartAdAdjustmentFieldNames: [...BID_MODIFIERS.SmartAdAdjustmentFieldEnum],
+  SerpLayoutAdjustmentFieldNames: [...BID_MODIFIERS.SerpLayoutAdjustmentFieldEnum],
+  IncomeGradeAdjustmentFieldNames: [...BID_MODIFIERS.IncomeGradeAdjustmentFieldEnum],
+  AdGroupAdjustmentFieldNames: [...BID_MODIFIERS.AdGroupAdjustmentFieldEnum]
 }
 
 export async function handleGetBidAdjustments(params: z.infer<typeof getBidAdjustmentsSchema>): Promise<string> {

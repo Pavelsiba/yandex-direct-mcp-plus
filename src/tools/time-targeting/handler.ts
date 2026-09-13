@@ -3,13 +3,14 @@
 // внутрь уходят строки из 25 чисел; перевод в обе стороны живёт здесь.
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import type { FieldOf } from "#shared/config/api-fields"
 import { WEEKDAYS } from "#shared/config/enums"
 import { HOURS_IN_DAY } from "#shared/config/limits"
 import { formatResult } from "#shared/lib/format"
 import { apiId } from "#shared/lib/id"
 import type { getTimeTargetingSchema, setTimeTargetingSchema } from "./schema.js"
 
-const FIELDS = ["Id", "Name", "TimeZone", "TimeTargeting"]
+const FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = ["Id", "Name", "TimeZone", "TimeTargeting"]
 
 // День недели в строке Schedule — число: 1 — понедельник, 7 — воскресенье.
 const DAY_NUMBERS = new Map(WEEKDAYS.map((day, index) => [day, index + 1]))

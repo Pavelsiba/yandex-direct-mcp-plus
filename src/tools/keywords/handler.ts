@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import type { FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -11,8 +12,7 @@ import type {
   setKeywordBidsSchema,
   updateKeywordsSchema
 } from "./schema.js"
-
-const LIST_FIELDS = ["Id", "Keyword", "CampaignId", "AdGroupId", "Status", "State", "Bid", "ContextBid"]
+import { KEYWORD_LIST_FIELDS } from "./schema.js"
 
 // Ставки ставятся на один уровень целей за вызов; поле тела зависит от уровня.
 // Чтение аукциона отбирает те же уровни, но именем множественного числа — отсюда две
@@ -37,7 +37,7 @@ function selectBidTarget(params: BidTargetParams): BidTarget {
 // Позиции аукциона Директ отдаёт двумя наборами имён: AuctionBids — кодами P11–P24,
 // SearchPrices — словами (PREMIUMFIRST, FOOTERBLOCK). Проба 12.09.2026: приходят оба,
 // а CurrentSearchPrice и ContextCoverage бывают null у фразы без показов.
-const AUCTION_FIELDS = [
+const AUCTION_FIELDS: FieldOf<"bids", "BidFieldEnum">[] = [
   "KeywordId",
   "CampaignId",
   "AdGroupId",
@@ -56,7 +56,7 @@ const AUCTION_FIELDS = [
 export async function handleListKeywords(params: z.infer<typeof listKeywordsSchema>): Promise<string> {
   const requestParams: Record<string, unknown> = {
     SelectionCriteria: { AdGroupIds: apiIds(params.ad_group_ids) },
-    FieldNames: LIST_FIELDS
+    FieldNames: params.fields ?? KEYWORD_LIST_FIELDS
   }
   const page = buildPage(params)
   if (page) requestParams.Page = page
