@@ -120,23 +120,26 @@ export const setStrategySchema = z.object({
   campaign_id: idField("ID текстово-графической кампании"),
   search_type: z.literal(SETTABLE_SEARCH_STRATEGIES).meta({
     description:
-      "Стратегия на поиске: HIGHEST_POSITION (ручная), WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
+      "Стратегия на поиске: HIGHEST_POSITION (ручная), WB_MAXIMUM_CLICKS, WB_MAXIMUM_CONVERSION_RATE (максимум конверсий за недельный бюджет), AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
   }),
   network_type: z.literal(SETTABLE_NETWORK_STRATEGIES).meta({
     description:
-      "Стратегия в сетях: NETWORK_DEFAULT (по настройкам поиска), MAXIMUM_COVERAGE, WB_MAXIMUM_CLICKS, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
+      "Стратегия в сетях: NETWORK_DEFAULT (по настройкам поиска), MAXIMUM_COVERAGE, WB_MAXIMUM_CLICKS, WB_MAXIMUM_CONVERSION_RATE, AVERAGE_CPC, AVERAGE_CPA, PAY_FOR_CONVERSION или SERVING_OFF"
   }),
   weekly_spend_limit: rublesField(
-    "Недельный бюджет в рублях; обязателен для WB_MAXIMUM_CLICKS, для остальных автостратегий необязателен"
+    "Недельный бюджет в рублях; обязателен для WB_MAXIMUM_CLICKS и WB_MAXIMUM_CONVERSION_RATE, для остальных автостратегий необязателен"
   ).optional(),
-  bid_ceiling: rublesField("Максимальная ставка в рублях для WB_MAXIMUM_CLICKS и AVERAGE_CPA").optional(),
+  bid_ceiling: rublesField(
+    "Максимальная ставка в рублях для WB_MAXIMUM_CLICKS, WB_MAXIMUM_CONVERSION_RATE и AVERAGE_CPA"
+  ).optional(),
   average_cpc: rublesField("Средняя цена клика в рублях; обязательна для AVERAGE_CPC").optional(),
   average_cpa: rublesField("Средняя цена конверсии в рублях; обязательна для AVERAGE_CPA").optional(),
   conversion_price: rublesField(
     "Цена конверсии в рублях для PAY_FOR_CONVERSION: списывается за конверсию, а не за клик"
   ).optional(),
   goal_id: idField(
-    "ID цели Метрики для AVERAGE_CPA и PAY_FOR_CONVERSION; для оплаты за конверсию обязателен"
+    "ID цели Метрики для AVERAGE_CPA, PAY_FOR_CONVERSION и WB_MAXIMUM_CONVERSION_RATE; для оплаты за конверсию обязателен. " +
+      "Для максимума конверсий необязателен, но без него Директ оптимизируется по вовлечённым сессиям, а не по вашей цели"
   ).optional(),
   network_limit_percent: z
     .int()

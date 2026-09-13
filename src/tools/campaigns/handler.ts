@@ -152,7 +152,10 @@ export async function handleGetStrategy(params: z.infer<typeof getStrategySchema
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(params.campaign_id)] },
     FieldNames: ["Id", "Name", "Type"],
-    TextCampaignFieldNames: ["BiddingStrategy"]
+    // PriorityGoals — не украшение, а вторая половина стратегии: в BiddingStrategy у
+    // максимума конверсий стоит служебный GoalId, а настоящие цели с их ценностью лежат
+    // здесь. Без этого поля ответ читается как «цель не выбрана» (проба 12.09.2026).
+    TextCampaignFieldNames: ["BiddingStrategy", "PriorityGoals", "CounterIds", "AttributionModel"]
   })
   return formatResult(data)
 }
@@ -185,6 +188,19 @@ function strategySettings(type: StrategyType, params: StrategyParams): Record<st
       }
       if (params.bid_ceiling !== undefined) settings.BidCeiling = params.bid_ceiling
       return { WbMaximumClicks: settings }
+    }
+
+    // Максимум конверсий за недельный бюджет. GoalId необязателен: без него Директ
+    // оптимизируется по вовлечённым сессиям — расчётной вероятности целевого действия,
+    // а не по вашей цели. Проба 12.09.2026: у кампании без выбранной цели в ответе
+    // стоит GoalId 13, которого нет ни на одном счётчике Метрики аккаунта.
+    case "WB_MAXIMUM_CONVERSION_RATE": {
+      const settings = withOptional(
+        { WeeklySpendLimit: required(params.weekly_spend_limit, "weekly_spend_limit", type) },
+        params
+      )
+      if (params.bid_ceiling !== undefined) settings.BidCeiling = params.bid_ceiling
+      return { WbMaximumConversionRate: settings }
     }
 
     case "AVERAGE_CPC":
