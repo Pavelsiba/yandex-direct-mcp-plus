@@ -8,8 +8,9 @@ import type { deleteSitelinksSchema, listSitelinksSchema, setSitelinksSchema } f
 
 const NO_MONEY = { money: false } as const
 
-// Sitelinks из SitelinksSetFieldEnum не запрашивается: сами ссылки приезжают
-// отдельным параметром SitelinkFieldNames, набором ниже.
+// Sitelinks из SitelinksSetFieldEnum не запрашивается: он взаимоисключающий с
+// SitelinkFieldNames (пробой 13.09.2026, ошибка 4004), а сами ссылки приезжают этим
+// параметром, набором ниже.
 const SET_FIELDS: FieldOf<"sitelinks", "SitelinksSetFieldEnum">[] = ["Id"]
 
 export async function handleListSitelinks(params: z.infer<typeof listSitelinksSchema>): Promise<string> {
