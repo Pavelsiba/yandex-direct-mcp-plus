@@ -2,6 +2,7 @@
 // ошибки разбирает shared/api — здесь только последовательность вызовов.
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import type { FieldOf } from "#shared/config/api-fields"
 import { type CampaignSettingsKey, getCampaignSettingsKey } from "#shared/lib/campaign-type"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
@@ -16,8 +17,49 @@ import type {
   updateCampaignSchema
 } from "./schema.js"
 
-const LIST_FIELDS = ["Id", "Name", "Status", "State", "DailyBudget", "StartDate", "Type", "Statistics"]
-const DETAIL_FIELDS = [...LIST_FIELDS, "EndDate"]
+// Списком идут кампании десятками, поэтому здесь набор узкий и осознанный, а не весь
+// CampaignFieldEnum. StatusClarification — исключение: единственное место, где Директ
+// объясняет, почему кампания отклонена или остановлена, и это короткая строка.
+const LIST_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [
+  "Id",
+  "Name",
+  "Status",
+  "StatusClarification",
+  "State",
+  "DailyBudget",
+  "StartDate",
+  "Type",
+  "Statistics"
+]
+const DETAIL_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [...LIST_FIELDS, "EndDate"]
+
+// Цели, счётчики и модель атрибуции лежат не в BiddingStrategy, а рядом с ней: у кампании
+// на максимум конверсий в стратегии стоит служебный GoalId, и по нему кампания выглядит
+// как «цель не настроена», хотя PriorityGoals заполнены.
+//
+// Пересечение трёх перечислений — это ровно «поле, которое есть у всех трёх типов»: TS
+// сводит пересечение строковых объединений к общим членам. Смарт-кампании стоят отдельно,
+// потому что счётчик у них называется CounterId, в единственном числе, и общий набор им
+// не подходит: пробой 13.09.2026 множественное отбито ошибкой 8000. Теперь то же самое
+// отбивает компилятор.
+type SettingsField = FieldOf<"campaigns", "TextCampaignFieldEnum"> &
+  FieldOf<"campaigns", "DynamicTextCampaignFieldEnum"> &
+  FieldOf<"campaigns", "UnifiedCampaignFieldEnum">
+
+const SETTINGS_FIELDS: SettingsField[] = [
+  "TrackingParams",
+  "PriorityGoals",
+  "CounterIds",
+  "AttributionModel",
+  "Settings"
+]
+const SMART_SETTINGS_FIELDS: FieldOf<"campaigns", "SmartCampaignFieldEnum">[] = [
+  "TrackingParams",
+  "PriorityGoals",
+  "CounterId",
+  "AttributionModel",
+  "Settings"
+]
 
 // TrackingParams поддерживают не все типы: сверено с WSDL campaigns 05.09.2026 — поле есть
 // в Text, DynamicText, Smart и Unified, но не в MobileApp и не в CpmBanner. Набор не тот
@@ -64,18 +106,18 @@ export async function handleListCampaigns(params: z.infer<typeof listCampaignsSc
   return formatResult(await apiPost("campaigns", "get", requestParams))
 }
 
-// TrackingParams лежит внутри объекта настроек, поэтому в общий FieldNames не попадает —
-// его запрашивают отдельным type-specific параметром. Заранее тип неизвестен, но лишние
-// *CampaignFieldNames безвредны: Директ наполняет тот объект, который соответствует
-// реальному типу кампании, а остальные просто не возвращает.
+// Настройки кампании лежат внутри объекта, имя которого зависит от типа, поэтому в общий
+// FieldNames не попадают — их запрашивают отдельным type-specific параметром. Заранее тип
+// неизвестен, но лишние *CampaignFieldNames безвредны: Директ наполняет тот объект, который
+// соответствует реальному типу кампании, а остальные просто не возвращает.
 export async function handleGetCampaign(params: z.infer<typeof getCampaignSchema>): Promise<string> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(params.campaign_id)] },
     FieldNames: DETAIL_FIELDS,
-    TextCampaignFieldNames: ["TrackingParams"],
-    DynamicTextCampaignFieldNames: ["TrackingParams"],
-    SmartCampaignFieldNames: ["TrackingParams"],
-    UnifiedCampaignFieldNames: ["TrackingParams"]
+    TextCampaignFieldNames: SETTINGS_FIELDS,
+    DynamicTextCampaignFieldNames: SETTINGS_FIELDS,
+    SmartCampaignFieldNames: SMART_SETTINGS_FIELDS,
+    UnifiedCampaignFieldNames: SETTINGS_FIELDS
   })
   return formatResult(data)
 }
@@ -147,15 +189,22 @@ export async function handleManageCampaigns(params: z.infer<typeof manageCampaig
   return formatResult(data)
 }
 
+// PriorityGoals — не украшение, а вторая половина стратегии: в BiddingStrategy у
+// максимума конверсий стоит служебный GoalId, а настоящие цели с их ценностью лежат
+// здесь. Без этого поля ответ читается как «цель не выбрана» (проба 12.09.2026).
+const STRATEGY_FIELDS: FieldOf<"campaigns", "TextCampaignFieldEnum">[] = [
+  "BiddingStrategy",
+  "PriorityGoals",
+  "CounterIds",
+  "AttributionModel"
+]
+
 // Стратегия — часть кампании: читается тем же get, пишется тем же update.
 export async function handleGetStrategy(params: z.infer<typeof getStrategySchema>): Promise<string> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(params.campaign_id)] },
-    FieldNames: ["Id", "Name", "Type"],
-    // PriorityGoals — не украшение, а вторая половина стратегии: в BiddingStrategy у
-    // максимума конверсий стоит служебный GoalId, а настоящие цели с их ценностью лежат
-    // здесь. Без этого поля ответ читается как «цель не выбрана» (проба 12.09.2026).
-    TextCampaignFieldNames: ["BiddingStrategy", "PriorityGoals", "CounterIds", "AttributionModel"]
+    FieldNames: ["Id", "Name", "Type"] satisfies FieldOf<"campaigns", "CampaignFieldEnum">[],
+    TextCampaignFieldNames: STRATEGY_FIELDS
   })
   return formatResult(data)
 }

@@ -1,5 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -11,8 +12,25 @@ import type {
   updateTextAdSchema
 } from "./schema.js"
 
-const LIST_FIELDS = ["Id", "CampaignId", "AdGroupId", "State", "Status"]
-const TEXT_AD_FIELDS = ["Title", "Title2", "Text", "Href", "DisplayDomain"]
+// Весь AdFieldEnum целиком: узкий список не экономил баллов (они считаются за вызов и
+// объекты, не за поля), а StatusClarification без него не доезжал — и сервер не мог
+// ответить, почему объявление отклонено модерацией. Набор придёт из снимка WSDL сам,
+// поэтому новое поле Яндекса появится здесь пересборкой, а не через месяц на живой кампании.
+const LIST_FIELDS = [...API_FIELDS.ads.AdFieldEnum]
+
+// Из TextAdFieldEnum взяты ещё три привязки: без них не видно, что у объявления есть
+// сайтлинки, визитка и изображение. Поля *Moderation не берём — это вложенные объекты,
+// они раздувают ответ, а причина отказа уже приходит в StatusClarification.
+const TEXT_AD_FIELDS: FieldOf<"ads", "TextAdFieldEnum">[] = [
+  "Title",
+  "Title2",
+  "Text",
+  "Href",
+  "DisplayDomain",
+  "SitelinkSetId",
+  "VCardId",
+  "AdImageHash"
+]
 
 // Директ на группу без объявлений отдаёт `{ "result": {} }` — без ключа Ads и без
 // единого слова. Модель читает это как поломку инструмента и принимается гадать
