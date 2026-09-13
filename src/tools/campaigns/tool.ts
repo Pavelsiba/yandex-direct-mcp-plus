@@ -34,7 +34,9 @@ export const getCampaignTool = defineTool({
   title: "Кампания по ID",
   description:
     "Детальная информация о кампании по ID: бюджет (руб), статус и пояснение к нему, даты, статистика, " +
-    "UTM-разметка, цели и их ценность (PriorityGoals), счётчики Метрики, модель атрибуции и прочие настройки.",
+    "UTM-разметка, цели и их ценность (PriorityGoals), счётчики Метрики, модель атрибуции и прочие настройки. " +
+    "Реальные ID целей — PriorityGoals.Items[].GoalId; GoalId 13 в стратегии — служебное «ключевые цели», " +
+    "то есть оптимизация по этим PriorityGoals.",
   annotations: READ,
   schema: getCampaignSchema,
   handler: handleGetCampaign
@@ -73,7 +75,12 @@ export const manageCampaignsTool = defineTool({
 export const getStrategyTool = defineTool({
   name: "get_strategy",
   title: "Стратегия кампании",
-  description: "Получить текущую стратегию показов текстово-графической кампании.",
+  description:
+    "Получить текущую стратегию показов текстово-графической кампании вместе с целями (PriorityGoals), счётчиками и " +
+    "моделью атрибуции. Реальные ID целей Метрики, по которым работает кампания, — " +
+    "TextCampaign.PriorityGoals.Items[].GoalId (рядом их ценность Value в рублях), счётчики — CounterIds. " +
+    "GoalId внутри BiddingStrategy бывает служебным: 13 — «оптимизировать по ключевым целям», то есть по тем же " +
+    "PriorityGoals; 12 — «Вовлечённые сессии». Названий целей API Директа не отдаёт — они есть только в Метрике.",
   annotations: READ,
   schema: getStrategySchema,
   handler: handleGetStrategy

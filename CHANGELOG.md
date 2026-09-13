@@ -4,6 +4,23 @@
 `theYahia/yandex-direct-mcp`) — в
 [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
 
+# [1.5.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.4.0...v1.5.0) (2026-09-13)
+
+
+### Bug Fixes
+
+* **campaigns:** описан служебный GoalId 13 в стратегии ([5e60c68](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/5e60c68f988bb545104da4b2f4bd71fd415e5e0d))
+* **id:** идентификаторы приведены к строке независимо от разрядности ([196f853](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/196f85343eb2e362cfc01a1b0c6e4643dd740b3a))
+
+
+### Features
+
+* **ads:** list_ads объясняет пустой ответ и предупреждает о неполноте ([c8092ac](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/c8092ac52c3ad67e9a921d29b18bee391b5cb42f))
+* **campaigns:** максимум конверсий на запись, цели кампании на чтение ([0069934](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/0069934808edb27b998581479373a46185aaebe2))
+* **fields:** наборы FieldNames генерируются из снимка WSDL ([b89a017](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/b89a017065d7e49375544fd0e9974625ae0ee728))
+* **keywords:** добавлен get_keyword_auction — цены и ставки по позициям ([3f8fe26](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/3f8fe266291a9f8ab9dd8931e112e6146e858ca2))
+* **tools:** list_campaigns и list_keywords принимают набор полей ([4e578dc](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/4e578dc0c06233aae43f5ec75743c1dc952eb71b)), closes [#31](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/31)
+
 # [1.4.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.3.0...v1.4.0) (2026-09-06)
 
 

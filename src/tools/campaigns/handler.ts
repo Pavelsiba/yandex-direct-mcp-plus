@@ -22,8 +22,8 @@ import { CAMPAIGN_LIST_FIELDS } from "./schema.js"
 const DETAIL_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [...CAMPAIGN_LIST_FIELDS, "EndDate"]
 
 // Цели, счётчики и модель атрибуции лежат не в BiddingStrategy, а рядом с ней: у кампании
-// на максимум конверсий в стратегии стоит служебный GoalId, и по нему кампания выглядит
-// как «цель не настроена», хотя PriorityGoals заполнены.
+// на максимум конверсий в стратегии стоит служебный GoalId 13 («ключевые цели»), и без
+// PriorityGoals кампания выглядит как «цель не настроена».
 //
 // Пересечение трёх перечислений — это ровно «поле, которое есть у всех трёх типов»: TS
 // сводит пересечение строковых объединений к общим членам. Смарт-кампании стоят отдельно,
@@ -181,8 +181,9 @@ export async function handleManageCampaigns(params: z.infer<typeof manageCampaig
 }
 
 // PriorityGoals — не украшение, а вторая половина стратегии: в BiddingStrategy у
-// максимума конверсий стоит служебный GoalId, а настоящие цели с их ценностью лежат
-// здесь. Без этого поля ответ читается как «цель не выбрана» (проба 12.09.2026).
+// максимума конверсий стоит служебный GoalId 13 — «оптимизировать по ключевым целям», а
+// сами цели с их ценностью лежат здесь. Без этого поля ответ читается как «цель не
+// выбрана» (проба 12.09.2026).
 const STRATEGY_FIELDS: FieldOf<"campaigns", "TextCampaignFieldEnum">[] = [
   "BiddingStrategy",
   "PriorityGoals",
@@ -230,10 +231,10 @@ function strategySettings(type: StrategyType, params: StrategyParams): Record<st
       return { WbMaximumClicks: settings }
     }
 
-    // Максимум конверсий за недельный бюджет. GoalId необязателен: без него Директ
-    // оптимизируется по вовлечённым сессиям — расчётной вероятности целевого действия,
-    // а не по вашей цели. Проба 12.09.2026: у кампании без выбранной цели в ответе
-    // стоит GoalId 13, которого нет ни на одном счётчике Метрики аккаунта.
+    // Максимум конверсий за недельный бюджет. GoalId здесь — либо цель Метрики, либо
+    // служебное 13 «ключевые цели»: оптимизация по PriorityGoals, допустимая, если там есть
+    // цель кроме 12 «Вовлечённые сессии» (справочник campaigns/update, StrategyMaximumConversionRate).
+    // Проба 12.09.2026 видела 13 у кампании с заполненными PriorityGoals.
     case "WB_MAXIMUM_CONVERSION_RATE": {
       const settings = withOptional(
         { WeeklySpendLimit: required(params.weekly_spend_limit, "weekly_spend_limit", type) },
