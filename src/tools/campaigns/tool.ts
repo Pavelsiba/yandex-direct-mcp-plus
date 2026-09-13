@@ -23,7 +23,9 @@ export const listCampaignsTool = defineTool({
   name: "list_campaigns",
   title: "Список кампаний",
   description:
-    "Список рекламных кампаний Яндекс.Директ с фильтрацией по статусу и типу. Бюджеты — в рублях. По умолчанию возвращается узкий набор полей; нужны другие (Funds, TimeZone, NegativeKeywords и прочие из CampaignFieldEnum) — перечислите их в fields.",
+    "Список рекламных кампаний Яндекс.Директ с фильтрацией по статусу и типу. Бюджеты — в рублях. По умолчанию возвращается узкий набор полей; нужны другие (Funds, TimeZone, NegativeKeywords и прочие из CampaignFieldEnum) — перечислите их в fields. " +
+    "Кампаний «Баннер на поиске» (MCBANNER) API не отдаёт вовсе: их нет в списке, и это граница API, " +
+    "а не ошибка логина или фильтра — такие кампании видны только в веб-интерфейсе.",
   annotations: READ,
   schema: listCampaignsSchema,
   handler: handleListCampaigns
@@ -36,7 +38,8 @@ export const getCampaignTool = defineTool({
     "Детальная информация о кампании по ID: бюджет (руб), статус и пояснение к нему, даты, статистика, " +
     "UTM-разметка, цели и их ценность (PriorityGoals), счётчики Метрики, модель атрибуции и прочие настройки. " +
     "Реальные ID целей — PriorityGoals.Items[].GoalId; GoalId 13 в стратегии — служебное «ключевые цели», " +
-    "то есть оптимизация по этим PriorityGoals.",
+    "то есть оптимизация по этим PriorityGoals. Пустой ответ по ID из веб-интерфейса не значит, что номер " +
+    "неверный: кампании «Баннер на поиске» (MCBANNER) API не отдаёт, по ID они приходят пустыми.",
   annotations: READ,
   schema: getCampaignSchema,
   handler: handleGetCampaign
