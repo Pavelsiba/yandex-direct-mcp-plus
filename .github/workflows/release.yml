@@ -34,10 +34,9 @@ jobs:
       issues: write
       pull-requests: write
       # OIDC-токен для provenance: npm обменивает его на аттестацию Sigstore,
-      # связывающую тарбол с этим репозиторием, коммитом и прогоном. Тем же токеном
-      # mcp-publisher входит в реестр MCP (successCmd в .releaserc.json) — секрета
-      # для реестра нет. Публикация стоит в success, а не в publish: её сбой не
-      # отменяет уже вышедший npm-пакет и не срывает GitHub-релиз.
+      # связывающую тарбол с этим репозиторием, коммитом и прогоном. Реестр MCP
+      # здесь не публикуется — это отдельный workflow mcp-registry.yml по событию
+      # release.
       id-token: write
     concurrency:
       group: release

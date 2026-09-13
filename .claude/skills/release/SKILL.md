@@ -26,8 +26,11 @@ description: Релизный конвейер yd-mcp — PR dev→main, semanti
                                      │    CHANGELOG.md
                                      │    тег + GitHub release
                                      │    chore(release): x.y.z [skip ci] в main
+                                     │    npm publish
                                      │
                                      └─ Back-merge: main ──▶ dev
+
+GitHub release (published) ──▶ MCP Registry: ждёт версию в npm → mcp-publisher publish
 ```
 
 Ключевые свойства, которые легко забыть:
@@ -71,6 +74,19 @@ on GitHub Actions», проверяется командой `npm audit signatur
 Из этого следует ограничение: **публиковать пакет руками нельзя**. Ручной `npm publish`
 аттестации не даст, и версия выйдет без провенанса, хотя соседние его имеют. Публикация —
 только через этот workflow.
+
+### Реестр MCP
+
+`server.json` публикуется в `registry.modelcontextprotocol.io` отдельным workflow
+`mcp-registry.yml` по событию `release: published`. Версию в `server.json` проставляет
+`prepareCmd` в `.releaserc.json`, так что тег уже несёт нужную. Вход — `github-oidc`, секрета
+нет. `mcp-publisher` закреплён версией и хешем в `env` workflow.
+
+**В `successCmd` семантик-релиза публикацию не возвращать.** Сбой в `success` завершает
+semantic-release с кодом 1, джоба Release краснеет, и back-merge (`needs: release`) не
+запускается. Так вышло с 1.6.0: реестр сверяет версию с npm и отбил её с 404 через две
+секунды после `npm publish`. Поэтому workflow сначала ждёт, пока npm отдаст версию, и
+публикует с повтором.
 
 ### `[secure]` вместо имени владельца
 
@@ -177,6 +193,16 @@ Job отдельный намеренно: его падение не краси
   бы до-релизный `main` и молча оставил дрейф;
 - **`[skip ci]`** в сообщении обязателен — пуш от PAT, в отличие от штатного токена,
   запускает workflow, и CI прогнался бы второй раз на том же коде.
+
+### Реестр MCP не опубликовал версию
+
+Workflow «MCP Registry» независим от релиза: npm, тег и back-merge его сбой не задевает.
+Перезапустить упавший прогон или догнать версию руками — `workflow_dispatch` с входом `tag`
+(`gh workflow run mcp-registry.yml -f tag=v1.6.0`), по просьбе пользователя. Уже
+опубликованную версию реестр второй раз не примет — это не поломка.
+
+Ручной `workflow_dispatch` видит только workflow из ветки по умолчанию (`main`): пока
+файл не доехал туда релизом, запускать нечего.
 
 ### Версия вышла не та, что ожидали
 
