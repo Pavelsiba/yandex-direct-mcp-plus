@@ -19,6 +19,39 @@ describe("formatResult", () => {
     expect(output.result.Campaigns[0].Clicks).toBe(1200)
   })
 
+  it("отдаёт ID строкой независимо от его длины", () => {
+    const output = JSON.parse(
+      formatResult({
+        result: {
+          AdGroups: [{ Id: 1234567890, CampaignId: 123456789, RegionIds: [225, -213, 0] }],
+          Keywords: [{ Id: "1915016273214320641" }]
+        }
+      })
+    )
+
+    expect(output.result.AdGroups[0].Id).toBe("1234567890")
+    expect(output.result.AdGroups[0].CampaignId).toBe("123456789")
+    expect(output.result.AdGroups[0].RegionIds).toEqual(["225", "-213", "0"])
+    expect(output.result.Keywords[0].Id).toBe("1915016273214320641")
+  })
+
+  // `Bid` и `AuctionBids` кончаются на `id`/`ids`: без учёта регистра ставки стали бы строками.
+  it("не принимает ставки за ID", () => {
+    const output = JSON.parse(
+      formatResult({ result: { Keywords: [{ Bid: 25_500_000, ContextBid: 10_000_000, AuctionBids: [1, 2] }] } })
+    )
+
+    expect(output.result.Keywords[0].Bid).toBe(25.5)
+    expect(output.result.Keywords[0].ContextBid).toBe(10)
+    expect(output.result.Keywords[0].AuctionBids).toEqual([1, 2])
+  })
+
+  it("приводит ID к строке и при money: false", () => {
+    const output = JSON.parse(formatResult({ result: { Campaigns: [{ Id: 123456789 }] } }, { money: false }))
+
+    expect(output.result.Campaigns[0].Id).toBe("123456789")
+  })
+
   it("оставляет суммы как есть при money: false", () => {
     const output = JSON.parse(formatResult({ result: { Amount: 5_000_000 } }, { money: false }))
 
