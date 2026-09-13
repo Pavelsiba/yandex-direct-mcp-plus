@@ -70,6 +70,30 @@ describe("get_campaign", () => {
 
     expect(output).toContain('"1915016273214320641"')
   })
+
+  it("запрашивает цели, счётчики и модель атрибуции вместе с настройками", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleGetCampaign({ campaign_id: "1915016273214320641" })
+
+    const { params } = JSON.parse(lastRawBody())
+    expect(params.TextCampaignFieldNames).toEqual(
+      expect.arrayContaining(["TrackingParams", "PriorityGoals", "CounterIds", "AttributionModel", "Settings"])
+    )
+    expect(params.FieldNames).toContain("StatusClarification")
+  })
+
+  // У смарт-кампаний поле называется CounterId, в единственном числе: множественного
+  // в SmartCampaignFieldEnum нет, и запрос с ним Директ не примет.
+  it("просит у смарт-кампании CounterId, а не CounterIds", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleGetCampaign({ campaign_id: "1915016273214320641" })
+
+    const { params } = JSON.parse(lastRawBody())
+    expect(params.SmartCampaignFieldNames).toContain("CounterId")
+    expect(params.SmartCampaignFieldNames).not.toContain("CounterIds")
+  })
 })
 
 describe("create_campaign", () => {
@@ -197,8 +221,10 @@ describe("UTM-разметка кампании", () => {
     await handleGetCampaign(getCampaignSchema.parse({ campaign_id: "123" }))
 
     const sent = lastBody().params
-    expect(sent.TextCampaignFieldNames).toEqual(["TrackingParams"])
-    expect(sent.UnifiedCampaignFieldNames).toEqual(["TrackingParams"])
+    expect(sent.TextCampaignFieldNames).toContain("TrackingParams")
+    expect(sent.DynamicTextCampaignFieldNames).toContain("TrackingParams")
+    expect(sent.SmartCampaignFieldNames).toContain("TrackingParams")
+    expect(sent.UnifiedCampaignFieldNames).toContain("TrackingParams")
   })
 
   it("пустую строку схема отвергает: снятие — это null", () => {

@@ -31,7 +31,9 @@ export const listCampaignsTool = defineTool({
 export const getCampaignTool = defineTool({
   name: "get_campaign",
   title: "Кампания по ID",
-  description: "Детальная информация о кампании по ID: бюджет (руб), статус, даты, статистика.",
+  description:
+    "Детальная информация о кампании по ID: бюджет (руб), статус и пояснение к нему, даты, статистика, " +
+    "UTM-разметка, цели и их ценность (PriorityGoals), счётчики Метрики, модель атрибуции и прочие настройки.",
   annotations: READ,
   schema: getCampaignSchema,
   handler: handleGetCampaign

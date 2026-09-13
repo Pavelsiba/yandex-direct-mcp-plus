@@ -21,6 +21,49 @@ describe("list_ads", () => {
     expect(lastBody().params.TextAdFieldNames).toContain("Href")
   })
 
+  it("запрашивает тип объявления и пояснение модерации", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
+
+    await handleListAds({ ad_group_ids: ["123"] })
+
+    expect(lastBody().params.FieldNames).toEqual(
+      expect.arrayContaining(["Type", "Subtype", "StatusClarification", "AdCategories", "AgeLabel"])
+    )
+  })
+
+  it("запрашивает привязки сайтлинков, визитки и изображения", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
+
+    await handleListAds({ ad_group_ids: ["123"] })
+
+    expect(lastBody().params.TextAdFieldNames).toEqual(
+      expect.arrayContaining(["SitelinkSetId", "VCardId", "AdImageHash"])
+    )
+  })
+
+  // json-bigint отдаёт строкой только 16+ знаков, поэтому короткие привязки приезжают
+  // числами и тип поля зависел бы от величины значения.
+  it("отдаёт привязки строками независимо от разрядности", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({
+        result: {
+          Ads: [
+            {
+              Id: "1919964803537252737",
+              TextAd: { SitelinkSetId: 5794001114, VCardId: 12345678, AdImageHash: "abc123" }
+            }
+          ]
+        }
+      })
+    )
+
+    const output = await handleListAds({ ad_group_ids: ["123"] })
+
+    expect(output).toContain('"SitelinkSetId": "5794001114"')
+    expect(output).toContain('"VCardId": "12345678"')
+    expect(output).toContain('"AdImageHash": "abc123"')
+  })
+
   // Голый `{ "result": {} }` модель читает как поломку инструмента и додумывает причину.
   it("объясняет пустой ответ, в котором Директ не прислал даже ключ Ads", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: {} }))

@@ -30,6 +30,13 @@ const MONEY_KEYS = new Set([
 // и проверка без учёта регистра превратила бы ставки в строки.
 const ID_KEYS = /Ids?$/
 
+// Часть коллекций v5 приезжает обёрткой `{ Items: [...] }` — так устроены CounterIds,
+// NegativeKeywordSharedSetIds и соседи. Своего имени у элементов нет, а `Items` про них
+// ничего не говорит, поэтому через обёртку пронести надо имя родителя. Пробой 13.09.2026:
+// `CounterIds: { Items: [...] }` иначе уезжает наружу числом, и тип ID зависит уже
+// не от величины значения, а от формы обёртки.
+const WRAPPER_KEY = "Items"
+
 // Ключ передаётся вглубь массива: `RegionIds` — имя коллекции, а решение принимается
 // по элементам, у которых своего имени нет.
 function normalize(value: unknown, key: string, money: boolean): unknown {
@@ -38,7 +45,7 @@ function normalize(value: unknown, key: string, money: boolean): unknown {
   if (value && typeof value === "object") {
     const converted: Record<string, unknown> = {}
     for (const [nestedKey, nested] of Object.entries(value as Record<string, unknown>)) {
-      converted[nestedKey] = normalize(nested, nestedKey, money)
+      converted[nestedKey] = normalize(nested, nestedKey === WRAPPER_KEY ? key : nestedKey, money)
     }
     return converted
   }
