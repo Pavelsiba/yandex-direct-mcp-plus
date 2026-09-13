@@ -4,6 +4,13 @@
 `theYahia/yandex-direct-mcp`) — в
 [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
 
+## [1.6.1](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.6.0...v1.6.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **release:** публикация в реестр MCP вынесена в отдельный workflow ([d4fde8a](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/d4fde8a885b1dae9ed713d2bb6d589d830891d11))
+
 # [1.6.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.5.0...v1.6.0) (2026-09-13)
 
 
