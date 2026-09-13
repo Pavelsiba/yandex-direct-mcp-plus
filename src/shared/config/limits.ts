@@ -21,6 +21,9 @@ export const MAX_SHARED_SETS_PER_CALL = 30
 export const MAX_SHARED_SETS_PER_AD_GROUP = 3
 export const SHARED_SET_NAME_MAX = 255
 
+// Ключевых целей стратегии у кампании — не больше тридцати (справочник campaigns/update).
+export const MAX_PRIORITY_GOALS = 30
+
 // Универсальный потолок на список ID в SelectionCriteria большинства сервисов.
 export const MAX_IDS_PER_CALL = 10_000
 
