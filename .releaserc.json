@@ -19,8 +19,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "jq --arg v '${nextRelease.version}' '.version = $v | .packages[0].version = $v' server.json > server.json.tmp && mv server.json.tmp server.json",
-        "successCmd": "curl -fsSL https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher && ./mcp-publisher login github-oidc && ./mcp-publisher publish"
+        "prepareCmd": "jq --arg v '${nextRelease.version}' '.version = $v | .packages[0].version = $v' server.json > server.json.tmp && mv server.json.tmp server.json"
       }
     ],
     [

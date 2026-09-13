@@ -1,0 +1,88 @@
+name: MCP Registry
+
+# Публикация сервера в официальный реестр MCP (registry.modelcontextprotocol.io).
+# Отдельным workflow, а не successCmd в .releaserc.json: сбой в success валит
+# semantic-release с кодом 1, джоба Release краснеет, и back-merge main → dev
+# (needs: release) не запускается. Так вышло с релизом 1.6.0 13.09.2026. Здесь сбой
+# реестра не задевает ничего, кроме себя, и перезапускается отдельно.
+#
+# Событие release до workflow доходит, потому что релиз создаётся от PAT: события
+# от штатного GITHUB_TOKEN новых прогонов не запускают.
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Тег релиза, который нужно догнать в реестре (например, v1.6.0)"
+        required: true
+
+permissions:
+  contents: read
+
+# Версия закреплена и сверяется по хешу: latest менял бы поведение публикации без
+# единой правки в репозитории. Хеш — из registry_<версия>_checksums.txt релиза.
+env:
+  MCP_PUBLISHER_VERSION: v1.8.1
+  MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+
+jobs:
+  publish:
+    name: Publish to MCP Registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # mcp-publisher входит в реестр по OIDC-токену прогона: неймспейс
+      # io.github.Pavelsiba подтверждается владельцем репозитория, секрета нет.
+      id-token: write
+    concurrency:
+      group: mcp-registry
+      cancel-in-progress: false
+    steps:
+      # server.json берётся из тега: релизный коммит, на который он указывает,
+      # уже несёт версию, проставленную prepareCmd.
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          persist-credentials: false
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL -o mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum --check
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+
+      # Реестр сверяет версию пакета с npm, а свежая версия видна там не сразу:
+      # 1.6.0 реестр отбил с 404 через две секунды после npm publish.
+      - name: Wait for npm version
+        run: |
+          package=$(jq -r '.packages[0].identifier' server.json)
+          version=$(jq -r '.packages[0].version' server.json)
+          for attempt in $(seq 1 30); do
+            if npm view "${package}@${version}" version > /dev/null 2>&1; then
+              echo "${package}@${version} есть в npm"
+              exit 0
+            fi
+            echo "Попытка ${attempt}: ${package}@${version} в npm ещё нет, жду 10 с"
+            sleep 10
+          done
+          echo "::error::${package}@${version} так и не появился в npm"
+          exit 1
+
+      # Реестр может смотреть в npm через другой кэш, чем npm view выше, поэтому
+      # публикация тоже с повтором. Вход — в каждой попытке: токен реестра живёт
+      # недолго и между паузами может истечь.
+      - name: Publish
+        run: |
+          for attempt in $(seq 1 5); do
+            if ./mcp-publisher login github-oidc && ./mcp-publisher publish; then
+              exit 0
+            fi
+            echo "Попытка ${attempt} не прошла, повтор через 30 с"
+            sleep 30
+          done
+          echo "::error::Публикация в реестр MCP не прошла"
+          exit 1
