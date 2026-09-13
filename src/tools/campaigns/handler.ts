@@ -3,16 +3,19 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
 import type { FieldOf } from "#shared/config/api-fields"
+import { MAX_PRIORITY_GOALS } from "#shared/config/limits"
 import { type CampaignSettingsKey, getCampaignSettingsKey } from "#shared/lib/campaign-type"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
+import { mergePriorityGoals, type PriorityGoal } from "./priority-goals.js"
 import type {
   createCampaignSchema,
   getCampaignSchema,
   getStrategySchema,
   listCampaignsSchema,
   manageCampaignsSchema,
+  setPriorityGoalsSchema,
   setStrategySchema,
   updateCampaignSchema
 } from "./schema.js"
@@ -288,6 +291,91 @@ export async function handleSetStrategy(params: StrategyParams): Promise<string>
         }
       }
     ]
+  })
+  return formatResult(data)
+}
+
+// Типы, у которых PriorityGoals есть в CampaignUpdateItem: сверено с WSDL campaigns
+// 13.09.2026. У MobileApp и CpmBanner поля нет — список свой, как у TrackingParams.
+const PRIORITY_GOALS_TYPES = ["TEXT_CAMPAIGN", "DYNAMIC_TEXT_CAMPAIGN", "SMART_CAMPAIGN", "UNIFIED_CAMPAIGN"]
+
+// Имя поля совпадает у всех четырёх типов, включая смарт-кампании.
+const PRIORITY_GOALS_FIELDS: (SettingsField & FieldOf<"campaigns", "SmartCampaignFieldEnum">)[] = ["PriorityGoals"]
+
+type ApiPriorityGoal = { GoalId: number | string; Value: number; IsMetrikaSourceOfValue?: string }
+type CampaignGoals = { Type?: string } & Partial<
+  Record<CampaignSettingsKey, { PriorityGoals?: { Items?: ApiPriorityGoal[] } | null }>
+>
+
+// Тип и текущие цели читаются одним вызовом: имя объекта настроек нужно и для replace, где
+// сливать не с чем. Отсутствие кампании в ответе — ошибка до update, а не пустой список.
+async function readPriorityGoals(
+  campaignId: string
+): Promise<{ settingsKey: CampaignSettingsKey; goals: PriorityGoal[] }> {
+  const data = await apiPost("campaigns", "get", {
+    SelectionCriteria: { Ids: [apiId(campaignId)] },
+    FieldNames: ["Id", "Type"] satisfies FieldOf<"campaigns", "CampaignFieldEnum">[],
+    TextCampaignFieldNames: PRIORITY_GOALS_FIELDS,
+    DynamicTextCampaignFieldNames: PRIORITY_GOALS_FIELDS,
+    SmartCampaignFieldNames: PRIORITY_GOALS_FIELDS,
+    UnifiedCampaignFieldNames: PRIORITY_GOALS_FIELDS
+  })
+
+  const campaign = (data as { result?: { Campaigns?: CampaignGoals[] } }).result?.Campaigns?.[0]
+  if (!campaign) throw new Error(`Кампания ${campaignId} не найдена или недоступна — объединять цели не с чем.`)
+
+  const { Type: type } = campaign
+  const settingsKey = type && PRIORITY_GOALS_TYPES.includes(type) ? getCampaignSettingsKey(type) : undefined
+  if (!settingsKey) {
+    throw new Error(
+      `Кампания ${campaignId} имеет тип ${type ?? "неизвестный"}, а цели стратегии поддерживают только ${PRIORITY_GOALS_TYPES.join(", ")}.`
+    )
+  }
+
+  const items = campaign[settingsKey]?.PriorityGoals?.Items ?? []
+  const goals = items.map((item) => ({
+    goalId: String(item.GoalId),
+    value: item.Value,
+    isMetrikaSourceOfValue: item.IsMetrikaSourceOfValue
+  }))
+  return { settingsKey, goals }
+}
+
+type PriorityGoalsParams = z.infer<typeof setPriorityGoalsSchema>
+
+// Проверка до чтения: без ценности add и replace бессмысленны, и узнать это надо, не
+// потратив вызов API. Для remove ценность не участвует в слиянии.
+function toIncomingGoals({ goals, mode }: PriorityGoalsParams): PriorityGoal[] {
+  return goals.map((goal) => {
+    if (mode !== "remove" && goal.value === undefined) {
+      throw new Error(`value обязателен для цели ${goal.goal_id} при mode=${mode}.`)
+    }
+    return { goalId: goal.goal_id, value: goal.value ?? 0 }
+  })
+}
+
+// Operation обязателен и принимает только SET (справочник campaigns/update).
+// IsMetrikaSourceOfValue нужен лишь стратегиям на ДРР, поэтому уходит, только если был.
+function toApiGoal(goal: PriorityGoal): Record<string, unknown> {
+  const item: Record<string, unknown> = { GoalId: apiId(goal.goalId), Value: goal.value, Operation: "SET" }
+  if (goal.isMetrikaSourceOfValue !== undefined) item.IsMetrikaSourceOfValue = goal.isMetrikaSourceOfValue
+  return item
+}
+
+// Форма тела подтверждена записью 13.09.2026 на боевой кампании по просьбе пользователя.
+// Пустой список уходит null: в WSDL PriorityGoals объявлен nillable, а у Items minOccurs="1".
+export async function handleSetPriorityGoals(params: PriorityGoalsParams): Promise<string> {
+  const incoming = toIncomingGoals(params)
+  const { settingsKey, goals } = await readPriorityGoals(params.campaign_id)
+
+  const merged = mergePriorityGoals(goals, incoming, params.mode)
+  if (merged.length > MAX_PRIORITY_GOALS) {
+    throw new Error(`У кампании не больше ${MAX_PRIORITY_GOALS} целей стратегии, после слияния их ${merged.length}.`)
+  }
+
+  const priorityGoals = merged.length > 0 ? { Items: merged.map(toApiGoal) } : null
+  const data = await apiPost("campaigns", "update", {
+    Campaigns: [{ Id: apiId(params.campaign_id), [settingsKey]: { PriorityGoals: priorityGoals } }]
   })
   return formatResult(data)
 }

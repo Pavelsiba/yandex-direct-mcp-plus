@@ -1,4 +1,3 @@
-// biome-ignore-all lint/plugin: тест разбирает собственный вывод форматтера
 // Сетевой тест: форма ID в ответе боевого API. Юнит здесь бесполезен по устройству —
 // он сверяет вывод с нашей же фикстурой, а разрядность ID назначает Яндекс: короткий ID
 // приезжает числом, 16+ знаков — строкой (json-bigint). Расхождение 12.09.2026 нашлось
@@ -7,45 +6,9 @@
 //
 // Только чтение: полигон не нужен, ничего не создаётся и не меняется.
 import { describe, expect, it } from "vitest"
-import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
+import { CONFIGURED, collectIds, firstCampaignId, parseOutput, smokeRead } from "#testing/smoke"
 import { handleListAdGroups } from "./handler.js"
-
-const CONFIGURED = Boolean(process.env.YANDEX_DIRECT_TOKEN)
-
-const ID_KEYS = /Ids?$/
-
-type IdEntry = [key: string, value: unknown]
-
-// Обход всего ответа, а не заранее названного списка полей: проверяется то, что Директ
-// реально прислал, включая поля, о которых мы не знали. Ключ передаётся вглубь массива —
-// у элементов `RegionIds` своего имени нет.
-function collectIds(value: unknown, key = ""): IdEntry[] {
-  if (Array.isArray(value)) return value.flatMap((item) => collectIds(item, key))
-
-  if (value && typeof value === "object") {
-    return Object.entries(value as Record<string, unknown>).flatMap(([nestedKey, nested]) =>
-      collectIds(nested, nestedKey)
-    )
-  }
-
-  // null под ID-ключом — норма: так Директ отдаёт незаполненную ссылку (VCardId и прочие).
-  if (value === null || value === undefined) return []
-  return ID_KEYS.test(key) ? [[key, value]] : []
-}
-
-// Вывод инструмента начинается с уведомлений Директа (LimitedBy и per-item ошибки),
-// тело идёт следом.
-function parseOutput(output: string): unknown {
-  return JSON.parse(output.slice(output.indexOf("{")))
-}
-
-async function firstCampaignId(): Promise<string> {
-  const data = await apiPost("campaigns", "get", { FieldNames: ["Id"], Page: { Limit: 1 } })
-  const campaign = (data as { result?: { Campaigns?: { Id?: unknown }[] } }).result?.Campaigns?.[0]
-
-  expect(campaign, "В аккаунте нет ни одной кампании — форму ID проверять не на чем").toBeDefined()
-  return String(campaign?.Id)
-}
 
 describe.skipIf(!CONFIGURED)("форма ID в ответе боевого API", () => {
   it("отдаёт каждый ID строкой, какой бы разрядности он ни был", async () => {
@@ -59,5 +22,24 @@ describe.skipIf(!CONFIGURED)("форма ID в ответе боевого API",
       "в ответе не оказалось ни одного поля ID"
     ).toEqual(expect.arrayContaining(["Id", "CampaignId", "RegionIds"]))
     expect(ids.filter(([, value]) => typeof value !== "string")).toEqual([])
+  })
+})
+
+const GROUP_FIELDS = API_FIELDS.adgroups.AdGroupFieldEnum
+
+describe.skipIf(!CONFIGURED)("smoke adgroups.get", () => {
+  it("принимает весь AdGroupFieldEnum и отдаёт группы известной формы", async () => {
+    await smokeRead({
+      service: "adgroups",
+      method: "get",
+      params: {
+        SelectionCriteria: { CampaignIds: [BigInt(await firstCampaignId())] },
+        FieldNames: [...GROUP_FIELDS],
+        Page: { Limit: 5 }
+      },
+      collection: "AdGroups",
+      fields: GROUP_FIELDS,
+      money: false
+    })
   })
 })

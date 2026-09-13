@@ -9,6 +9,8 @@
 // YANDEX_DIRECT_POLYGON_CAMPAIGN_ID оба набора кейсов пропускаются.
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { apiPost } from "#shared/api/client"
+import { API_FIELDS } from "#shared/config/api-fields"
+import { smokeRead, CONFIGURED as TOKEN_SET } from "#testing/smoke"
 import {
   handleLinkNegativeKeywordSets,
   handleManageNegativeKeywordSharedSets,
@@ -250,5 +252,21 @@ describe.skipIf(!CONFIGURED)("привязка общих наборов к ка
     await handleLinkNegativeKeywordSets({ campaign_ids: [POLYGON as string], set_ids: [] })
 
     expect(await readCampaignSetIds()).toEqual([])
+  })
+})
+
+const SET_FIELDS = API_FIELDS.negativekeywordsharedsets.NegativeKeywordSharedSetFieldEnum
+
+// Полигон здесь не нужен — только чтение, поэтому условие пропуска своё.
+describe.skipIf(!TOKEN_SET)("smoke negativekeywordsharedsets.get", () => {
+  it("принимает весь NegativeKeywordSharedSetFieldEnum и отдаёт наборы известной формы", async () => {
+    await smokeRead({
+      service: "negativekeywordsharedsets",
+      method: "get",
+      params: { FieldNames: [...SET_FIELDS], Page: { Limit: 5 } },
+      collection: "NegativeKeywordSharedSets",
+      fields: SET_FIELDS,
+      money: false
+    })
   })
 })

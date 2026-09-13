@@ -6,6 +6,7 @@ import {
   handleGetStrategy,
   handleListCampaigns,
   handleManageCampaigns,
+  handleSetPriorityGoals,
   handleSetStrategy,
   handleUpdateCampaign
 } from "./handler.js"
@@ -15,6 +16,7 @@ import {
   getStrategySchema,
   listCampaignsSchema,
   manageCampaignsSchema,
+  setPriorityGoalsSchema,
   setStrategySchema,
   updateCampaignSchema
 } from "./schema.js"
@@ -23,7 +25,9 @@ export const listCampaignsTool = defineTool({
   name: "list_campaigns",
   title: "Список кампаний",
   description:
-    "Список рекламных кампаний Яндекс.Директ с фильтрацией по статусу и типу. Бюджеты — в рублях. По умолчанию возвращается узкий набор полей; нужны другие (Funds, TimeZone, NegativeKeywords и прочие из CampaignFieldEnum) — перечислите их в fields.",
+    "Список рекламных кампаний Яндекс.Директ с фильтрацией по статусу и типу. Бюджеты — в рублях. По умолчанию возвращается узкий набор полей; нужны другие (Funds, TimeZone, NegativeKeywords и прочие из CampaignFieldEnum) — перечислите их в fields. " +
+    "Кампаний «Баннер на поиске» (MCBANNER) API не отдаёт вовсе: их нет в списке, и это граница API, " +
+    "а не ошибка логина или фильтра — такие кампании видны только в веб-интерфейсе.",
   annotations: READ,
   schema: listCampaignsSchema,
   handler: handleListCampaigns
@@ -36,7 +40,8 @@ export const getCampaignTool = defineTool({
     "Детальная информация о кампании по ID: бюджет (руб), статус и пояснение к нему, даты, статистика, " +
     "UTM-разметка, цели и их ценность (PriorityGoals), счётчики Метрики, модель атрибуции и прочие настройки. " +
     "Реальные ID целей — PriorityGoals.Items[].GoalId; GoalId 13 в стратегии — служебное «ключевые цели», " +
-    "то есть оптимизация по этим PriorityGoals.",
+    "то есть оптимизация по этим PriorityGoals. Пустой ответ по ID из веб-интерфейса не значит, что номер " +
+    "неверный: кампании «Баннер на поиске» (MCBANNER) API не отдаёт, по ID они приходят пустыми.",
   annotations: READ,
   schema: getCampaignSchema,
   handler: handleGetCampaign
@@ -95,4 +100,19 @@ export const setStrategyTool = defineTool({
   annotations: IDEMPOTENT,
   schema: setStrategySchema,
   handler: handleSetStrategy
+})
+
+export const setPriorityGoalsTool = defineTool({
+  name: "set_priority_goals",
+  title: "Цели стратегии",
+  description:
+    "Задать цели стратегии кампании (PriorityGoals) и их ценность в рублях — по ним автостратегия оптимизирует " +
+    "ставки, в том числе «максимум конверсий» со служебным GoalId 13. Режим mode обязателен: add добавляет цели или " +
+    "меняет ценность уже заданных, remove убирает названные, replace заменяет список целиком (пустой массив очищает). " +
+    "Текущий список сервер читает сам. Чтобы добавить цель к существующим, нужен add: replace с одной целью сотрёт " +
+    "остальные. ⚠️ Смена целей перезапускает обучение стратегии. Поддерживаются текстово-графические, динамические, " +
+    "смарт и единые перфоманс-кампании; ID целей — из Метрики.",
+  annotations: DESTRUCTIVE,
+  schema: setPriorityGoalsSchema,
+  handler: handleSetPriorityGoals
 })
