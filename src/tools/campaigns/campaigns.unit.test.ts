@@ -254,18 +254,14 @@ describe("create_campaign", () => {
     expect(lastBody().params.Campaigns[0].DailyBudget.Amount).toBe(1_000_000_000)
   })
 
-  it("кладёт стратегию в DynamicTextCampaign для динамических объявлений", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
-    const params = createCampaignSchema.parse({
+  it("отклоняет динамическую кампанию, которую Директ через API не создаёт", () => {
+    const result = createCampaignSchema.safeParse({
       name: "Улов",
       start_date: "2026-09-10",
       type: "DYNAMIC_TEXT_CAMPAIGN"
     })
 
-    await handleCreateCampaign(params)
-
-    expect(lastBody().params.Campaigns[0].DynamicTextCampaign).toBeDefined()
-    expect(lastBody().params.Campaigns[0].TextCampaign).toBeUndefined()
+    expect(result.success).toBe(false)
   })
 })
 
@@ -306,20 +302,6 @@ describe("UTM-разметка кампании", () => {
       "utm_source=yandex&utm_campaign={campaign_id}"
     )
     expect(lastBody().params.Campaigns[0].TextCampaign.BiddingStrategy).toBeDefined()
-  })
-
-  it("на создании динамической кампании кладёт разметку в DynamicTextCampaign", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [{ Id: 1 }] } }))
-    const params = createCampaignSchema.parse({
-      name: "Кампания",
-      type: "DYNAMIC_TEXT_CAMPAIGN",
-      start_date: "2026-09-10",
-      tracking_params: "utm_source=yandex"
-    })
-
-    await handleCreateCampaign(params)
-
-    expect(lastBody().params.Campaigns[0].DynamicTextCampaign.TrackingParams).toBe("utm_source=yandex")
   })
 
   it("на обновлении сначала читает тип кампании, потом пишет в нужный объект", async () => {

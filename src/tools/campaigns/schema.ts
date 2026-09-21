@@ -70,10 +70,10 @@ export const createCampaignSchema = z.object({
     .string()
     .check(z.minLength(1, { error: "Название не может быть пустым" }))
     .meta({ description: "Название кампании" }),
-  type: z
-    .literal(CAMPAIGN_TYPES_CREATABLE)
-    .default("TEXT_CAMPAIGN")
-    .meta({ description: "Тип кампании: текстово-графическая или динамические объявления" }),
+  type: z.literal(CAMPAIGN_TYPES_CREATABLE).default("TEXT_CAMPAIGN").meta({
+    description:
+      "Тип кампании. Через API создаётся только текстово-графическая: смарт-баннеры и динамические объявления Директ через API не создаёт"
+  }),
   start_date: dateField("Дата начала показов, YYYY-MM-DD"),
   daily_budget: rublesField("Дневной бюджет в рублях, например 1000 — это 1000 ₽").optional(),
   search_strategy: z

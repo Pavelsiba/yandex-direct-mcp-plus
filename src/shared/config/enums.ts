@@ -26,9 +26,10 @@ export const CAMPAIGN_ACTIONS = ["suspend", "resume", "archive", "unarchive", "d
 // Регистр — часть внешнего контракта, менять его нельзя: он зашит в чужие сценарии.
 export const CAMPAIGN_STATUS_ACTIONS = ["SUSPEND", "RESUME", "ARCHIVE", "UNARCHIVE"] as const
 
-// Типы, которые умеет создавать create_campaign. Список ограничен нашей реализацией,
-// а не API: хендлер собирает только TextCampaign и DynamicTextCampaign.
-export const CAMPAIGN_TYPES_CREATABLE = ["TEXT_CAMPAIGN", "DYNAMIC_TEXT_CAMPAIGN"] as const
+// Типы, которые умеет создавать create_campaign. WSDL здесь не источник: в CampaignAddItem
+// есть и DynamicTextCampaign, и SmartCampaign, но боевой API с 22.05.2026 их не создаёт —
+// DYNAMIC_TEXT_CAMPAIGN отбит ошибкой 3500 (13.09.2026). Единая перфоманс-кампания — #46.
+export const CAMPAIGN_TYPES_CREATABLE = ["TEXT_CAMPAIGN"] as const
 
 // Типы кампаний для фильтра list_campaigns: CampaignTypeGetEnum без UNKNOWN —
 // это значение приходит в ответе для неизвестного клиенту типа, фильтровать по нему нечего.

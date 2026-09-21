@@ -132,11 +132,7 @@ export async function handleCreateCampaign(params: z.infer<typeof createCampaign
   const settings: Record<string, unknown> = { BiddingStrategy: biddingStrategy }
   if (params.tracking_params !== undefined) settings.TrackingParams = params.tracking_params
 
-  if (params.type === "DYNAMIC_TEXT_CAMPAIGN") {
-    campaign.DynamicTextCampaign = settings
-  } else {
-    campaign.TextCampaign = settings
-  }
+  campaign.TextCampaign = settings
 
   return formatResult(await apiPost("campaigns", "add", { Campaigns: [campaign] }))
 }

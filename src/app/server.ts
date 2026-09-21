@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { SERVER_INSTRUCTIONS } from "#app/instructions"
 import type { ToolDescriptor } from "#shared/lib/tool"
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -18,7 +19,7 @@ export function readVersion(): string {
 }
 
 export function createServer(tools: readonly ToolDescriptor[]): McpServer {
-  const server = new McpServer({ name: "yd-mcp", version: readVersion() })
+  const server = new McpServer({ name: "yd-mcp", version: readVersion() }, { instructions: SERVER_INSTRUCTIONS })
 
   for (const tool of tools) {
     server.registerTool(
