@@ -3,9 +3,9 @@ import { apiPost } from "#shared/api/client"
 import type { FieldOf } from "#shared/config/api-fields"
 import { PAGE_MAX_LIMIT } from "#shared/config/limits"
 import { formatResult } from "#shared/lib/format"
-import { apiId, apiIds } from "#shared/lib/id"
+import { apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
-import type { addVcardSchema, deleteVcardsSchema, listVcardsSchema } from "./schema.js"
+import type { deleteVcardsSchema, listVcardsSchema } from "./schema.js"
 
 const NO_MONEY = { money: false } as const
 
@@ -86,42 +86,4 @@ export async function handleListVcards(params: z.infer<typeof listVcardsSchema>)
 export async function handleDeleteVcards(params: z.infer<typeof deleteVcardsSchema>): Promise<string> {
   const data = await apiPost("vcards", "delete", { SelectionCriteria: { Ids: apiIds(params.vcard_ids) } })
   return formatResult(data, NO_MONEY)
-}
-
-// Необязательные поля визитки: имя параметра → имя поля Директа.
-const OPTIONAL_FIELDS = [
-  ["street", "Street"],
-  ["house", "House"],
-  ["building", "Building"],
-  ["apartment", "Apartment"],
-  ["extra_message", "ExtraMessage"],
-  ["contact_email", "ContactEmail"],
-  ["ogrn", "Ogrn"],
-  ["contact_person", "ContactPerson"]
-] as const
-
-export async function handleAddVcard(params: z.infer<typeof addVcardSchema>): Promise<string> {
-  const phone: Record<string, unknown> = {
-    CountryCode: params.phone_country_code,
-    CityCode: params.phone_city_code,
-    PhoneNumber: params.phone_number
-  }
-  if (params.phone_extension !== undefined) phone.Extension = params.phone_extension
-
-  const vcard: Record<string, unknown> = {
-    CampaignId: apiId(params.campaign_id),
-    Country: params.country,
-    City: params.city,
-    CompanyName: params.company_name,
-    WorkTime: params.work_time,
-    Phone: phone
-  }
-
-  for (const [source, target] of OPTIONAL_FIELDS) {
-    const value = params[source]
-    if (value !== undefined) vcard[target] = value
-  }
-  if (params.metro_station_id) vcard.MetroStationId = apiId(params.metro_station_id)
-
-  return formatResult(await apiPost("vcards", "add", { VCards: [vcard] }), NO_MONEY)
 }
