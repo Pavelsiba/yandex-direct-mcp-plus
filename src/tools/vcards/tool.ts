@@ -18,7 +18,7 @@ export const deleteVcardsTool = defineTool({
   name: "delete_vcards",
   title: "Удалить визитки",
   description:
-    "Удалить визитки по ID; удаление необратимо. Отказ по отдельной визитке приходит в ответе списком, а не ошибкой вызова.",
+    "Удалить визитки по ID; удаление необратимо. Отказ по отдельной визитке приходит строкой ❌ в ответе, остальные при этом удалены.",
   annotations: DESTRUCTIVE,
   schema: deleteVcardsSchema,
   handler: handleDeleteVcards

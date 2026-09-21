@@ -43,6 +43,14 @@ describe("клиент v5", () => {
     await expect(apiPost("campaigns", "get")).rejects.toThrow(/\[54\].*Нет прав.*Проверьте токен/)
   })
 
+  it("кладёт в текст ошибки остаток баллов из заголовка Units", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({ error: { error_code: 152, error_string: "Недостаточно баллов" } }, { Units: "20/0/240000" })
+    )
+
+    await expect(apiPost("campaigns", "get")).rejects.toThrow(/20\/0\/240000/)
+  })
+
   it("подставляет Client-Login для агентского токена", async () => {
     process.env.YANDEX_DIRECT_LOGIN = "agency-client"
     mockFetch.mockResolvedValueOnce(okResponse({ result: {} }))

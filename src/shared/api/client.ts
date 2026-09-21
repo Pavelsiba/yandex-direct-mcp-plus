@@ -10,9 +10,9 @@ export async function apiPost(service: string, method: string, params: Record<st
     headers: commonHeaders(),
     body: stringifyJson({ method, params })
   })
-  logUnits(response)
+  const units = logUnits(response)
 
   const data = parseJson(await response.text())
-  assertNoApiError(data)
+  assertNoApiError(data, units)
   return data
 }

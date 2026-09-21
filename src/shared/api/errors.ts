@@ -1,4 +1,5 @@
 // Разбор ошибок Директа. Хендлеры сюда не заглядывают: их дело — сценарий.
+import { getErrorHint } from "#shared/lib/error-hints"
 
 type ApiErrorV5 = {
   error_code?: number | string
@@ -27,9 +28,19 @@ function isAuthError(code: unknown): boolean {
   return Number(code) === AUTH_ERROR_CODE
 }
 
+// Хвост ошибки: что делать и сколько баллов осталось. Остаток нужен модели, чтобы
+// отличить «кончились баллы» от «запрос неверен» и не сжечь последние на повторах.
+function withAdvice(message: string, code: unknown, units?: string): string {
+  const parts = [message]
+  const hint = getErrorHint(code)
+  if (hint) parts.push(`Что делать: ${hint}`)
+  if (units) parts.push(`Баллы API (потрачено/остаток/лимит): ${units}.`)
+  return parts.join(" ")
+}
+
 // v5 возвращает ошибку уровня запроса телом с HTTP 200 — статус проверять бесполезно,
 // признак ошибки один: ключ `error`. Док: https://yandex.ru/dev/direct/doc/en/concepts/errors-list
-export function assertNoApiError(data: unknown): void {
+export function assertNoApiError(data: unknown, units?: string): void {
   const error = (data as { error?: ApiErrorV5 } | null)?.error
   if (!error || typeof error !== "object") return
   if (isAuthError(error.error_code)) throw new Error(AUTH_ERROR_MESSAGE)
@@ -37,16 +48,17 @@ export function assertNoApiError(data: unknown): void {
   const parts = [`Ошибка API Яндекс.Директ [${error.error_code ?? "?"}]: ${error.error_string ?? "неизвестная ошибка"}`]
   if (error.error_detail) parts.push(`— ${error.error_detail}`)
   if (error.request_id) parts.push(`(request_id: ${error.request_id})`)
-  throw new Error(parts.join(" "))
+  throw new Error(withAdvice(parts.join(" "), error.error_code, units))
 }
 
 // v4 отвечает по-своему: error_str вместо error_string, признак — любой из двух ключей.
-export function assertNoApiErrorV4(data: Record<string, unknown> | null): void {
+export function assertNoApiErrorV4(data: Record<string, unknown> | null, units?: string): void {
   if (!data || (data.error_code === undefined && data.error_str === undefined)) return
   if (isAuthError(data.error_code)) throw new Error(AUTH_ERROR_MESSAGE)
 
   const detail = data.error_detail ? ` — ${data.error_detail}` : ""
-  throw new Error(`Ошибка API v4 [${data.error_code ?? "?"}]: ${data.error_str ?? "неизвестная ошибка"}${detail}`)
+  const message = `Ошибка API v4 [${data.error_code ?? "?"}]: ${data.error_str ?? "неизвестная ошибка"}${detail}`
+  throw new Error(withAdvice(message, data.error_code, units))
 }
 
 const REPORT_ERROR_CODE = /<reports:errorCode>(\d+)<\/reports:errorCode>/

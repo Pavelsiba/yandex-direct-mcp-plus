@@ -15,10 +15,11 @@ export function commonHeaders(): Record<string, string> {
 }
 
 // Units = «израсходовано/остаток/суточный лимит» баллов API. В stdout писать нельзя —
-// там транспорт MCP, поэтому stderr.
-export function logUnits(response: Response): void {
-  const units = response.headers?.get?.("Units")
+// там транспорт MCP, поэтому stderr. Значение возвращается — оно же уходит в текст ошибки.
+export function logUnits(response: Response): string | undefined {
+  const units = response.headers?.get?.("Units") ?? undefined
   if (units) console.error(`[yd-mcp] Баллы API (потрачено/остаток/лимит): ${units}`)
+  return units
 }
 
 function delay(ms: number): Promise<void> {

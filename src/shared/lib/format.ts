@@ -1,6 +1,7 @@
 // biome-ignore-all lint/plugin: слой вывода — сериализуется уже нормализованное дерево,
 // больших чисел в нём не остаётся: ID приведены к строкам ниже
 // Единый формат ответа инструментов: деньги в рублях, ID строками, сверху — уведомления Директа.
+import { getErrorHint } from "#shared/lib/error-hints"
 import { microsToRubles } from "#shared/lib/money"
 
 // Поля v5, приезжающие в микроединицах. Набор консервативный: только заведомо
@@ -61,10 +62,21 @@ type Notification = {
   Details?: string
 }
 
+// Отказ по объекту начинается с этого знака в начале строки. По нему server ставит isError:
+// хендлеры склеивают несколько ответов в один текст, и признак обязан пережить склейку.
+// Тело ответа — JSON с отступами, строк с этим знаком в начале в нём не бывает.
+const ITEM_ERROR_MARK = "❌"
+
 function formatNotice(prefix: string, key: string, index: number, notification: Notification): string {
   const detail = notification.Details ? ` — ${notification.Details}` : ""
-  return `${prefix} ${key}[${index}] [${notification.Code ?? "?"}] ${notification.Message ?? ""}${detail}`
+  const line = `${prefix} ${key}[${index}] [${notification.Code ?? "?"}] ${notification.Message ?? ""}${detail}`
+  const hint = prefix === ITEM_ERROR_MARK ? getErrorHint(notification.Code) : undefined
+  return hint ? `${line}\n   Что делать: ${hint}` : line
 }
+
+/** Есть ли в выводе инструмента отказ хотя бы по одному объекту. */
+export const hasItemErrors = (output: string): boolean =>
+  output.split("\n").some((line) => line.startsWith(ITEM_ERROR_MARK))
 
 // Частичный успех Директ хранит в теле: per-item ошибки и предупреждения лежат
 // в массивах *Results, обрезанная выборка — в LimitedBy. Без этой шапки модель
@@ -84,7 +96,9 @@ function collectNotices(data: unknown): string {
     if (!/Results$/.test(key) || !Array.isArray(value)) continue
 
     value.forEach((item, index) => {
-      for (const error of (item?.Errors ?? []) as Notification[]) lines.push(formatNotice("❌", key, index, error))
+      for (const error of (item?.Errors ?? []) as Notification[]) {
+        lines.push(formatNotice(ITEM_ERROR_MARK, key, index, error))
+      }
       for (const warning of (item?.Warnings ?? []) as Notification[]) lines.push(formatNotice("⚠️", key, index, warning))
     })
   }
