@@ -7,8 +7,6 @@ export const getTimeTargetingSchema = z.object({
   campaign_id: idField("ID кампании, десятичная строка")
 })
 
-// Час — это z.int(), а не z.number().int(): в zod v4 целое есть отдельным типом,
-// и границы задаются проверками, а не цепочкой методов v3.
 const startHour = (description: string) =>
   z
     .int()
@@ -31,9 +29,7 @@ const bidPercent = (range: typeof HOURLY_BID_RANGE | typeof HOLIDAY_BID_RANGE, d
     )
     .meta({ description })
 
-// Наружу расписание задаётся правилами «дни + интервал часов + коэффициент», а не
-// строками из 25 чисел, как в API: собрать такую строку модель обязана без ошибок,
-// а проверить её глазами нельзя. Компиляцию правил в строки делает хендлер.
+// Правила вместо строк из 25 чисел: такую строку модель соберёт с ошибкой и не заметит.
 const scheduleRule = z
   .object({
     days: z
@@ -85,8 +81,6 @@ export const setTimeTargetingSchema = z
       })
   })
   // Директ отклоняет часы и коэффициент праздников при SuspendOnHolidays=YES.
-  // Ловим это схемой: иначе модель отправит взаимоисключающие настройки и получит
-  // ошибку API вместо подсказки.
   .refine(
     (params) =>
       params.suspend_on_holidays !== true ||

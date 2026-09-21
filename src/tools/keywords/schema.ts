@@ -7,10 +7,7 @@ import { idField } from "#shared/lib/id"
 import { rublesField } from "#shared/lib/money"
 import { pageFields } from "#shared/lib/pagination"
 
-// Фраз в группе бывают сотни, поэтому по умолчанию берётся минимум, по которому фразу
-// видно и можно поставить ставку. Statistics, Productivity и автотаргетинг за ним —
-// по запросу: на сотне фраз они утраивают ответ. Живёт в контракте, а не в хендлере,
-// потому что перечислен в описании параметра fields.
+// Минимум для ставки: фраз в группе сотни, Statistics и Productivity утроили бы ответ.
 export const KEYWORD_LIST_FIELDS: FieldOf<"keywords", "KeywordFieldEnum">[] = [
   "Id",
   "Keyword",
@@ -46,8 +43,7 @@ export const addKeywordsSchema = z.object({
     .meta({ description: "Ключевые фразы; минус-слова внутри фразы записываются через дефис" })
 })
 
-// Подстановочная переменная: null снимает значение (поле nillable), пропуск поля
-// оставляет прежнее. Пустой строкой это не выражается — она сама себе значение.
+// null снимает значение, пропуск оставляет прежнее; пустая строка — тоже значение.
 const userParam = (variable: string) =>
   z
     .string()
@@ -66,8 +62,6 @@ const keywordUpdate = z.object({
   user_param2: userParam("param2")
 })
 
-// Меняет текст фразы и подстановочные переменные. Ставки живут в set_keyword_bids,
-// статус — в manage_keywords: у Директа это другие методы, не Keywords.update.
 export const updateKeywordsSchema = z.object({
   keywords: z
     .array(keywordUpdate)
@@ -88,8 +82,7 @@ export const manageKeywordsSchema = z.object({
   action: z.literal(KEYWORD_ACTIONS).meta({ description: "Действие: suspend, resume или delete (необратимо)" })
 })
 
-// Ставка ставится ровно на один уровень целей: фразы, группы или кампании.
-// Проверку «ровно один» делает хендлер — она про сочетание полей, а не про поле.
+// «Ровно один уровень целей» проверяет хендлер: это сочетание полей, а не поле.
 export const setKeywordBidsSchema = z.object({
   keyword_ids: z.array(idField("ID ключевой фразы")).optional().meta({ description: "Ставки на уровне фраз" }),
   ad_group_ids: z

@@ -1,6 +1,4 @@
-// Временной таргетинг кампании. В API это поле кампании: читается тем же get,
-// пишется тем же update. Наружный контракт — правила «дни + часы + коэффициент»,
-// внутрь уходят строки из 25 чисел; перевод в обе стороны живёт здесь.
+// Временной таргетинг: наружу правила «дни + часы + коэффициент», в API — строки из 25 чисел.
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
 import type { FieldOf } from "#shared/config/api-fields"
@@ -12,14 +10,11 @@ import type { getTimeTargetingSchema, setTimeTargetingSchema } from "./schema.js
 
 const FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = ["Id", "Name", "TimeZone", "TimeTargeting"]
 
-// День недели в строке Schedule — число: 1 — понедельник, 7 — воскресенье.
 const DAY_NUMBERS = new Map(WEEKDAYS.map((day, index) => [day, index + 1]))
 
 type SetParams = z.infer<typeof setTimeTargetingSchema>
 
-// Расписание собирается сразу на все семь дней. Пропустить день нельзя: Директ
-// трактует отсутствующий элемент как «круглосуточно 100%», и «показы только в
-// будни» молча превратилось бы в показы всю неделю.
+// Все семь дней: пропущенный Директ считает «круглосуточно 100%», и «только будни» стало бы всей неделей.
 function compileSchedule(rules: SetParams["schedule"]): string[] {
   const week = WEEKDAYS.map(() => new Array<number>(HOURS_IN_DAY).fill(0))
 
@@ -68,8 +63,6 @@ export async function handleSetTimeTargeting(params: SetParams): Promise<string>
 type Interval = { From: number; To: number; BidPercent: number }
 type DaySchedule = { Day: string; Around: string; Intervals: Interval[] }
 
-// Часы с одинаковым коэффициентом сворачиваются в интервал: 24 числа в строке
-// модель прочитает, но пересказать пользователю «когда идут показы» по ним сложно.
 function toIntervals(hours: number[]): Interval[] {
   const intervals: Interval[] = []
 
@@ -95,9 +88,7 @@ function describe(intervals: Interval[]): string {
     .join(", ")
 }
 
-// Отсутствующий в ответе день — круглосуточные показы со 100%: таково правило
-// самого Директа, а не наша догадка. Поэтому неделя заполняется сотнями, и уже
-// поверх ложатся присланные строки.
+// Отсутствующий в ответе день по правилу Директа — круглосуточно 100%.
 function decodeSchedule(items: unknown): DaySchedule[] {
   const week = WEEKDAYS.map(() => new Array<number>(HOURS_IN_DAY).fill(100))
 

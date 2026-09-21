@@ -36,7 +36,6 @@ const VCARD_FIELDS: FieldOf<"vcards", "VCardFieldEnum">[] = [
 type AdsResponse = { result?: { Ads?: Array<{ TextAd?: { VCardId?: unknown } }> } }
 
 // VCardId приезжает строкой (json-bigint) либо числом, если ID короткий.
-// Чистая функция, поэтому проверяется без сети.
 function collectVCardIds(response: AdsResponse): string[] {
   const ids = new Set<string>()
 

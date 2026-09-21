@@ -1,5 +1,4 @@
-// Создания визиток здесь нет намеренно: vcards.add в WSDL объявлен, но боевой API отвечает
-// 3500 «Создание визиток не поддерживается» (проба 13.09.2026, #38).
+// Создания визиток нет намеренно: vcards.add в WSDL есть, но боевой API отвечает 3500.
 import { DESTRUCTIVE, defineTool, READ } from "#shared/lib/tool"
 import { handleDeleteVcards, handleListVcards } from "./handler.js"
 import { deleteVcardsSchema, listVcardsSchema } from "./schema.js"
