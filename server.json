@@ -7,12 +7,12 @@
     "url": "https://github.com/Pavelsiba/yandex-direct-mcp-plus",
     "source": "github"
   },
-  "version": "1.6.1",
+  "version": "1.7.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "yandex-direct-mcp-plus",
-      "version": "1.6.1",
+      "version": "1.7.0",
       "transport": {
         "type": "stdio"
       },
