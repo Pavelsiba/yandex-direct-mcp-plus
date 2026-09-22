@@ -35,7 +35,8 @@ export function createServer(tools: readonly ToolDescriptor[]): McpServer {
       {
         title: tool.title,
         description: tool.description,
-        inputSchema: tool.schema.shape,
+        // Схема целиком, не .shape: из словаря полей SDK собрал бы новый объект без .refine.
+        inputSchema: tool.schema,
         annotations: tool.annotations
       },
       async (params: unknown) => toCallResult(await tool.run(params))

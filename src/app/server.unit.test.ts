@@ -45,6 +45,27 @@ describe("сервер", () => {
     await client.close()
   })
 
+  it("проверяет параметры и правилами на весь объект, а не только на отдельные поля", async () => {
+    const client = await connect()
+
+    const result = await client.callTool({
+      name: "set_time_targeting",
+      arguments: {
+        campaign_id: "1",
+        schedule: [{ days: ["MON"], start_hour: 9, end_hour: 21 }],
+        suspend_on_holidays: true,
+        holiday_bid_percent: 50,
+        dry_run: true
+      }
+    })
+
+    expect(result.isError).toBe(true)
+    expect(result.content).toEqual([
+      expect.objectContaining({ text: expect.stringContaining("suspend_on_holidays=true") })
+    ])
+    await client.close()
+  })
+
   it("помечает ошибкой вызов, в котором отказал хотя бы один объект", async () => {
     const client = await connect([
       toolAnswering({ result: { AddResults: [{ Id: 1 }, { Errors: [{ Code: 3500, Message: "Не поддерживается" }] }] } })
