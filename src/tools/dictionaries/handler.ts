@@ -5,9 +5,7 @@ import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import type { getRegionsSchema, listTimeZonesSchema } from "./schema.js"
 
-// Схемы ответа нестрогие (`looseObject`): обязательны только поля, на которые опирается
-// инструмент, остальное проходит насквозь и попадает в вывод. Директ добавляет поля без
-// предупреждения — строгая схема превратила бы такое добавление в отказ инструмента.
+// Нестрогие схемы: новое поле Директа не должно ломать инструмент.
 const geoRegionSchema = z.looseObject({
   GeoRegionId: z.number(),
   GeoRegionName: z.string()
@@ -18,8 +16,6 @@ const timeZoneSchema = z.looseObject({
   TimeZoneName: z.string()
 })
 
-// Имя справочника связано с типом его записей здесь и только здесь: перепутать пару
-// или ошибиться в имени теперь нельзя — это ловит компилятор.
 const DICTIONARIES = {
   GeoRegions: geoRegionSchema,
   TimeZones: timeZoneSchema
@@ -28,12 +24,10 @@ const DICTIONARIES = {
 type DictionaryName = keyof typeof DICTIONARIES
 type DictionaryItem<Name extends DictionaryName> = z.infer<(typeof DICTIONARIES)[Name]>
 
-// Справочники Директа — тысячи записей и почти неизменны, поэтому держатся
-// в памяти процесса: иначе каждый вызов тратил бы баллы API на одно и то же.
+// Справочники почти неизменны — кэш в памяти процесса экономит баллы API.
 let cache: { [Name in DictionaryName]?: DictionaryItem<Name>[] } = {}
 
-// Кэш переживает импорты, поэтому тесту нужен явный сброс: без него проверка
-// «сходил в сеть один раз» зависела бы от того, загрузил ли справочник кто-то раньше.
+// Для тестов: vi.resetModules() в проекте запрещён, кэш сбрасывается явно.
 export function clearDictionaryCache(): void {
   cache = {}
 }
@@ -50,8 +44,7 @@ async function loadDictionary<Name extends DictionaryName>(name: Name): Promise<
     data?.result?.[name] ?? [],
     `справочник ${name}`
   )
-  // Запись по generic-ключу компилятор не выводит: для него `cache[name]` — пересечение
-  // всех вариантов. Чтение (`cache[name]` выше) типизировано точно, каст только здесь.
+  // Запись по generic-ключу компилятор не выводит — каст только здесь.
   cache[name] = items as (typeof cache)[Name]
   return items
 }
@@ -77,14 +70,11 @@ function limitedOutput<Item>(matched: Item[], limit: number): string {
       ? `ℹ️ Показано ${limited.length} из ${matched.length}. Уточните search или увеличьте limit.\n\n`
       : ""
 
-  // Записи справочника короткие, но вывод всё равно идёт через общий форматтер:
-  // один формат ответа на все инструменты, никаких исключений.
   return note + formatResult(limited, { money: false })
 }
 
-// Вложенность региона знает только getGeoRegions, и она не кэшируется: справочник
-// GeoRegions родителей не отдаёт вовсе. Отбор здесь тоже чужой — Name отдаёт регионы
-// «с похожим названием» (док getGeoRegions), а не подстрокой, как фильтр по кэшу.
+// Родителей региона отдаёт только getGeoRegions, справочник GeoRegions — нет. Поиск там
+// «по похожему названию», а не подстрокой, как фильтр по кэшу.
 async function searchRegionsWithParents(search: string, limit: number): Promise<string> {
   const data = await apiPost("dictionaries", "getGeoRegions", {
     SelectionCriteria: { Name: search },

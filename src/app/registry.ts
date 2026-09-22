@@ -1,5 +1,6 @@
 // Реестр инструментов: единственный список, который знает про все домены сразу.
 // Импорты явные, не глоб: glob прячет инструмент от knip и ломает типизацию списка.
+import { withDryRun } from "#app/dry-run"
 import type { ToolDescriptor } from "#shared/lib/tool"
 import { getAccountBalanceTool } from "#tools/account/tool"
 import { addAdExtensionsTool, deleteAdExtensionsTool, listAdExtensionsTool } from "#tools/ad-extensions/tool"
@@ -54,7 +55,7 @@ import { getSearchQueriesTool } from "#tools/search-queries/tool"
 import { deleteSitelinksTool, listSitelinksTool, setSitelinksTool } from "#tools/sitelinks/tool"
 import { getStatisticsTool } from "#tools/statistics/tool"
 import { getTimeTargetingTool, setTimeTargetingTool } from "#tools/time-targeting/tool"
-import { addVcardTool, deleteVcardsTool, listVcardsTool } from "#tools/vcards/tool"
+import { deleteVcardsTool, listVcardsTool } from "#tools/vcards/tool"
 
 export const tools: readonly ToolDescriptor[] = [
   // Кампании и стратегии
@@ -106,7 +107,6 @@ export const tools: readonly ToolDescriptor[] = [
   deleteAdExtensionsTool,
   manageAdImagesTool,
   listVcardsTool,
-  addVcardTool,
   deleteVcardsTool,
 
   // Таргетинг и корректировки
@@ -134,4 +134,4 @@ export const tools: readonly ToolDescriptor[] = [
   listFeedsTool,
   getRegionsTool,
   listTimeZonesTool
-]
+].map(withDryRun)

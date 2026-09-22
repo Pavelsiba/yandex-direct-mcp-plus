@@ -1,7 +1,7 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса; ID в фикстурах заданы сырой строкой
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleAddVcard, handleDeleteVcards, handleListVcards } from "./handler.js"
+import { handleDeleteVcards, handleListVcards } from "./handler.js"
 
 installFetchMock()
 
@@ -61,51 +61,5 @@ describe("delete_vcards", () => {
 
     expect(bodyOf(0).method).toBe("delete")
     expect(lastRawBody()).toContain('"Ids":[777,1915016273214320641]')
-  })
-})
-
-describe("add_vcard", () => {
-  beforeEach(() => mockFetch.mockReset())
-
-  it("собирает телефон из частей и пропускает незаполненные поля адреса", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [] } }))
-
-    await handleAddVcard({
-      campaign_id: "123",
-      country: "Россия",
-      city: "Новосибирск",
-      company_name: "Свежий улов",
-      work_time: "1#5#9#0#18#0",
-      phone_country_code: "+7",
-      phone_city_code: "383",
-      phone_number: "1234567",
-      street: "Ленина"
-    })
-
-    const vcard = bodyOf(0).params.VCards[0]
-    expect(vcard.Phone).toEqual({ CountryCode: "+7", CityCode: "383", PhoneNumber: "1234567" })
-    expect(vcard.Street).toBe("Ленина")
-    expect(vcard).not.toHaveProperty("House")
-    expect(vcard).not.toHaveProperty("ContactEmail")
-  })
-
-  it("отправляет добавочный номер и станцию метро, когда они заданы", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [] } }))
-
-    await handleAddVcard({
-      campaign_id: "123",
-      country: "Россия",
-      city: "Новосибирск",
-      company_name: "Свежий улов",
-      work_time: "1#5#9#0#18#0",
-      phone_country_code: "+7",
-      phone_city_code: "383",
-      phone_number: "1234567",
-      phone_extension: "101",
-      metro_station_id: "20370"
-    })
-
-    expect(bodyOf(0).params.VCards[0].Phone.Extension).toBe("101")
-    expect(lastRawBody()).toContain('"MetroStationId":20370')
   })
 })

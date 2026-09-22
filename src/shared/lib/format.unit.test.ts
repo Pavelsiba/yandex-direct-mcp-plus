@@ -1,6 +1,6 @@
 // biome-ignore-all lint/plugin: тест разбирает собственный вывод форматтера
 import { describe, expect, it } from "vitest"
-import { formatResult } from "#shared/lib/format"
+import { formatResult, hasItemErrors } from "#shared/lib/format"
 
 describe("formatResult", () => {
   it("переводит денежные поля из микроединиц в рубли", () => {
@@ -127,5 +127,34 @@ describe("formatResult", () => {
 
     expect(output).toContain("❌ AddResults[1] [5001] Недопустимое значение — Поле Name")
     expect(output).toContain("⚠️ AddResults[2] [10] Объявление уйдёт на модерацию")
+  })
+
+  it("дописывает к отказу по объекту, что делать", () => {
+    const output = formatResult({
+      result: {
+        AddResults: [
+          { Errors: [{ Code: 3500, Message: "Не поддерживается", Details: "Создание визиток не поддерживается" }] }
+        ]
+      }
+    })
+
+    expect(output).toMatch(/❌ AddResults\[0\] \[3500\].*\n\s+Что делать: .*бесполезно/)
+  })
+})
+
+describe("hasItemErrors", () => {
+  it("находит отказ по объекту и в склейке нескольких ответов", () => {
+    const failed = formatResult({ result: { UpdateResults: [{ Errors: [{ Code: 8800, Message: "Не найден" }] }] } })
+    const succeeded = formatResult({ result: { SuspendResults: [{ Id: 1 }] } })
+
+    expect(hasItemErrors(`${succeeded}\n\n${failed}`)).toBe(true)
+  })
+
+  it("не считает ошибкой успех и предупреждение", () => {
+    const output = formatResult({
+      result: { AddResults: [{ Id: 1 }, { Id: 2, Warnings: [{ Code: 10000, Message: "Повтор" }] }] }
+    })
+
+    expect(hasItemErrors(output)).toBe(false)
   })
 })

@@ -12,9 +12,9 @@ export async function apiV4(method: string, param: Record<string, unknown> = {})
     headers: { "Content-Type": "application/json", "Accept-Language": "ru" },
     body: stringifyJson({ method, token: getToken(), param })
   })
-  logUnits(response)
+  const units = logUnits(response)
 
   const data = parseJson(await response.text()) as Record<string, unknown>
-  assertNoApiErrorV4(data)
+  assertNoApiErrorV4(data, units)
   return data
 }

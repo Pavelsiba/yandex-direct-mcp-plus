@@ -1,5 +1,4 @@
-// Сценарии кампаний. Деньги сюда приезжают уже в микроединицах (конвертирует схема),
-// ошибки разбирает shared/api — здесь только последовательность вызовов.
+// Сценарии кампаний: деньги приезжают уже в микроединицах, ошибки разбирает shared/api.
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
 import type { FieldOf } from "#shared/config/api-fields"
@@ -21,18 +20,10 @@ import type {
 } from "./schema.js"
 import { CAMPAIGN_LIST_FIELDS } from "./schema.js"
 
-// Набор по умолчанию объявлен в контракте: его перечисляет описание параметра fields.
 const DETAIL_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [...CAMPAIGN_LIST_FIELDS, "EndDate"]
 
-// Цели, счётчики и модель атрибуции лежат не в BiddingStrategy, а рядом с ней: у кампании
-// на максимум конверсий в стратегии стоит служебный GoalId 13 («ключевые цели»), и без
-// PriorityGoals кампания выглядит как «цель не настроена».
-//
-// Пересечение трёх перечислений — это ровно «поле, которое есть у всех трёх типов»: TS
-// сводит пересечение строковых объединений к общим членам. Смарт-кампании стоят отдельно,
-// потому что счётчик у них называется CounterId, в единственном числе, и общий набор им
-// не подходит: пробой 13.09.2026 множественное отбито ошибкой 8000. Теперь то же самое
-// отбивает компилятор.
+// Пересечение — поля, общие для трёх типов. Смарт отдельно: счётчик у него CounterId,
+// в единственном числе, CounterIds Директ отбивает ошибкой 8000.
 type SettingsField = FieldOf<"campaigns", "TextCampaignFieldEnum"> &
   FieldOf<"campaigns", "DynamicTextCampaignFieldEnum"> &
   FieldOf<"campaigns", "UnifiedCampaignFieldEnum">
@@ -52,9 +43,7 @@ const SMART_SETTINGS_FIELDS: FieldOf<"campaigns", "SmartCampaignFieldEnum">[] = 
   "Settings"
 ]
 
-// TrackingParams поддерживают не все типы: сверено с WSDL campaigns 05.09.2026 — поле есть
-// в Text, DynamicText, Smart и Unified, но не в MobileApp и не в CpmBanner. Набор не тот
-// же, что у общих наборов минус-фраз, поэтому список свой, а не общий.
+// По WSDL: у MobileApp и CpmBanner поля TrackingParams нет.
 const TRACKING_PARAMS_TYPES = ["TEXT_CAMPAIGN", "DYNAMIC_TEXT_CAMPAIGN", "SMART_CAMPAIGN", "UNIFIED_CAMPAIGN"]
 
 async function readTrackingParamsKey(campaignId: string): Promise<CampaignSettingsKey> {
@@ -77,7 +66,6 @@ async function readTrackingParamsKey(campaignId: string): Promise<CampaignSettin
   return settingsKey
 }
 
-// Действие со статусом — отдельный метод API, а не поле update.
 const STATUS_METHODS: Record<string, string> = {
   SUSPEND: "suspend",
   RESUME: "resume",
@@ -100,10 +88,8 @@ export async function handleListCampaigns(params: z.infer<typeof listCampaignsSc
   return formatResult(await apiPost("campaigns", "get", requestParams))
 }
 
-// Настройки кампании лежат внутри объекта, имя которого зависит от типа, поэтому в общий
-// FieldNames не попадают — их запрашивают отдельным type-specific параметром. Заранее тип
-// неизвестен, но лишние *CampaignFieldNames безвредны: Директ наполняет тот объект, который
-// соответствует реальному типу кампании, а остальные просто не возвращает.
+// Тип заранее неизвестен, поэтому настройки просятся для всех типов: лишние
+// *CampaignFieldNames безвредны, Директ заполняет только объект реального типа.
 export async function handleGetCampaign(params: z.infer<typeof getCampaignSchema>): Promise<string> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(params.campaign_id)] },
@@ -127,23 +113,16 @@ export async function handleCreateCampaign(params: z.infer<typeof createCampaign
     Search: { BiddingStrategyType: params.search_strategy },
     Network: { BiddingStrategyType: params.network_strategy }
   }
-  // TrackingParams живёт в том же объекте настроек, что и стратегия, поэтому собирается
-  // вместе с ним. На создании тип известен из параметров, читать его неоткуда и не нужно.
   const settings: Record<string, unknown> = { BiddingStrategy: biddingStrategy }
   if (params.tracking_params !== undefined) settings.TrackingParams = params.tracking_params
 
-  if (params.type === "DYNAMIC_TEXT_CAMPAIGN") {
-    campaign.DynamicTextCampaign = settings
-  } else {
-    campaign.TextCampaign = settings
-  }
+  campaign.TextCampaign = settings
 
   return formatResult(await apiPost("campaigns", "add", { Campaigns: [campaign] }))
 }
 
-// Действие со статусом и правка полей — два разных вызова API. Выполняются оба,
-// если заданы оба: иначе при наличии status поля name/daily_budget молча терялись бы.
-// Каждый ответ форматируется отдельно, чтобы per-item ошибки не потерялись.
+// Статус и поля — два разных метода API; при заданных обоих выполняются оба, иначе
+// правка полей молча терялась бы.
 export async function handleUpdateCampaign(params: z.infer<typeof updateCampaignSchema>): Promise<string> {
   const sections: string[] = []
 
@@ -160,8 +139,7 @@ export async function handleUpdateCampaign(params: z.infer<typeof updateCampaign
     if (params.daily_budget !== undefined) {
       campaign.DailyBudget = { Amount: params.daily_budget, Mode: "STANDARD" }
     }
-    // Имя объекта настроек зависит от типа кампании, а в запросе тип не передаётся —
-    // приходится прочитать. Лишний вызов только там, где разметка правда меняется.
+    // Имя объекта настроек зависит от типа, а тип в запросе не передаётся — читаем.
     if (changesSettings) {
       const settingsKey = await readTrackingParamsKey(params.campaign_id)
       campaign[settingsKey] = { TrackingParams: params.tracking_params }
@@ -183,10 +161,8 @@ export async function handleManageCampaigns(params: z.infer<typeof manageCampaig
   return formatResult(data)
 }
 
-// PriorityGoals — не украшение, а вторая половина стратегии: в BiddingStrategy у
-// максимума конверсий стоит служебный GoalId 13 — «оптимизировать по ключевым целям», а
-// сами цели с их ценностью лежат здесь. Без этого поля ответ читается как «цель не
-// выбрана» (проба 12.09.2026).
+// PriorityGoals — вторая половина стратегии: при GoalId 13 («ключевые цели») сами цели
+// лежат здесь, и без поля стратегия читается как «цель не выбрана».
 const STRATEGY_FIELDS: FieldOf<"campaigns", "TextCampaignFieldEnum">[] = [
   "BiddingStrategy",
   "PriorityGoals",
@@ -194,7 +170,6 @@ const STRATEGY_FIELDS: FieldOf<"campaigns", "TextCampaignFieldEnum">[] = [
   "AttributionModel"
 ]
 
-// Стратегия — часть кампании: читается тем же get, пишется тем же update.
 export async function handleGetStrategy(params: z.infer<typeof getStrategySchema>): Promise<string> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(params.campaign_id)] },
@@ -207,23 +182,19 @@ export async function handleGetStrategy(params: z.infer<typeof getStrategySchema
 type StrategyParams = z.infer<typeof setStrategySchema>
 type StrategyType = StrategyParams["search_type"] | StrategyParams["network_type"]
 
-// Цену стратегии, без которой она не имеет смысла, требуем сами: Директ вернул бы
-// ту же ошибку, но после запроса и на своём языке.
 function required(value: number | undefined, field: string, type: StrategyType): number {
   if (value === undefined) throw new Error(`${field} обязателен для стратегии ${type}.`)
   return value
 }
 
-// Необязательные поля добавляются только когда заданы: пустое поле в запросе Директ
-// трактует как «сбросить», а не «оставить как есть».
+// Пустое поле Директ трактует как «сбросить», поэтому незаданные не отправляются.
 function withOptional(settings: Record<string, unknown>, params: StrategyParams): Record<string, unknown> {
   if (params.weekly_spend_limit !== undefined) settings.WeeklySpendLimit = params.weekly_spend_limit
   if (params.goal_id !== undefined) settings.GoalId = apiId(params.goal_id)
   return settings
 }
 
-// Настройки лежат не рядом с типом, а во вложенном объекте, названном по стратегии:
-// имя объекта и есть переключатель, а BiddingStrategyType только дублирует его.
+// Настройки лежат в объекте, названном по стратегии; BiddingStrategyType его лишь дублирует.
 function strategySettings(type: StrategyType, params: StrategyParams): Record<string, unknown> | undefined {
   switch (type) {
     case "WB_MAXIMUM_CLICKS": {
@@ -234,10 +205,8 @@ function strategySettings(type: StrategyType, params: StrategyParams): Record<st
       return { WbMaximumClicks: settings }
     }
 
-    // Максимум конверсий за недельный бюджет. GoalId здесь — либо цель Метрики, либо
-    // служебное 13 «ключевые цели»: оптимизация по PriorityGoals, допустимая, если там есть
-    // цель кроме 12 «Вовлечённые сессии» (справочник campaigns/update, StrategyMaximumConversionRate).
-    // Проба 12.09.2026 видела 13 у кампании с заполненными PriorityGoals.
+    // GoalId — цель Метрики или служебное 13: оптимизация по PriorityGoals, где должна быть
+    // цель кроме 12 «Вовлечённые сессии».
     case "WB_MAXIMUM_CONVERSION_RATE": {
       const settings = withOptional(
         { WeeklySpendLimit: required(params.weekly_spend_limit, "weekly_spend_limit", type) },
@@ -267,8 +236,7 @@ function strategySettings(type: StrategyType, params: StrategyParams): Record<st
         NetworkDefault: params.network_limit_percent === undefined ? {} : { LimitPercent: params.network_limit_percent }
       }
 
-    // HIGHEST_POSITION, MAXIMUM_COVERAGE и SERVING_OFF настроек не имеют:
-    // в TextCampaignStrategyBase структуры под них нет вовсе.
+    // У HIGHEST_POSITION, MAXIMUM_COVERAGE и SERVING_OFF структуры настроек нет.
     default:
       return undefined
   }
@@ -295,11 +263,9 @@ export async function handleSetStrategy(params: StrategyParams): Promise<string>
   return formatResult(data)
 }
 
-// Типы, у которых PriorityGoals есть в CampaignUpdateItem: сверено с WSDL campaigns
-// 13.09.2026. У MobileApp и CpmBanner поля нет — список свой, как у TrackingParams.
+// По WSDL: у MobileApp и CpmBanner поля PriorityGoals нет.
 const PRIORITY_GOALS_TYPES = ["TEXT_CAMPAIGN", "DYNAMIC_TEXT_CAMPAIGN", "SMART_CAMPAIGN", "UNIFIED_CAMPAIGN"]
 
-// Имя поля совпадает у всех четырёх типов, включая смарт-кампании.
 const PRIORITY_GOALS_FIELDS: (SettingsField & FieldOf<"campaigns", "SmartCampaignFieldEnum">)[] = ["PriorityGoals"]
 
 type ApiPriorityGoal = { GoalId: number | string; Value: number; IsMetrikaSourceOfValue?: string }
@@ -307,8 +273,7 @@ type CampaignGoals = { Type?: string } & Partial<
   Record<CampaignSettingsKey, { PriorityGoals?: { Items?: ApiPriorityGoal[] } | null }>
 >
 
-// Тип и текущие цели читаются одним вызовом: имя объекта настроек нужно и для replace, где
-// сливать не с чем. Отсутствие кампании в ответе — ошибка до update, а не пустой список.
+// Читается и при replace: там не с чем сливать, но нужен тип — от него имя объекта настроек.
 async function readPriorityGoals(
   campaignId: string
 ): Promise<{ settingsKey: CampaignSettingsKey; goals: PriorityGoal[] }> {
@@ -343,8 +308,7 @@ async function readPriorityGoals(
 
 type PriorityGoalsParams = z.infer<typeof setPriorityGoalsSchema>
 
-// Проверка до чтения: без ценности add и replace бессмысленны, и узнать это надо, не
-// потратив вызов API. Для remove ценность не участвует в слиянии.
+// До чтения из API: без ценности add и replace бессмысленны, вызов тратить незачем.
 function toIncomingGoals({ goals, mode }: PriorityGoalsParams): PriorityGoal[] {
   return goals.map((goal) => {
     if (mode !== "remove" && goal.value === undefined) {
@@ -354,16 +318,14 @@ function toIncomingGoals({ goals, mode }: PriorityGoalsParams): PriorityGoal[] {
   })
 }
 
-// Operation обязателен и принимает только SET (справочник campaigns/update).
-// IsMetrikaSourceOfValue нужен лишь стратегиям на ДРР, поэтому уходит, только если был.
+// Operation обязателен и принимает только SET.
 function toApiGoal(goal: PriorityGoal): Record<string, unknown> {
   const item: Record<string, unknown> = { GoalId: apiId(goal.goalId), Value: goal.value, Operation: "SET" }
   if (goal.isMetrikaSourceOfValue !== undefined) item.IsMetrikaSourceOfValue = goal.isMetrikaSourceOfValue
   return item
 }
 
-// Форма тела подтверждена записью 13.09.2026 на боевой кампании по просьбе пользователя.
-// Пустой список уходит null: в WSDL PriorityGoals объявлен nillable, а у Items minOccurs="1".
+// Пустой список уходит null: PriorityGoals nillable, а пустой Items запрещён (minOccurs=1).
 export async function handleSetPriorityGoals(params: PriorityGoalsParams): Promise<string> {
   const incoming = toIncomingGoals(params)
   const { settingsKey, goals } = await readPriorityGoals(params.campaign_id)

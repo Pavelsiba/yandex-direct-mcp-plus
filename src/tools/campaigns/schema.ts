@@ -1,5 +1,4 @@
-// Контракт инструментов кампаний. Здесь же граница snake_case → camelCase
-// и конвертация рублей в микроединицы: хендлер получает готовые значения.
+// Контракт инструментов кампаний; рубли в микроединицы переводит схема, не хендлер.
 import { z } from "zod"
 import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import {
@@ -20,10 +19,8 @@ import { idField } from "#shared/lib/id"
 import { rublesField } from "#shared/lib/money"
 import { pageFields } from "#shared/lib/pagination"
 
-// Набор по умолчанию: кампании идут списком десятками, поэтому он узкий и осознанный,
-// а не весь CampaignFieldEnum. StatusClarification — исключение: единственное место, где
-// Директ объясняет, почему кампания отклонена или остановлена, и это короткая строка.
-// Живёт в контракте, а не в хендлере, потому что перечислен в описании параметра fields.
+// Узкий набор: кампании идут списком десятками. StatusClarification — единственное место,
+// где Директ объясняет, почему кампания отклонена или остановлена.
 export const CAMPAIGN_LIST_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [
   "Id",
   "Name",
@@ -47,13 +44,7 @@ export const getCampaignSchema = z.object({
   campaign_id: idField("ID рекламной кампании, десятичная строка")
 })
 
-// UTM-разметка кампании. Директ дописывает эту строку к ссылке каждого объявления, поэтому
-// метки задаются один раз на кампанию, а не вписываются в href руками. Знак «?» не нужен:
-// его подставляет Директ, а присланный превратился бы в «??».
-//
-// Не литерал и без разбора на пары: набор меток открытый, а в значениях живут подстановки
-// Директа ({campaign_id}, {keyword} и прочие) — проверка вида «ключ=значение» отвергала бы
-// их. В WSDL это xsd:string без ограничения длины, поэтому проверяем только непустоту.
+// Только непустота: разбор на «ключ=значение» отверг бы подстановки Директа ({keyword} и прочие).
 const trackingParamsField = () =>
   z
     .string()
@@ -70,10 +61,10 @@ export const createCampaignSchema = z.object({
     .string()
     .check(z.minLength(1, { error: "Название не может быть пустым" }))
     .meta({ description: "Название кампании" }),
-  type: z
-    .literal(CAMPAIGN_TYPES_CREATABLE)
-    .default("TEXT_CAMPAIGN")
-    .meta({ description: "Тип кампании: текстово-графическая или динамические объявления" }),
+  type: z.literal(CAMPAIGN_TYPES_CREATABLE).default("TEXT_CAMPAIGN").meta({
+    description:
+      "Тип кампании. Через API создаётся только текстово-графическая: смарт-баннеры и динамические объявления Директ через API не создаёт"
+  }),
   start_date: dateField("Дата начала показов, YYYY-MM-DD"),
   daily_budget: rublesField("Дневной бюджет в рублях, например 1000 — это 1000 ₽").optional(),
   search_strategy: z
@@ -84,8 +75,7 @@ export const createCampaignSchema = z.object({
     .literal(NETWORK_STRATEGIES)
     .default("SERVING_OFF")
     .meta({ description: "Стратегия показов в сетях (РСЯ); SERVING_OFF отключает показы в сетях" }),
-  // Не литерал: в WSDL это xsd:string, закрытого списка нет — значения живут
-  // в справочнике TimeZones, его отдаёт list_time_zones.
+  // Не литерал: закрытого списка нет, значения — в справочнике TimeZones.
   time_zone: z
     .string()
     .check(z.minLength(1, { error: "Часовой пояс не может быть пустым" }))
@@ -131,10 +121,8 @@ export const getStrategySchema = z.object({
   campaign_id: idField("ID текстово-графической кампании")
 })
 
-// Набор уже, чем SEARCH_STRATEGIES: хендлер умеет собрать настройки только для
-// перечисленных типов. Настройки общие на обе стороны — автоматическая стратегия
-// по правилам Директа стоит на одной из них, вторая идёт NETWORK_DEFAULT или
-// SERVING_OFF, так что двусмысленности не возникает.
+// Настройки общие на обе стороны: автостратегия стоит только на одной, вторая — NETWORK_DEFAULT
+// или SERVING_OFF.
 export const setStrategySchema = z.object({
   campaign_id: idField("ID текстово-графической кампании"),
   search_type: z.literal(SETTABLE_SEARCH_STRATEGIES).meta({
@@ -168,10 +156,8 @@ export const setStrategySchema = z.object({
     .meta({ description: "Доля расходов в сетях для NETWORK_DEFAULT, проценты" })
 })
 
-// Цели стратегии перезаписываются целиком, как минус-фразы, и режим обязателен по той же
-// причине: replace с одной целью на просьбе «добавь цель» стёр бы остальные, а Директ
-// ответил бы успехом. Ценность необязательна в схеме только ради remove — там цель лишь
-// называется; для add и replace её требует хендлер.
+// Цели перезаписываются целиком, поэтому mode обязателен: replace на просьбе «добавь цель»
+// молча стёр бы остальные. Ценность необязательна ради remove, для add и replace её требует хендлер.
 const priorityGoal = z.object({
   goal_id: idField("ID цели Метрики; служебное 12 — «Вовлечённые сессии». Названия целей есть только в Метрике"),
   value: rublesField(

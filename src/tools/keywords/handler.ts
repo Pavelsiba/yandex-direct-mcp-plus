@@ -14,9 +14,7 @@ import type {
 } from "./schema.js"
 import { KEYWORD_LIST_FIELDS } from "./schema.js"
 
-// Ставки ставятся на один уровень целей за вызов; поле тела зависит от уровня.
-// Чтение аукциона отбирает те же уровни, но именем множественного числа — отсюда две
-// формы имени у одной цели.
+// Две формы имени: запись ставки — KeywordId, чтение аукциона — KeywordIds.
 type BidTarget = { field: string; criterion: string; ids: string[] }
 type BidTargetParams = { keyword_ids?: string[]; ad_group_ids?: string[]; campaign_ids?: string[] }
 
@@ -34,9 +32,8 @@ function selectBidTarget(params: BidTargetParams): BidTarget {
   return targets[0]
 }
 
-// Позиции аукциона Директ отдаёт двумя наборами имён: AuctionBids — кодами P11–P24,
-// SearchPrices — словами (PREMIUMFIRST, FOOTERBLOCK). Проба 12.09.2026: приходят оба,
-// а CurrentSearchPrice и ContextCoverage бывают null у фразы без показов.
+// AuctionBids — позиции кодами P11–P24, SearchPrices — словами; у фразы без показов
+// CurrentSearchPrice и ContextCoverage бывают null.
 const AUCTION_FIELDS: FieldOf<"bids", "BidFieldEnum">[] = [
   "KeywordId",
   "CampaignId",
@@ -73,8 +70,7 @@ export async function handleAddKeywords(params: z.infer<typeof addKeywordsSchema
 
 type KeywordUpdate = z.infer<typeof updateKeywordsSchema>["keywords"][number]
 
-// null у подстановочной переменной значит «очистить», поэтому от прочих значений
-// его отличает только undefined — сравнение именно с ним, а не проверка на falsy.
+// null значит «очистить», поэтому сравнение с undefined, а не проверка на falsy.
 function buildKeywordUpdate(update: KeywordUpdate): Record<string, unknown> {
   const item: Record<string, unknown> = { Id: apiId(update.keyword_id) }
   if (update.keyword !== undefined) item.Keyword = update.keyword
