@@ -14,11 +14,11 @@ export function commonHeaders(): Record<string, string> {
   return headers
 }
 
-// Units = «израсходовано/остаток/суточный лимит» баллов API. В stdout писать нельзя —
-// там транспорт MCP, поэтому stderr.
-export function logUnits(response: Response): void {
-  const units = response.headers?.get?.("Units")
+// Units — «потрачено/остаток/лимит». В stderr: stdout занят транспортом MCP.
+export function logUnits(response: Response): string | undefined {
+  const units = response.headers?.get?.("Units") ?? undefined
   if (units) console.error(`[yd-mcp] Баллы API (потрачено/остаток/лимит): ${units}`)
+  return units
 }
 
 function delay(ms: number): Promise<void> {
@@ -27,9 +27,7 @@ function delay(ms: number): Promise<void> {
 
 export type Transport = (url: string, options: RequestInit) => Promise<Response>
 
-// Шов для тестов. Раньше они подменяли globalThis.fetch — глобал один на процесс, и
-// подмена задевала всё, что в нём живёт, включая SDK. Здесь шов свой, объявлен типом
-// и виден в коде; сеть трогает единственная строка ниже.
+// Шов для тестов: подмена глобального fetch задела бы и SDK.
 let transport: Transport = (url, options) => fetch(url, options)
 
 export function setTransport(next: Transport): void {

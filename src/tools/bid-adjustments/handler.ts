@@ -14,9 +14,7 @@ import type {
 
 const NO_MONEY = { money: false } as const
 
-// Значения корректировок лежат в отдельных полях на каждый тип, поэтому запрашиваются
-// все наборы сразу: иначе ответ придёт без самих коэффициентов. Каждый набор берётся
-// целиком — у типовых перечислений от одного до четырёх значений, отбирать нечего.
+// Коэффициенты лежат в отдельных полях на каждый тип — без всех наборов ответ придёт без них.
 const BID_MODIFIERS = API_FIELDS.bidmodifiers
 
 const FIELD_NAMES = {
@@ -66,10 +64,8 @@ export async function handleSetBidAdjustments(params: z.infer<typeof setBidAdjus
 
 type NewAdjustment = z.infer<typeof addBidAdjustmentsSchema>["adjustments"][number]
 
-// Каждый вид корректировки лежит в своём поле BidModifierAddItem, и в одном элементе
-// Директ разрешает ровно один вид. Часть полей — массивы (пол/возраст, аудитории,
-// регионы, размещение, платёжеспособность): такие корректировки одного объекта
-// собираются в один элемент, остальные едут по элементу на штуку.
+// В одном элементе Директ разрешает ровно один вид корректировки. Виды-массивы (пол/возраст,
+// аудитории, регионы…) собираются в один элемент, остальные — по элементу на штуку.
 type AdjustmentSpec = {
   field: string
   many?: true
@@ -77,9 +73,8 @@ type AdjustmentSpec = {
   build: (adjustment: NewAdjustment) => Record<string, unknown>
 }
 
-// Срезы плоские в схеме, а принадлежат каждый своему виду корректировки. Переданный
-// не тому виду срез молча пропал бы при сборке: «+30% мобильным вот этой аудитории»
-// превратилось бы в +30% всему мобильному трафику, и вызов вернул бы успех.
+// Срез, переданный не тому виду, молча пропал бы: «+30% мобильным этой аудитории» стало бы
+// +30% всему мобильному трафику.
 const SLICE_FIELDS = [
   "operating_system_type",
   "gender",
@@ -110,8 +105,6 @@ function demographics(adjustment: NewAdjustment): Record<string, unknown> {
   return block
 }
 
-// Обязательный срез, без которого Директ отвергнет корректировку: имя параметра
-// в нашей схеме и поле запроса. Проверяем до вызова — ошибка понятнее и дешевле.
 function requiredField<Value>(value: Value | undefined, param: string, type: string): Value {
   if (value === undefined) throw new Error(`Для ${type} укажите ${param}.`)
   return value
@@ -217,8 +210,7 @@ export async function handleAddBidAdjustments(params: z.infer<typeof addBidAdjus
   const targetIds = campaignIds.length > 0 ? campaignIds : adGroupIds
   const bidModifiers = targetIds.flatMap((id) => buildTargetItems(targetField, id, params.adjustments))
 
-  // Лимит Директа стоит на элементах запроса, а их тут произведение целей на виды
-  // корректировок: по отдельности оба списка в схему укладываются, а вместе — нет.
+  // Элементов — произведение целей на виды: схема проверяет списки по отдельности.
   if (bidModifiers.length > MAX_ADJUSTMENTS_PER_CALL) {
     throw new Error(
       `Получилось ${bidModifiers.length} корректировок при пределе ${MAX_ADJUSTMENTS_PER_CALL} за вызов: ` +

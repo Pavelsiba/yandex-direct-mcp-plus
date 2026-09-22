@@ -41,6 +41,31 @@ describe("разбор ошибок Директа", () => {
     )
   })
 
+  it("на кончившихся баллах говорит не повторять и показывает остаток", () => {
+    const data = { error: { error_code: 152, error_string: "Недостаточно баллов" } }
+
+    expect(() => assertNoApiError(data, "10/0/240000")).toThrow(/Что делать: .*бесполезно/)
+    expect(() => assertNoApiError(data, "10/0/240000")).toThrow(/остаток.*10\/0\/240000/)
+  })
+
+  it("на отключённой операции говорит, что повтор не поможет", () => {
+    const data = { error: { error_code: 3500, error_string: "Не поддерживается" } }
+
+    expect(() => assertNoApiError(data)).toThrow(/Что делать: .*бесполезно/)
+  })
+
+  it("не выдумывает подсказку для кода без неё", () => {
+    const data = { error: { error_code: 4000, error_string: "Параметры запроса указаны неверно" } }
+
+    expect(() => assertNoApiError(data)).toThrow(/^(?!.*Что делать).*\[4000\]/)
+  })
+
+  it("даёт подсказку и в ошибке v4", () => {
+    expect(() => assertNoApiErrorV4({ error_code: 506, error_str: "Too many connections" })).toThrow(
+      /Что делать: .*последовательно/
+    )
+  })
+
   it("узнаёт 53 в XML от Reports", () => {
     expect(() => assertNoReportAuthError(REPORT_ERROR_XML(53))).toThrow(/YANDEX_DIRECT_TOKEN/)
   })

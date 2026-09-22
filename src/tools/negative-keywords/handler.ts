@@ -15,7 +15,6 @@ import type {
 } from "./schema.js"
 import { buildCampaignLink } from "./shared-set-link.js"
 
-// В домене нет денег: money: false бережёт от конвертации полей, которые ими не являются.
 const NO_MONEY = { money: false } as const
 
 export async function handleGetCampaignNegativeKeywords(
@@ -28,10 +27,8 @@ export async function handleGetCampaignNegativeKeywords(
   return formatResult(data, NO_MONEY)
 }
 
-// NegativeKeywords обязано быть в FieldNames: без него Директ вернёт существующую
-// кампанию вообще без этого поля, слияние даст один входящий список, а update пройдёт
-// успешно — прежние минус-фразы исчезнут молча. Отсутствие сущности в ответе — ошибка,
-// а не пустой список: сливать не с чем.
+// Без NegativeKeywords в FieldNames поле не придёт, слияние даст только входящий список,
+// и update молча сотрёт прежние минус-фразы.
 async function readExistingKeywords(
   service: "campaigns" | "adgroups",
   collection: "Campaigns" | "AdGroups",
@@ -48,19 +45,13 @@ async function readExistingKeywords(
   const entity = Array.isArray(found) ? found[0] : undefined
   if (!entity) throw new Error(`${label} ${id} не найдена или недоступна — объединять минус-фразы не с чем.`)
 
-  // У сущности без минус-фраз поле приходит как null, а не пропущенным ключом и не пустым
-  // Items (пробой 05.09.2026) — тип обязан это допускать, иначе `?.` выглядит перестраховкой.
+  // Без минус-фраз поле приходит null, а не пустым Items.
   return (entity as { NegativeKeywords?: { Items?: string[] } | null }).NegativeKeywords?.Items ?? []
 }
 
-// Коллекция очищается значением null, а не пустым Items: { Items: [] } Директ отклоняет
-// ошибкой 8000 «Количество элементов в массиве … должно быть не менее 1», { Items: null } —
-// «Items не может иметь значение null». В WSDL это видно как nillable="true" на самом поле;
-// подтверждено сетевым тестом и для NegativeKeywords, и для NegativeKeywordSharedSetIds.
-// Правило одно на домен и живёт здесь одним местом: «очистить» — это null, всегда.
+// Очистка — только null: и { Items: [] }, и { Items: null } Директ отбивает ошибкой 8000.
 const itemsOrNull = <T>(items: T[]): { Items: T[] } | null => (items.length > 0 ? { Items: items } : null)
 
-// replace остаётся одним вызовом: читать нечего, прежний список и так затирается.
 async function resolveItems(
   params: { negative_keywords: string[]; mode: NegativeKeywordsMode },
   readExisting: () => Promise<string[]>
@@ -109,11 +100,8 @@ export async function handleListNegativeKeywordSharedSets(
   return formatResult(await apiPost("negativekeywordsharedsets", "get", request), NO_MONEY)
 }
 
-// Здесь NegativeKeywords — голый массив строк, а не { Items: [...] } как у кампаний и групп,
-// и это не небрежность: WSDL объявляет для наборов xsd:string с maxOccurs="unbounded", тогда
-// как у кампаний тип general:ArrayOfString с maxOccurs="1" и nillable="true" (сверено
-// 05.09.2026, подтверждено сквозным пробоем add → update → delete). Приведение «к
-// единообразию» сломает сервис. Отсюда же и разная очистка: null допускает только кампания.
+// У наборов NegativeKeywords — голый массив строк, а не { Items: [...] }, как у кампаний
+// и групп: так в WSDL. Приведение «к единообразию» сломает сервис.
 type UpdateSet = NonNullable<z.infer<typeof manageNegativeKeywordSharedSetsSchema>["update_sets"]>[number]
 
 function buildUpdateItem(set: UpdateSet): Record<string, unknown> {
@@ -159,8 +147,6 @@ export async function handleManageNegativeKeywordSharedSets(
   return formatResult(data, NO_MONEY)
 }
 
-// Типы читаются одним вызовом на все кампании сразу, а не по одной: имя объекта настроек
-// зависит от типа, но сам запрос от этого не дробится.
 async function readCampaignTypes(campaignIds: string[]): Promise<Map<string, string | undefined>> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: apiIds(campaignIds) },
@@ -171,9 +157,7 @@ async function readCampaignTypes(campaignIds: string[]): Promise<Map<string, str
   return new Map(campaigns.map((campaign) => [String(campaign.Id), campaign.Type]))
 }
 
-// Привязка наборов перезаписывается целиком: список, отправленный здесь, становится
-// единственным для объекта. Кампании и группы — два разных вызова API, и оба выполняются,
-// если заданы оба: ответы форматируются отдельно, чтобы per-item ошибки не потерялись.
+// Привязка перезаписывается целиком: отправленный список становится единственным.
 export async function handleLinkNegativeKeywordSets(
   params: z.infer<typeof linkNegativeKeywordSetsSchema>
 ): Promise<string> {

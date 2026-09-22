@@ -44,7 +44,7 @@ export const deleteRetargetingListsTool = defineTool({
   name: "delete_retargeting_lists",
   title: "Удалить списки ретаргетинга",
   description:
-    "Удалить условия ретаргетинга и подбора аудитории по ID; удаление необратимо. Отказ по отдельному условию приходит в ответе списком, а не ошибкой вызова.",
+    "Удалить условия ретаргетинга и подбора аудитории по ID; удаление необратимо. Отказ по отдельному условию приходит строкой ❌ в ответе, остальные при этом удалены.",
   annotations: DESTRUCTIVE,
   schema: deleteRetargetingListsSchema,
   handler: handleDeleteRetargetingLists

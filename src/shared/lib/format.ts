@@ -1,15 +1,11 @@
-// biome-ignore-all lint/plugin: слой вывода — сериализуется уже нормализованное дерево,
-// больших чисел в нём не остаётся: ID приведены к строкам ниже
+// biome-ignore-all lint/plugin: сериализуется нормализованное дерево, ID в нём уже строки
 // Единый формат ответа инструментов: деньги в рублях, ID строками, сверху — уведомления Директа.
+import { getErrorHint } from "#shared/lib/error-hints"
 import { microsToRubles } from "#shared/lib/money"
+import { isRecord } from "#shared/lib/record"
 
-// Поля v5, приезжающие в микроединицах. Набор консервативный: только заведомо
-// денежные ключи, иначе под конвертацию попали бы счётчики и ID.
-// Аукционные добавлены 12.09.2026 вместе с get_keyword_auction: CompetitorsBids —
-// массив голых чисел, поэтому ключ и обязан доходить до элементов.
-// Value — ценность цели в PriorityGoals. Имя общее, поэтому оговорка: конвертируются
-// только числа, а строковые Value (`Settings`: YES/NO) проход не проходят. Появится
-// числовое неденежное Value — набор придётся переписать на пары «родитель + ключ».
+// Только заведомо денежные ключи, иначе в рубли уехали бы счётчики и ID. Value — ценность
+// цели: конвертируются только числа, строковые Value из Settings (YES/NO) не трогаются.
 const MONEY_KEYS = new Set([
   "Amount",
   "Bid",
@@ -23,28 +19,21 @@ const MONEY_KEYS = new Set([
   "Value"
 ])
 
-// json-bigint отдаёт строкой только то, что не помещается в число (16+ знаков), поэтому
-// короткие ID — кампании, группы, коды регионов — приезжают числами, и тип поля зависел бы
-// от величины значения, а не от самого поля. Наружу ID уходит строкой всегда.
-// Регистр значим: `Bid`, `ContextBid`, `AuctionBids` кончаются на `id`/`ids` строчными,
-// и проверка без учёта регистра превратила бы ставки в строки.
+// Короткие ID json-bigint отдаёт числом, наружу ID всегда строка. Регистр значим:
+// Bid и ContextBid кончаются на «id», без учёта регистра ставки стали бы строками.
 const ID_KEYS = /Ids?$/
 
-// Часть коллекций v5 приезжает обёрткой `{ Items: [...] }` — так устроены CounterIds,
-// NegativeKeywordSharedSetIds и соседи. Своего имени у элементов нет, а `Items` про них
-// ничего не говорит, поэтому через обёртку пронести надо имя родителя. Пробой 13.09.2026:
-// `CounterIds: { Items: [...] }` иначе уезжает наружу числом, и тип ID зависит уже
-// не от величины значения, а от формы обёртки.
+// У элементов массива и обёртки `{ Items: [...] }` (CounterIds и соседи) своего имени нет —
+// им передаётся имя родителя, иначе ID внутри остались бы числами.
 const WRAPPER_KEY = "Items"
 
-// Ключ передаётся вглубь массива: `RegionIds` — имя коллекции, а решение принимается
-// по элементам, у которых своего имени нет.
 function normalize(value: unknown, key: string, money: boolean): unknown {
   if (Array.isArray(value)) return value.map((item) => normalize(item, key, money))
 
-  if (value && typeof value === "object") {
+  if (isRecord(value)) {
     const converted: Record<string, unknown> = {}
-    for (const [nestedKey, nested] of Object.entries(value as Record<string, unknown>)) {
+
+    for (const [nestedKey, nested] of Object.entries(value)) {
       converted[nestedKey] = normalize(nested, nestedKey === WRAPPER_KEY ? key : nestedKey, money)
     }
     return converted
@@ -61,18 +50,26 @@ type Notification = {
   Details?: string
 }
 
+// По этому знаку в начале строки server ставит isError: признак переживает склейку
+// нескольких ответов в один текст, а в JSON-теле строка с него не начинается.
+const ITEM_ERROR_MARK = "❌"
+
 function formatNotice(prefix: string, key: string, index: number, notification: Notification): string {
   const detail = notification.Details ? ` — ${notification.Details}` : ""
-  return `${prefix} ${key}[${index}] [${notification.Code ?? "?"}] ${notification.Message ?? ""}${detail}`
+  const line = `${prefix} ${key}[${index}] [${notification.Code ?? "?"}] ${notification.Message ?? ""}${detail}`
+  const hint = prefix === ITEM_ERROR_MARK ? getErrorHint(notification.Code) : undefined
+  return hint ? `${line}\n   Что делать: ${hint}` : line
 }
 
-// Частичный успех Директ хранит в теле: per-item ошибки и предупреждения лежат
-// в массивах *Results, обрезанная выборка — в LimitedBy. Без этой шапки модель
-// увидела бы «успех» там, где половина элементов не прошла.
+export const hasItemErrors = (output: string): boolean =>
+  output.split("\n").some((line) => line.startsWith(ITEM_ERROR_MARK))
+
+// Отказы по объектам лежат в *Results, обрезка выборки — в LimitedBy, и всё это приходит
+// с HTTP 200: без шапки модель прочла бы частичный отказ как успех.
 function collectNotices(data: unknown): string {
   const lines: string[] = []
-  const result = (data as { result?: Record<string, unknown> })?.result
-  if (!result || typeof result !== "object") return ""
+  const result = isRecord(data) ? data.result : undefined
+  if (!isRecord(result)) return ""
 
   if (typeof result.LimitedBy === "number") {
     lines.push(
@@ -84,7 +81,9 @@ function collectNotices(data: unknown): string {
     if (!/Results$/.test(key) || !Array.isArray(value)) continue
 
     value.forEach((item, index) => {
-      for (const error of (item?.Errors ?? []) as Notification[]) lines.push(formatNotice("❌", key, index, error))
+      for (const error of (item?.Errors ?? []) as Notification[]) {
+        lines.push(formatNotice(ITEM_ERROR_MARK, key, index, error))
+      }
       for (const warning of (item?.Warnings ?? []) as Notification[]) lines.push(formatNotice("⚠️", key, index, warning))
     })
   }
