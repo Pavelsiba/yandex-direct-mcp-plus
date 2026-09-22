@@ -4,6 +4,20 @@
 `theYahia/yandex-direct-mcp`) — в
 [docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
 
+# [1.7.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.6.1...v1.7.0) (2026-09-22)
+
+
+### Bug Fixes
+
+* проверки схемы на весь объект доходят до сервера ([4af587f](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/4af587ff9cd67b8a0bcfcfb0fae901a1fffd10cf))
+* убраны операции, которые Директ через API не выполняет ([69b1973](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/69b1973174a935fd277ff2d57336802e44ef31c2))
+
+
+### Features
+
+* dry_run у пишущих инструментов ([2a87114](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/2a87114a585f2069b173f09de28ac2192cc68950))
+* подсказки по кодам ошибок Директа и isError при частичном отказе ([bc21972](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/bc219720946e853588e1a866cfcf6f63556a58bc)), closes [#45](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/45)
+
 ## [1.6.1](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.6.0...v1.6.1) (2026-09-13)
 
 
