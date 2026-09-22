@@ -1,6 +1,7 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса; проверка ID сравнивает сырую строку
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { apiPost } from "#shared/api/client"
+import { runDryRun } from "#shared/api/dry-run"
 import {
   errorResponse,
   installFetchMock,
@@ -87,6 +88,33 @@ describe("клиент v5", () => {
     mockFetch.mockResolvedValueOnce(errorResponse(400, "Bad Request"))
 
     await expect(apiPost("campaigns", "get")).rejects.toThrow(/HTTP 400/)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("в предпросмотре отправляет чтение и откладывает запись", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: {} }))
+
+    const { requests } = await runDryRun(async () => {
+      await apiPost("campaigns", "get")
+      await apiPost("campaigns", "delete", { SelectionCriteria: { Ids: [1] } })
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(requests).toEqual([{ service: "campaigns", method: "delete", params: { SelectionCriteria: { Ids: [1] } } }])
+  })
+
+  it("считает записью метод, которого нет в списке читающих", async () => {
+    const { requests } = await runDryRun(() => apiPost("campaigns", "someNewMethod"))
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(requests).toHaveLength(1)
+  })
+
+  it("вне предпросмотра отправляет запись", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: {} }))
+
+    await apiPost("campaigns", "delete")
+
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 

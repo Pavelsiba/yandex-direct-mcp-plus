@@ -54,6 +54,10 @@ export const MAX_CAMPAIGNS_PER_CHANGES_CALL = 3_000
 export const MAX_AD_GROUPS_PER_CHANGES_CALL = 10_000
 export const MAX_ADS_PER_CHANGES_CALL = 50_000
 
+// Длиннее — обрезается в предпросмотре dry_run: base64 картинки иначе забил бы ответ.
+// Порог не ниже длины ссылки сайтлинка, чтобы URL показывались целиком.
+export const PREVIEW_STRING_MAX = 1_024
+
 // Сколько строк справочника отдавать модели за раз.
 export const REGIONS_DEFAULT_LIMIT = 50
 export const REGIONS_MAX_LIMIT = 500

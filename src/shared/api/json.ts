@@ -9,6 +9,6 @@ export function parseJson(text: string): unknown {
   return JSONbig.parse(text)
 }
 
-export function stringifyJson(value: unknown): string {
-  return JSONbig.stringify(value)
+export function stringifyJson(value: unknown, indent?: number): string {
+  return JSONbig.stringify(value, null, indent)
 }
