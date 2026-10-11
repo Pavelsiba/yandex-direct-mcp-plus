@@ -18,6 +18,7 @@ export const PAGE_MAX_LIMIT = 10_000
 export const MAX_CAMPAIGNS_PER_CALL = 1_000
 export const MAX_AD_GROUPS_PER_CALL = 1_000
 export const MAX_ADS_PER_MODERATION = 10_000
+export const MAX_CAMPAIGNS_PER_ADS_CALL = 10
 export const MAX_SHARED_SETS_PER_CALL = 30
 export const MAX_SHARED_SETS_PER_AD_GROUP = 3
 export const SHARED_SET_NAME_MAX = 255
