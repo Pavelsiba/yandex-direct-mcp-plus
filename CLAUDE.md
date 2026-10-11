@@ -223,9 +223,7 @@ X» не является разрешением зафиксировать ре
   и `.json`, включая `.vscode`. JSONC он не портит — комментарии `tsconfig.json`
   переживают `format` побайтово, проверено. Правило `noQuickfixBiome` заодно
   ловит устаревшие имена действий в `.vscode/settings.json`.
-- Баг диалекта JSON Schema в `@modelcontextprotocol/sdk` (`mapMiniTarget` отдаёт
-  `draft-7` вместо `draft-2020-12`) ломает клиентов со строгой валидацией. Пробоем
-  03.09.2026 установлено, что от версии zod он не зависит: `draft-07` уходит и на
-  3.25.76 + SDK 1.29, и на 4.5.4 + SDK 1.30. Описания полей при этом доезжают —
-  и через `.meta({ description })`, и через легаси `.describe()`. При обновлении
-  SDK пробой повторять: поднять сервер, вызвать `listTools`, посмотреть `$schema`.
+- SDK — v2 (`@modelcontextprotocol/server`, в тестах `@modelcontextprotocol/client`),
+  не `@modelcontextprotocol/sdk` 1.x: в 1.x вплоть до 1.32.1 `tools/list` отдаёт
+  схемы в `draft-07` вместо `draft-2020-12`, и клиенты со строгой валидацией их
+  отклоняют. Диалект сторожит `app/server.unit.test.ts`.

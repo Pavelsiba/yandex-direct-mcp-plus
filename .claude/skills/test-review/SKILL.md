@@ -8,7 +8,7 @@ description: Ревью качества уже написанных Vitest-те
 Ревьюишь **существующие** тесты, а не пишешь новые. Цель одна: чтобы каждый тест ловил
 реальную регрессию поведения, а не подтверждал, что «код — это код».
 
-Стек-контекст: Vitest, Node, TypeScript, Zod v4, `@modelcontextprotocol/sdk`, разбор JSON — `#shared/api/json` (reviver с `context.source`).
+Стек-контекст: Vitest, Node, TypeScript, Zod v4, `@modelcontextprotocol/server` (v2), разбор JSON — `#shared/api/json` (reviver с `context.source`).
 Внешняя система — API Яндекс.Директа v5/v4. Конвенции кода — скилл `yd-conventions`,
 архитектура — `CLAUDE.md` и `docs/architecture.md`. Здесь только качество тестов.
 
