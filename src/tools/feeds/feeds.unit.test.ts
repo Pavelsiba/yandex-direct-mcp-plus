@@ -21,6 +21,7 @@ describe("list_feeds", () => {
     expect(params.SelectionCriteria).toBeUndefined()
     expect(params.FileFeedFieldNames).toEqual(["Filename"])
     expect(params.UrlFeedFieldNames).toContain("Url")
+    expect(params.FieldNames).toContain("NumberOfListings")
   })
 
   it("отбирает конкретные фиды по ID", async () => {

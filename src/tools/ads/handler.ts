@@ -1,6 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
-import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -17,16 +17,7 @@ import type {
 const LIST_FIELDS = [...API_FIELDS.ads.AdFieldEnum]
 
 // *Moderation не берём: вложенные объекты раздувают ответ, причина отказа уже в StatusClarification.
-const TEXT_AD_FIELDS: FieldOf<"ads", "TextAdFieldEnum">[] = [
-  "Title",
-  "Title2",
-  "Text",
-  "Href",
-  "DisplayDomain",
-  "SitelinkSetId",
-  "VCardId",
-  "AdImageHash"
-]
+const TEXT_AD_FIELDS = API_FIELDS.ads.TextAdFieldEnum.filter((field) => !field.endsWith("Moderation"))
 
 // На пустую выборку Директ отдаёт `{ "result": {} }` без ключа Ads — модель читает это
 // как поломку и начинает гадать.

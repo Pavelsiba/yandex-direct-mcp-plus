@@ -42,6 +42,16 @@ describe("list_ads", () => {
     )
   })
 
+  it("берёт поля текстового объявления из перечисления, кроме объектов модерации", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
+
+    await handleListAds({ ad_group_ids: ["123"] })
+
+    const fields: string[] = lastBody().params.TextAdFieldNames
+    expect(fields).toEqual(expect.arrayContaining(["FinalUrl", "DisplayUrlPath", "BusinessId", "AdExtensions"]))
+    expect(fields.filter((field) => field.endsWith("Moderation"))).toEqual([])
+  })
+
   it("отдаёт привязки строками независимо от разрядности", async () => {
     mockFetch.mockResolvedValueOnce(
       okResponse({

@@ -229,6 +229,16 @@ describe("get_campaign", () => {
     expect(params.FieldNames).toContain("StatusClarification")
   })
 
+  it("запрашивает весь CampaignFieldEnum: кампания одна, усечённый набор только прячет поля", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(emptyResult))
+
+    await handleGetCampaign({ campaign_id: "123" })
+
+    expect(JSON.parse(lastRawBody()).params.FieldNames).toEqual(
+      expect.arrayContaining(["Funds", "TimeZone", "NegativeKeywords", "TimeTargeting", "EndDate"])
+    )
+  })
+
   // У смарт-кампаний поле называется CounterId, в единственном числе: множественного
   // в SmartCampaignFieldEnum нет, и запрос с ним Директ не примет.
   it("просит у смарт-кампании CounterId, а не CounterIds", async () => {

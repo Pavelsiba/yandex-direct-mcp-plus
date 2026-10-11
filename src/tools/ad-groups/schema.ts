@@ -1,12 +1,24 @@
 import { z } from "zod"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
+import { fieldsField } from "#shared/lib/fields"
 import { idField, regionIdField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
+
+export const AD_GROUP_LIST_FIELDS: FieldOf<"adgroups", "AdGroupFieldEnum">[] = [
+  "Id",
+  "Name",
+  "CampaignId",
+  "RegionIds",
+  "Status",
+  "Type"
+]
 
 export const listAdGroupsSchema = z.object({
   campaign_ids: z
     .array(idField("ID кампании, десятичная строка"))
     .check(z.minLength(1, { error: "Укажите хотя бы одну кампанию" }))
     .meta({ description: "Кампании, группы которых нужно выбрать" }),
+  fields: fieldsField(API_FIELDS.adgroups.AdGroupFieldEnum, AD_GROUP_LIST_FIELDS),
   ...pageFields
 })
 

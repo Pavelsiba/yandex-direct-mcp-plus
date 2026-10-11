@@ -1,24 +1,15 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
-import type { FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
 import type { createAdGroupSchema, deleteAdGroupsSchema, listAdGroupsSchema } from "./schema.js"
-
-const LIST_FIELDS: FieldOf<"adgroups", "AdGroupFieldEnum">[] = [
-  "Id",
-  "Name",
-  "CampaignId",
-  "RegionIds",
-  "Status",
-  "Type"
-]
+import { AD_GROUP_LIST_FIELDS } from "./schema.js"
 
 export async function handleListAdGroups(params: z.infer<typeof listAdGroupsSchema>): Promise<string> {
   const requestParams: Record<string, unknown> = {
     SelectionCriteria: { CampaignIds: apiIds(params.campaign_ids) },
-    FieldNames: LIST_FIELDS
+    FieldNames: params.fields ?? AD_GROUP_LIST_FIELDS
   }
   const page = buildPage(params)
   if (page) requestParams.Page = page
