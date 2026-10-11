@@ -19,6 +19,11 @@ const MONEY_KEYS = new Set([
   "Value"
 ])
 
+// Средства кампании (CampaignFunds, SharedAccountFunds). Имена слишком общие для
+// глобального списка, поэтому в рубли они переводятся только под ключом Funds.
+const FUNDS_KEY = "Funds"
+const FUNDS_MONEY_KEYS = new Set(["Sum", "Balance", "BalanceBonus", "SumAvailableForTransfer", "Refund", "Spend"])
+
 // Короткие ID json-bigint отдаёт числом, наружу ID всегда строка. Регистр значим:
 // Bid и ContextBid кончаются на «id», без учёта регистра ставки стали бы строками.
 const ID_KEYS = /Ids?$/
@@ -27,20 +32,21 @@ const ID_KEYS = /Ids?$/
 // им передаётся имя родителя, иначе ID внутри остались бы числами.
 const WRAPPER_KEY = "Items"
 
-function normalize(value: unknown, key: string, money: boolean): unknown {
-  if (Array.isArray(value)) return value.map((item) => normalize(item, key, money))
+function normalize(value: unknown, key: string, money: boolean, inFunds = false): unknown {
+  if (Array.isArray(value)) return value.map((item) => normalize(item, key, money, inFunds))
 
   if (isRecord(value)) {
     const converted: Record<string, unknown> = {}
+    const nestedInFunds = inFunds || key === FUNDS_KEY
 
     for (const [nestedKey, nested] of Object.entries(value)) {
-      converted[nestedKey] = normalize(nested, nestedKey === WRAPPER_KEY ? key : nestedKey, money)
+      converted[nestedKey] = normalize(nested, nestedKey === WRAPPER_KEY ? key : nestedKey, money, nestedInFunds)
     }
     return converted
   }
 
   if (typeof value !== "number") return value
-  if (money && MONEY_KEYS.has(key)) return microsToRubles(value)
+  if (money && (MONEY_KEYS.has(key) || (inFunds && FUNDS_MONEY_KEYS.has(key)))) return microsToRubles(value)
   return ID_KEYS.test(key) ? String(value) : value
 }
 
