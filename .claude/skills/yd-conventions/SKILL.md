@@ -189,7 +189,7 @@ z.string().max(4096)            // почему не в config?
 **ID — через `idField`, никогда `z.coerce`.** `z.coerce.number()` на 19-значном ID принял
 бы уже округлённое число и превратил его в правдоподобную строку — потеря точности стала
 бы невидимой. Наружу десятичные строки, внутрь `BigInt`. Разбор и сериализация JSON —
-только через `json-bigint` и только в `shared/api`; держит это GritQL-плагин Biome
+только через `parseJson`/`stringifyJson` в `shared/api`; держит это GritQL-плагин Biome
 (`plugins/no-native-json.grit`), исключения помечены в файлах строкой
 `// biome-ignore-all lint/plugin`.
 
@@ -325,7 +325,7 @@ if (!campaignId || keywords.length === 0) return EMPTY
 ### Число там, где должна быть строка
 
 `Number(id)`, `parseInt(id)`, сравнение ID с числовым литералом, `JSON.parse` вместо
-`json-bigint` вне `shared/api`. Каждое — потеря точности, которая выглядит работающей на
+`parseJson` вне `shared/api`. Каждое — потеря точности, которая выглядит работающей на
 коротких ID из песочницы и ломается на боевых 19-значных.
 
 ### Множитель в хендлере

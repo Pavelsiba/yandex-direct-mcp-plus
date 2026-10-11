@@ -1,7 +1,15 @@
 // Транспорт: заголовки, повторы, таймаут. Знает про HTTP и токен, не знает про домен.
 import { assertNoReportAuthError } from "#shared/api/errors"
+import { parseJson } from "#shared/api/json"
 import { getClientLogin, getToken } from "#shared/config/env"
-import { MAX_RETRIES, MAX_RETRY_DELAY_MS, REQUEST_TIMEOUT_MS } from "#shared/config/limits"
+import { ERROR_BODY_PREVIEW_MAX, MAX_RETRIES, MAX_RETRY_DELAY_MS, REQUEST_TIMEOUT_MS } from "#shared/config/limits"
+
+const UNAVAILABLE_HINT = "API Директа, вероятно, временно недоступен — повторите позже."
+
+function previewBody(body: string): string {
+  const flat = body.replace(/\s+/g, " ").trim()
+  return flat.length > ERROR_BODY_PREVIEW_MAX ? `${flat.slice(0, ERROR_BODY_PREVIEW_MAX)}…` : flat
+}
 
 export function commonHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
@@ -43,6 +51,10 @@ export async function fetchWithRetry(url: string, options: RequestInit = {}, ret
       const response = await transport(url, { ...options, signal: controller.signal })
       clearTimeout(timer)
 
+      // Ни один сервис Директа в норме не отвечает 204, а балансировщик на время сбоя
+      // отдаёт его без тела — с response.ok это выглядело бы успехом.
+      if (response.status === 204) throw new Error(`Директ вернул пустой ответ (HTTP 204). ${UNAVAILABLE_HINT}`)
+
       if (response.ok) return response
 
       if (response.status >= 500 && attempt < retries) {
@@ -54,7 +66,7 @@ export async function fetchWithRetry(url: string, options: RequestInit = {}, ret
 
       const body = await response.text().catch(() => "")
       assertNoReportAuthError(body)
-      throw new Error(`HTTP ${response.status}: ${response.statusText}. ${body}`)
+      throw new Error(`HTTP ${response.status}: ${response.statusText}. ${previewBody(body)}`)
     } catch (error) {
       clearTimeout(timer)
       if (attempt === retries) throw error
@@ -66,4 +78,17 @@ export async function fetchWithRetry(url: string, options: RequestInit = {}, ret
     }
   }
   throw new Error("Все попытки исчерпаны")
+}
+
+// Тело не JSON — пустое или HTML-заглушка балансировщика — это сбой Директа, а не ответ API.
+export async function readJson(response: Response): Promise<unknown> {
+  const body = await response.text()
+  if (body.trim() === "") throw new Error(`Директ вернул пустой ответ (HTTP ${response.status}). ${UNAVAILABLE_HINT}`)
+  try {
+    return parseJson(body)
+  } catch {
+    const contentType = response.headers?.get?.("Content-Type")
+    const status = contentType ? `HTTP ${response.status}, ${contentType}` : `HTTP ${response.status}`
+    throw new Error(`Директ ответил не JSON (${status}). ${UNAVAILABLE_HINT} Начало ответа: ${previewBody(body)}`)
+  }
 }

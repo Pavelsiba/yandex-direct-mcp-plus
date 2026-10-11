@@ -84,7 +84,7 @@ export async function handleSetKeywordBids(
   ошибки в `*Results` и `LimitedBy` разбирает `format`;
 - **`Date.now()` / `new Date()` без аргумента / `Math.random()`** — такие значения
   приходят параметром или из подменяемого хелпера, иначе хендлер непроверяем;
-- **нативного `JSON.parse`/`stringify`** — только `json-bigint` и только в клиенте;
+- **нативного `JSON.parse`/`stringify`** — только `parseJson`/`stringifyJson` из `#shared/api/json`;
   GritQL-плагин Biome (`plugins/no-native-json.grit`) это ловит.
 
 Возвращает **строку** (`Promise<string>`) — так объявлен `ToolDescriptor`, а текст

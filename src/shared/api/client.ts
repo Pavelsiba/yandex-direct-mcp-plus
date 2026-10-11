@@ -1,8 +1,8 @@
 // JSON API v5 — основной клиент: один POST на сервис с телом { method, params }.
 import { holdWrite } from "#shared/api/dry-run"
 import { assertNoApiError } from "#shared/api/errors"
-import { commonHeaders, fetchWithRetry, logUnits } from "#shared/api/fetch"
-import { parseJson, stringifyJson } from "#shared/api/json"
+import { commonHeaders, fetchWithRetry, logUnits, readJson } from "#shared/api/fetch"
+import { stringifyJson } from "#shared/api/json"
 import { BASE_URL } from "#shared/config/endpoints"
 
 export async function apiPost(service: string, method: string, params: Record<string, unknown> = {}): Promise<unknown> {
@@ -16,7 +16,7 @@ export async function apiPost(service: string, method: string, params: Record<st
   })
   const units = logUnits(response)
 
-  const data = parseJson(await response.text())
+  const data = await readJson(response)
   assertNoApiError(data, units)
   return data
 }

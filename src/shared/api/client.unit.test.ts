@@ -91,6 +91,37 @@ describe("клиент v5", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
+  it("обрезает длинное тело в тексте HTTP-ошибки", async () => {
+    mockFetch.mockResolvedValueOnce(errorResponse(400, `<html>${"x".repeat(5_000)}</html>`))
+
+    const error = (await apiPost("campaigns", "get").catch((caught) => caught)) as Error
+
+    expect(error.message.length).toBeLessThan(500)
+  })
+
+  it("считает пустой 204 сбоем Директа, а не успехом", async () => {
+    mockFetch.mockResolvedValueOnce({ ...okResponse(""), status: 204 })
+
+    await expect(apiPost("campaigns", "get")).rejects.toThrow(/пустой ответ \(HTTP 204\).*временно недоступен/)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("считает пустое тело с кодом 200 сбоем Директа", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse(""))
+
+    await expect(apiPost("campaigns", "get")).rejects.toThrow(/пустой ответ \(HTTP 200\)/)
+  })
+
+  it("на HTML вместо JSON называет статус, тип и начало тела", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse("<html><body>Кабинет Директа пока недоступен</body></html>", { "Content-Type": "text/html" })
+    )
+
+    await expect(apiPost("campaigns", "get")).rejects.toThrow(
+      /не JSON \(HTTP 200, text\/html\).*Кабинет Директа пока недоступен/
+    )
+  })
+
   it("в предпросмотре отправляет чтение и откладывает запись", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: {} }))
 
