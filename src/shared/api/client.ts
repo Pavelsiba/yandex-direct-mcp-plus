@@ -1,7 +1,7 @@
 // JSON API v5 — основной клиент: один POST на сервис с телом { method, params }.
-import { holdWrite } from "#shared/api/dry-run"
-import { assertNoApiError } from "#shared/api/errors"
-import { commonHeaders, fetchWithRetry, logUnits, readJson } from "#shared/api/fetch"
+import { holdWrite, isReadMethod } from "#shared/api/dry-run"
+import { assertNoApiError, isTransientApiError } from "#shared/api/errors"
+import { commonHeaders, fetchWithRetry, logUnits, readJson, retryWhen } from "#shared/api/fetch"
 import { stringifyJson } from "#shared/api/json"
 import { BASE_URL } from "#shared/config/endpoints"
 
@@ -9,14 +9,20 @@ export async function apiPost(service: string, method: string, params: Record<st
   const held = holdWrite(service, method, params)
   if (held) return held
 
-  const response = await fetchWithRetry(`${BASE_URL}${service}`, {
-    method: "POST",
-    headers: commonHeaders(),
-    body: stringifyJson({ method, params })
-  })
-  const units = logUnits(response)
+  const write = !isReadMethod(method)
+  return retryWhen(
+    (error) => isTransientApiError(error, { write }),
+    async () => {
+      const response = await fetchWithRetry(`${BASE_URL}${service}`, {
+        method: "POST",
+        headers: commonHeaders(),
+        body: stringifyJson({ method, params })
+      })
+      const units = logUnits(response)
 
-  const data = await readJson(response)
-  assertNoApiError(data, units)
-  return data
+      const data = await readJson(response)
+      assertNoApiError(data, units)
+      return data
+    }
+  )
 }

@@ -33,6 +33,27 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const backoffMs = (attempt: number): number => Math.min(1000 * 2 ** (attempt - 1), MAX_RETRY_DELAY_MS)
+
+// Повтор поверх разобранного ответа: ошибку, пришедшую телом с HTTP 200, fetchWithRetry не
+// видит, а какую из них можно повторить, знает только вызывающий.
+export async function retryWhen<T>(
+  shouldRetry: (error: unknown) => boolean,
+  action: () => Promise<T>,
+  retries = MAX_RETRIES
+): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await action()
+    } catch (error) {
+      if (attempt >= retries || !shouldRetry(error)) throw error
+      const backoff = backoffMs(attempt)
+      console.error(`[yd-mcp] Временная ошибка Директа, повтор через ${backoff}мс (${attempt}/${retries})`)
+      await delay(backoff)
+    }
+  }
+}
+
 export type Transport = (url: string, options: RequestInit) => Promise<Response>
 
 // Шов для тестов: подмена глобального fetch задела бы и SDK.
@@ -58,7 +79,7 @@ export async function fetchWithRetry(url: string, options: RequestInit = {}, ret
       if (response.ok) return response
 
       if (response.status >= 500 && attempt < retries) {
-        const backoff = Math.min(1000 * 2 ** (attempt - 1), MAX_RETRY_DELAY_MS)
+        const backoff = backoffMs(attempt)
         console.error(`[yd-mcp] ${response.status} от ${url}, повтор через ${backoff}мс (${attempt}/${retries})`)
         await delay(backoff)
         continue
