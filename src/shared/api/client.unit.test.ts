@@ -1,7 +1,8 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса; проверка ID сравнивает сырую строку
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { apiPost } from "#shared/api/client"
 import { runDryRun } from "#shared/api/dry-run"
+import { MAX_RETRIES } from "#shared/config/limits"
 import {
   errorResponse,
   installFetchMock,
@@ -13,10 +14,22 @@ import {
 
 installFetchMock()
 
+const skipDelays = () =>
+  vi.spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void) => {
+    callback()
+    return 0
+  }) as unknown as typeof setTimeout)
+
+const apiError = (code: number) => okResponse({ error: { error_code: code, error_string: "Сбой" } })
+
 describe("клиент v5", () => {
   beforeEach(() => {
     mockFetch.mockReset()
     delete process.env.YANDEX_DIRECT_LOGIN
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it("отправляет 19-значный ID числом, не потеряв точность", async () => {
@@ -71,17 +84,55 @@ describe("клиент v5", () => {
   })
 
   it("повторяет запрос после 500 и отдаёт успешный ответ", async () => {
-    vi.spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void) => {
-      callback()
-      return 0
-    }) as unknown as typeof setTimeout)
+    skipDelays()
     mockFetch.mockResolvedValueOnce(errorResponse(500)).mockResolvedValueOnce(okResponse({ result: { ok: true } }))
 
     const data = (await apiPost("campaigns", "get")) as { result: { ok: boolean } }
 
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(data.result.ok).toBe(true)
-    vi.restoreAllMocks()
+  })
+
+  it("повторяет чтение после внутреннего сбоя Директа, пришедшего с кодом 200", async () => {
+    skipDelays()
+    mockFetch.mockResolvedValueOnce(apiError(1000)).mockResolvedValueOnce(okResponse({ result: { ok: true } }))
+
+    const data = (await apiPost("campaigns", "get")) as { result: { ok: boolean } }
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(data.result.ok).toBe(true)
+  })
+
+  it("не повторяет запись после внутреннего сбоя: она могла примениться", async () => {
+    skipDelays()
+    mockFetch.mockResolvedValueOnce(apiError(1000))
+
+    await expect(apiPost("campaigns", "add")).rejects.toThrow(/\[1000\].*проверьте чтением/)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("повторяет запись, отбитую лимитом соединений до выполнения", async () => {
+    skipDelays()
+    mockFetch.mockResolvedValueOnce(apiError(506)).mockResolvedValueOnce(okResponse({ result: {} }))
+
+    await apiPost("campaigns", "add")
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it("исчерпав повторы, отдаёт ошибку с подсказкой", async () => {
+    skipDelays()
+    mockFetch.mockResolvedValue(apiError(52))
+
+    await expect(apiPost("campaigns", "get")).rejects.toThrow(/\[52\].*Что делать: .*через минуту/)
+    expect(mockFetch).toHaveBeenCalledTimes(MAX_RETRIES)
+  })
+
+  it("не повторяет ошибку, которую повтор не исправит", async () => {
+    mockFetch.mockResolvedValueOnce(apiError(8800))
+
+    await expect(apiPost("campaigns", "get")).rejects.toThrow(/\[8800\]/)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
   it("не повторяет запрос после 400 и показывает тело ошибки", async () => {
