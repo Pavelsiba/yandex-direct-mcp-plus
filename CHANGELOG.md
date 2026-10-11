@@ -1,5 +1,22 @@
 # Changelog
 
+# [1.8.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.7.0...v1.8.0) (2026-10-11)
+
+
+### Bug Fixes
+
+* **api:** пустой и не-JSON ответ Директа даёт понятную ошибку ([bcf1ee9](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/bcf1ee9ad6773b472418d2f3e7029a3b58fa6b6f)), closes [#53](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/53) [#73](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/73) [#74](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/74)
+* **campaigns:** средства кампании Funds отдаются в рублях ([a253fbc](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/a253fbcb7d649b8d4055f1b3474f93d4912a54ab)), closes [#61](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/61)
+* **server:** схемы инструментов уходят в JSON Schema 2020-12 ([b0ede87](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/b0ede872a87fd23fc992d0a35b22a60caf95d63c)), closes [#54](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/54)
+
+
+### Features
+
+* **ads:** list_ads отбирает по ID, кампаниям, состоянию, статусу и типу ([b030613](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/b030613376a7d00090181f0ed2d96074693c7d2b)), closes [#63](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/63)
+* **app:** удалённый сервер по Streamable HTTP с входом по секрету ([ad93a7c](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/ad93a7caf04d69f6958c7b12bbd092fe73e07677)), closes [#75](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/75)
+* **client:** добавлен повтор временных ошибок Директа ([f580e4a](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/f580e4a51ccc7cd926625b5a8dc8af9c52f1fe99)), closes [#78](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/78)
+* **tools:** поля ответа — из перечислений WSDL, а не рукописных списков ([1a638e0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/1a638e0ad8fbced77eeab21a76bb5bf5f9e0c7fa)), closes [#66](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/66)
+
 # [1.7.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.6.1...v1.7.0) (2026-09-22)
 
 
