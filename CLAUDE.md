@@ -10,7 +10,7 @@ MCP-сервер (stdio) поверх API Яндекс.Директа v5: 59 и�
 
 Первая версия собрана на коде `theYahia/yandex-direct-mcp` (MIT, расширение до 48
 инструментов — DrSeedon, PR #7); дальше развивается самостоятельно, апстрим не
-отслеживается. Атрибуция — в `LICENSE` и README.
+отслеживается. Благодарность — в README.
 
 - Архитектура и инварианты — `docs/architecture.md`. Читать до того, как решать,
   куда класть новый код.
@@ -34,6 +34,7 @@ npm run typecheck    # tsc --noEmit: src, тесты и конфиги
 npm run lint:dead    # knip
 npm run api:snapshot # WSDL → docs/api-v5.md (сеть, токен не нужен)
 npm run api:fields   # снимок → src/shared/config/api-fields.ts (офлайн)
+npm run docs:tools   # реестр → таблицы инструментов в README (офлайн)
 ```
 
 После правок исходников — `npm run build`: MCP-клиенты запускают собранный
@@ -146,7 +147,7 @@ src/
 - `YANDEX_DIRECT_LOGIN` — Client-Login, нужен для агентских токенов.
 
 Локально значения живут в `.env` (закрыт `.gitignore`; образца нет, переменные
-перечислены таблицей в README).
+перечислены в README, раздел «Токен»).
 Читают его `npm run dev`, `npm start` и сервер из `.mcp.json` — все через флаг Node
 `--env-file-if-exists=.env`. Сам код `.env` не знает: `shared/config/env.ts` берёт
 только `process.env`, и это намеренно. Опубликованный пакет запускается MCP-клиентом
