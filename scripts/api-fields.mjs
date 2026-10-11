@@ -98,6 +98,10 @@ const valueCount = Object.values(services).reduce(
   0
 )
 
+// Пустой набор — признак испорченного снимка, а не API без полей: перезапись обнулила бы
+// FieldNames во всех инструментах.
+if (enumCount === 0) throw new Error(`${SNAPSHOT}: ни одного *FieldEnum — снимок пуст или испорчен, ${OUT} не тронут`)
+
 writeFileSync(OUT, render(services), "utf8")
 // Форматирование отдаём biome: иначе сгенерированный файл валит npm run lint. Бинарь
 // зовём через node напрямую — npx под Windows требует shell, а это лишний слой цитирования.

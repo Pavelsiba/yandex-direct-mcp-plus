@@ -1,7 +1,7 @@
 // Сценарии кампаний: деньги приезжают уже в микроединицах, ошибки разбирает shared/api.
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
-import type { FieldOf } from "#shared/config/api-fields"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { MAX_PRIORITY_GOALS } from "#shared/config/limits"
 import { type CampaignSettingsKey, getCampaignSettingsKey } from "#shared/lib/campaign-type"
 import { formatResult } from "#shared/lib/format"
@@ -19,8 +19,6 @@ import type {
   updateCampaignSchema
 } from "./schema.js"
 import { CAMPAIGN_LIST_FIELDS } from "./schema.js"
-
-const DETAIL_FIELDS: FieldOf<"campaigns", "CampaignFieldEnum">[] = [...CAMPAIGN_LIST_FIELDS, "EndDate"]
 
 // Пересечение — поля, общие для трёх типов. Смарт отдельно: счётчик у него CounterId,
 // в единственном числе, CounterIds Директ отбивает ошибкой 8000.
@@ -93,7 +91,7 @@ export async function handleListCampaigns(params: z.infer<typeof listCampaignsSc
 export async function handleGetCampaign(params: z.infer<typeof getCampaignSchema>): Promise<string> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [apiId(params.campaign_id)] },
-    FieldNames: DETAIL_FIELDS,
+    FieldNames: [...API_FIELDS.campaigns.CampaignFieldEnum],
     TextCampaignFieldNames: SETTINGS_FIELDS,
     DynamicTextCampaignFieldNames: SETTINGS_FIELDS,
     SmartCampaignFieldNames: SMART_SETTINGS_FIELDS,

@@ -1,16 +1,53 @@
 import { z } from "zod"
-import { AD_ACTIONS } from "#shared/config/enums"
-import { AD_TEXT_LIMITS, MAX_ADS_PER_MODERATION } from "#shared/config/limits"
+import { AD_ACTIONS, AD_STATES, AD_STATUSES, AD_TYPES } from "#shared/config/enums"
+import {
+  AD_TEXT_LIMITS,
+  MAX_AD_GROUPS_PER_CALL,
+  MAX_ADS_PER_MODERATION,
+  MAX_CAMPAIGNS_PER_ADS_CALL,
+  MAX_IDS_PER_CALL
+} from "#shared/config/limits"
 import { idField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
 
-export const listAdsSchema = z.object({
-  ad_group_ids: z
-    .array(idField("ID группы объявлений"))
-    .check(z.minLength(1, { error: "Укажите хотя бы одну группу" }))
-    .meta({ description: "Группы, объявления которых нужно выбрать" }),
-  ...pageFields
-})
+export const listAdsSchema = z
+  .object({
+    ad_ids: z
+      .array(idField("ID объявления"))
+      .check(
+        z.maxLength(MAX_IDS_PER_CALL, { error: `За один вызов допустимо не больше ${MAX_IDS_PER_CALL} объявлений` })
+      )
+      .optional()
+      .meta({ description: "Конкретные объявления по ID" }),
+    ad_group_ids: z
+      .array(idField("ID группы объявлений"))
+      .check(
+        z.maxLength(MAX_AD_GROUPS_PER_CALL, {
+          error: `За один вызов допустимо не больше ${MAX_AD_GROUPS_PER_CALL} групп`
+        })
+      )
+      .optional()
+      .meta({ description: "Группы, объявления которых нужно выбрать" }),
+    campaign_ids: z
+      .array(idField("ID кампании"))
+      .check(
+        z.maxLength(MAX_CAMPAIGNS_PER_ADS_CALL, {
+          error: `За один вызов допустимо не больше ${MAX_CAMPAIGNS_PER_ADS_CALL} кампаний`
+        })
+      )
+      .optional()
+      .meta({ description: `Кампании, объявления которых нужно выбрать, до ${MAX_CAMPAIGNS_PER_ADS_CALL}` }),
+    states: z
+      .array(z.literal(AD_STATES))
+      .optional()
+      .meta({ description: "Фильтр по состоянию: ON — показывается, SUSPENDED — остановлено, ARCHIVED — в архиве" }),
+    statuses: z.array(z.literal(AD_STATUSES)).optional().meta({ description: "Фильтр по статусу модерации" }),
+    types: z.array(z.literal(AD_TYPES)).optional().meta({ description: "Фильтр по типу объявления" }),
+    ...pageFields
+  })
+  .refine((params) => [params.ad_ids, params.ad_group_ids, params.campaign_ids].some((ids) => ids && ids.length > 0), {
+    error: "Укажите хотя бы одно из ad_ids, ad_group_ids, campaign_ids: без них Директ не отбирает объявления"
+  })
 
 export const createTextAdSchema = z.object({
   ad_group_id: idField("ID группы, в которой создаётся объявление"),

@@ -10,6 +10,25 @@ export const KEYWORD_ACTIONS = ["suspend", "resume", "delete"] as const
 
 export const AD_ACTIONS = ["suspend", "resume", "archive", "unarchive", "moderate", "delete"] as const
 
+export const AD_STATES = ["ON", "OFF", "OFF_BY_MONITORING", "SUSPENDED", "ARCHIVED"] as const
+export const AD_STATUSES = ["ACCEPTED", "DRAFT", "MODERATION", "PREACCEPTED", "REJECTED"] as const
+
+// AdTypeEnum плюс RESPONSIVE_AD: в снимке WSDL его нет, но тип есть в справке и в истории
+// изменений API, а сетевой тест держит, что Директ принимает в отборе каждое значение.
+export const AD_TYPES = [
+  "TEXT_AD",
+  "MOBILE_APP_AD",
+  "DYNAMIC_TEXT_AD",
+  "IMAGE_AD",
+  "CPC_VIDEO_AD",
+  "CPM_BANNER_AD",
+  "CPM_VIDEO_AD",
+  "SMART_AD",
+  "SHOPPING_AD",
+  "LISTING_AD",
+  "RESPONSIVE_AD"
+] as const
+
 export const CAMPAIGN_ACTIONS = ["suspend", "resume", "archive", "unarchive", "delete"] as const
 
 // Верхний регистр — внешний контракт update_campaign, к CAMPAIGN_ACTIONS не приводить.

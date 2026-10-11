@@ -20,6 +20,14 @@ describe("list_ad_extensions", () => {
     expect(lastBody().params.SelectionCriteria).toEqual({ Types: ["CALLOUT"] })
   })
 
+  it("запрашивает весь AdExtensionFieldEnum, включая состояние", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AdExtensions: [] } }))
+
+    await handleListAdExtensions({})
+
+    expect(lastBody().params.FieldNames).toContain("State")
+  })
+
   it("добавляет фильтры по состоянию и статусу к типу", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { AdExtensions: [] } }))
 

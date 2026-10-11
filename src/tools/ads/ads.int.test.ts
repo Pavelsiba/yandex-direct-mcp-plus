@@ -1,6 +1,8 @@
 // Сетевой smoke: форма ответа ads.get на боевом API. Только чтение.
-import { describe, it } from "vitest"
+import { describe, expect, it } from "vitest"
+import { apiPost } from "#shared/api/client"
 import { API_FIELDS } from "#shared/config/api-fields"
+import { AD_STATES, AD_STATUSES, AD_TYPES } from "#shared/config/enums"
 import { CONFIGURED, firstCampaignId, smokeRead } from "#testing/smoke"
 
 // Настройки объявления лежат в отдельном объекте, имя которого зависит от типа: TextAd,
@@ -24,5 +26,21 @@ describe.skipIf(!CONFIGURED)("smoke ads.get", () => {
       collection: "Ads",
       fields: FIELDS
     })
+  })
+
+  // Литералы схемы не из одного снимка WSDL: неизвестное значение Директ отбил бы ошибкой запроса.
+  it("принимает в отборе каждое состояние, статус и тип из литералов list_ads", async () => {
+    await expect(
+      apiPost("ads", "get", {
+        SelectionCriteria: {
+          CampaignIds: [BigInt(await firstCampaignId())],
+          States: [...AD_STATES],
+          Statuses: [...AD_STATUSES],
+          Types: [...AD_TYPES]
+        },
+        FieldNames: ["Id"],
+        Page: { Limit: 1 }
+      })
+    ).resolves.toBeDefined()
   })
 })

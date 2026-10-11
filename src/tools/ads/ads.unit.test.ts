@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
 import { handleCreateTextAd, handleListAds, handleManageAds, handleModerateAds, handleUpdateTextAd } from "./handler.js"
+import { listAdsSchema } from "./schema.js"
 
 installFetchMock()
 
@@ -39,6 +40,16 @@ describe("list_ads", () => {
     expect(lastBody().params.TextAdFieldNames).toEqual(
       expect.arrayContaining(["SitelinkSetId", "VCardId", "AdImageHash"])
     )
+  })
+
+  it("берёт поля текстового объявления из перечисления, кроме объектов модерации", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
+
+    await handleListAds({ ad_group_ids: ["123"] })
+
+    const fields: string[] = lastBody().params.TextAdFieldNames
+    expect(fields).toEqual(expect.arrayContaining(["FinalUrl", "DisplayUrlPath", "BusinessId", "AdExtensions"]))
+    expect(fields.filter((field) => field.endsWith("Moderation"))).toEqual([])
   })
 
   it("отдаёт привязки строками независимо от разрядности", async () => {
@@ -79,6 +90,54 @@ describe("list_ads", () => {
 
     expect(output).not.toContain("Причин две")
     expect(output.trimStart().startsWith("{")).toBe(true)
+  })
+
+  it("переносит все отборы в SelectionCriteria, а ID — числами без потери точности", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
+
+    await handleListAds({
+      ad_ids: ["1919964803537252737"],
+      campaign_ids: ["714159718"],
+      states: ["ON", "SUSPENDED"],
+      statuses: ["REJECTED"],
+      types: ["TEXT_AD", "RESPONSIVE_AD"]
+    })
+
+    expect(lastRawBody()).toContain('"Ids":[1919964803537252737]')
+    expect(lastBody().params.SelectionCriteria).toEqual({
+      Ids: [expect.any(Number)],
+      CampaignIds: [714159718],
+      States: ["ON", "SUSPENDED"],
+      Statuses: ["REJECTED"],
+      Types: ["TEXT_AD", "RESPONSIVE_AD"]
+    })
+  })
+
+  it("не шлёт пустых отборов", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
+
+    await handleListAds({ ad_group_ids: ["123"], states: [] })
+
+    expect(lastBody().params.SelectionCriteria).toEqual({ AdGroupIds: [123] })
+  })
+})
+
+describe("listAdsSchema", () => {
+  it("отклоняет вызов без ID объявлений, групп и кампаний", () => {
+    const result = listAdsSchema.safeParse({ states: ["ON"], ad_group_ids: [] })
+
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.message).toContain("ad_ids, ad_group_ids, campaign_ids")
+  })
+
+  it("принимает отбор по одной кампании", () => {
+    expect(listAdsSchema.safeParse({ campaign_ids: ["714159718"] }).success).toBe(true)
+  })
+
+  it("отклоняет больше десяти кампаний — потолок Ads.get", () => {
+    const campaignIds = Array.from({ length: 11 }, (_, index) => String(index + 1))
+
+    expect(listAdsSchema.safeParse({ campaign_ids: campaignIds }).success).toBe(false)
   })
 })
 

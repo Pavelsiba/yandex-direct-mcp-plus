@@ -22,6 +22,7 @@ describe("list_vcards", () => {
     expect(bodyOf(0).method).toBe("get")
     expect(bodyOf(0).params.TextAdFieldNames).toEqual(["VCardId"])
     expect(lastRawBody()).toContain('"Ids":[777,1915016273214320641]')
+    expect(bodyOf(1).params.FieldNames).toContain("PointOnMap")
   })
 
   it("не повторяет один и тот же ID визитки", async () => {

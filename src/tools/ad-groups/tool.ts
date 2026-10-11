@@ -5,7 +5,10 @@ import { createAdGroupSchema, deleteAdGroupsSchema, listAdGroupsSchema } from ".
 export const listAdGroupsTool = defineTool({
   name: "list_ad_groups",
   title: "Список групп",
-  description: "Группы объявлений выбранных кампаний: названия, регионы, статусы.",
+  description:
+    "Группы объявлений выбранных кампаний: названия, регионы, статусы. По умолчанию возвращается узкий набор полей; " +
+    "нужны другие (NegativeKeywords, NegativeKeywordSharedSetIds, TrackingParams, ServingStatus и прочие из " +
+    "AdGroupFieldEnum) — перечислите их в fields.",
   annotations: READ,
   schema: listAdGroupsSchema,
   handler: handleListAdGroups
