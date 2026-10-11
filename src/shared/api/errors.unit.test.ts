@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest"
-import { assertNoApiError, assertNoApiErrorV4, assertNoReportAuthError } from "#shared/api/errors"
+import {
+  assertNoApiError,
+  assertNoApiErrorV4,
+  assertNoReportAuthError,
+  DirectApiError,
+  isTransientApiError
+} from "#shared/api/errors"
+
+const catchError = (action: () => void): unknown => {
+  try {
+    action()
+  } catch (error) {
+    return error
+  }
+  throw new Error("ожидалась ошибка")
+}
 
 const REPORT_ERROR_XML = (code: number) =>
   `<?xml version="1.0" encoding="UTF-8"?><reports:reportDownloadError xmlns:reports="http://api.direct.yandex.com/v5/reports">` +
@@ -64,6 +79,38 @@ describe("разбор ошибок Директа", () => {
     expect(() => assertNoApiErrorV4({ error_code: 506, error_str: "Too many connections" })).toThrow(
       /Что делать: .*последовательно/
     )
+  })
+
+  it("отдаёт код и request_id ошибки v5 полями, а не только текстом", () => {
+    const data = { error: { error_code: "8800", error_string: "Объект не найден", request_id: "42" } }
+
+    const error = catchError(() => assertNoApiError(data))
+
+    expect(error).toBeInstanceOf(DirectApiError)
+    expect(error).toMatchObject({ code: 8800, requestId: "42" })
+  })
+
+  it("помечает 53 кодом, хотя текст заменён целиком", () => {
+    const error = catchError(() => assertNoApiErrorV4({ error_code: 53, error_str: "Authorization error" }))
+
+    expect(error).toMatchObject({ code: 53 })
+  })
+
+  it("не выдумывает код, если Директ его не прислал", () => {
+    const error = catchError(() => assertNoApiErrorV4({ error_str: "Что-то сломалось", error_code: "" }))
+
+    expect(error).toMatchObject({ code: undefined })
+  })
+
+  it("повторяет 52 и 506 и для записи, а внутренний сбой — только для чтения", () => {
+    const failure = (code: number) => new DirectApiError("сбой", code)
+
+    expect(isTransientApiError(failure(506), { write: true })).toBe(true)
+    expect(isTransientApiError(failure(52), { write: true })).toBe(true)
+    expect(isTransientApiError(failure(1000), { write: false })).toBe(true)
+    expect(isTransientApiError(failure(1000), { write: true })).toBe(false)
+    expect(isTransientApiError(failure(152), { write: false })).toBe(false)
+    expect(isTransientApiError(new Error("[1000] сбой"), { write: false })).toBe(false)
   })
 
   it("узнаёт 53 в XML от Reports", () => {

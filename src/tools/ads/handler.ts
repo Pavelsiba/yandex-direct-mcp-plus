@@ -1,6 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
-import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
+import { API_FIELDS } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -17,23 +17,15 @@ import type {
 const LIST_FIELDS = [...API_FIELDS.ads.AdFieldEnum]
 
 // *Moderation не берём: вложенные объекты раздувают ответ, причина отказа уже в StatusClarification.
-const TEXT_AD_FIELDS: FieldOf<"ads", "TextAdFieldEnum">[] = [
-  "Title",
-  "Title2",
-  "Text",
-  "Href",
-  "DisplayDomain",
-  "SitelinkSetId",
-  "VCardId",
-  "AdImageHash"
-]
+const TEXT_AD_FIELDS = API_FIELDS.ads.TextAdFieldEnum.filter((field) => !field.endsWith("Moderation"))
 
 // На пустую выборку Директ отдаёт `{ "result": {} }` без ключа Ads — модель читает это
 // как поломку и начинает гадать.
 const EMPTY_ADS_NOTICE =
   "ℹ️ Директ вернул ответ без ключа Ads и без пояснений. Это не сбой инструмента и не ошибка запроса — " +
-  "повторять вызов иначе бесполезно. Причин две: объявлений в этих группах действительно нет, либо они есть, " +
-  "но недоступны через API — так устроены объявления, тексты которых генерирует нейросеть Яндекса. Различить " +
+  "повторять тот же вызов бесполезно. Причин две: под отбор действительно не попало ни одного объявления, либо " +
+  "объявления есть, но недоступны через API — так устроены объявления, тексты которых генерирует нейросеть " +
+  "Яндекса. Различить " +
   "можно по показам: статистика накопительная, поэтому прошлые показы бывают и у группы, из которой объявления " +
   "удалили, а показы за сегодня при пустом ответе означают второй случай."
 
@@ -43,8 +35,17 @@ function hasAds(data: unknown): boolean {
 }
 
 export async function handleListAds(params: z.infer<typeof listAdsSchema>): Promise<string> {
+  const { ad_ids, ad_group_ids, campaign_ids, states, statuses, types } = params
+  const selectionCriteria: Record<string, unknown> = {}
+  if (ad_ids?.length) selectionCriteria.Ids = apiIds(ad_ids)
+  if (ad_group_ids?.length) selectionCriteria.AdGroupIds = apiIds(ad_group_ids)
+  if (campaign_ids?.length) selectionCriteria.CampaignIds = apiIds(campaign_ids)
+  if (states?.length) selectionCriteria.States = states
+  if (statuses?.length) selectionCriteria.Statuses = statuses
+  if (types?.length) selectionCriteria.Types = types
+
   const requestParams: Record<string, unknown> = {
-    SelectionCriteria: { AdGroupIds: apiIds(params.ad_group_ids) },
+    SelectionCriteria: selectionCriteria,
     FieldNames: LIST_FIELDS,
     TextAdFieldNames: TEXT_AD_FIELDS
   }

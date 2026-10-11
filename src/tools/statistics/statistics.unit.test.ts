@@ -35,6 +35,14 @@ describe("get_statistics", () => {
     expect(lastRequestUrl()).toContain("/reports")
   })
 
+  it("на пустой 204 бросает сбой, а не отдаёт пустой отчёт", async () => {
+    mockFetch.mockResolvedValueOnce({ ...okResponse(""), status: 204 })
+
+    await expect(
+      handleGetStatistics({ campaign_ids: ["123"], date_from: "2026-09-01", date_to: "2026-09-02" })
+    ).rejects.toThrow(/HTTP 204/)
+  })
+
   it("фильтрует по кампаниям строками: ReportService не принимает числа", async () => {
     mockFetch.mockResolvedValueOnce(okResponse(TSV))
 

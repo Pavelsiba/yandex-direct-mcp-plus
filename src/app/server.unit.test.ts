@@ -1,5 +1,4 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
 import { tools } from "#app/registry"
@@ -42,6 +41,16 @@ describe("сервер", () => {
     const { tools: listed } = await client.listTools()
 
     expect(listed.map((tool) => tool.name)).not.toContain("add_vcard")
+    await client.close()
+  })
+
+  it("отдаёт схемы инструментов в диалекте JSON Schema 2020-12", async () => {
+    const client = await connect()
+
+    const { tools: listed } = await client.listTools()
+    const dialects = new Set(listed.map((tool) => tool.inputSchema.$schema))
+
+    expect([...dialects]).toEqual(["https://json-schema.org/draft/2020-12/schema"])
     await client.close()
   })
 

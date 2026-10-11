@@ -12,6 +12,53 @@ describe("formatResult", () => {
     expect(output.result.Campaigns[0].Bid).toBe(25.5)
   })
 
+  it("переводит в рубли средства кампании без общего счёта", () => {
+    const output = JSON.parse(
+      formatResult({
+        result: {
+          Campaigns: [
+            {
+              Funds: {
+                Mode: "CAMPAIGN_FUNDS",
+                CampaignFunds: {
+                  Sum: 5_000_000_000,
+                  Balance: 1_234_560_000,
+                  BalanceBonus: 0,
+                  SumAvailableForTransfer: 500_000_000
+                }
+              }
+            }
+          ]
+        }
+      })
+    )
+
+    expect(output.result.Campaigns[0].Funds).toEqual({
+      Mode: "CAMPAIGN_FUNDS",
+      CampaignFunds: { Sum: 5000, Balance: 1234.56, BalanceBonus: 0, SumAvailableForTransfer: 500 }
+    })
+  })
+
+  it("переводит в рубли расход кампании на общем счёте", () => {
+    const output = JSON.parse(
+      formatResult({
+        result: {
+          Campaigns: [
+            { Funds: { Mode: "SHARED_ACCOUNT_FUNDS", SharedAccountFunds: { Refund: 0, Spend: 7_500_000_000 } } }
+          ]
+        }
+      })
+    )
+
+    expect(output.result.Campaigns[0].Funds.SharedAccountFunds).toEqual({ Refund: 0, Spend: 7500 })
+  })
+
+  it("не трогает Sum и Balance вне Funds", () => {
+    const output = JSON.parse(formatResult({ result: { Sum: 3, Balance: 7 } }))
+
+    expect(output.result).toEqual({ Sum: 3, Balance: 7 })
+  })
+
   it("не трогает счётчики и ID, похожие на деньги", () => {
     const output = JSON.parse(formatResult({ result: { Campaigns: [{ Id: "1915016273214320641", Clicks: 1200 }] } }))
 

@@ -5,6 +5,9 @@ export const REQUEST_TIMEOUT_MS = 15_000
 export const MAX_RETRIES = 3
 export const MAX_RETRY_DELAY_MS = 8_000
 
+// Сколько символов тела ответа показывать в тексте ошибки: HTML-заглушка иначе забила бы его.
+export const ERROR_BODY_PREVIEW_MAX = 300
+
 // Отчёт формируется офлайн: сервер отвечает 201/202 и просит повторить позже.
 export const REPORT_MAX_POLLS = 6
 export const REPORT_DEFAULT_RETRY_IN_SEC = 5
@@ -15,6 +18,7 @@ export const PAGE_MAX_LIMIT = 10_000
 export const MAX_CAMPAIGNS_PER_CALL = 1_000
 export const MAX_AD_GROUPS_PER_CALL = 1_000
 export const MAX_ADS_PER_MODERATION = 10_000
+export const MAX_CAMPAIGNS_PER_ADS_CALL = 10
 export const MAX_SHARED_SETS_PER_CALL = 30
 export const MAX_SHARED_SETS_PER_AD_GROUP = 3
 export const SHARED_SET_NAME_MAX = 255

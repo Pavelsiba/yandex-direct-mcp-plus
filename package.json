@@ -42,6 +42,8 @@
     "dev": "tsx --env-file-if-exists=.env --conditions=development src/app/index.ts",
     "probe": "node --env-file-if-exists=.env --import tsx --conditions=development",
     "start": "node --env-file-if-exists=.env dist/app/index.js",
+    "dev:http": "tsx --env-file-if-exists=.env --conditions=development src/app/http.ts",
+    "start:http": "node --env-file-if-exists=.env dist/app/http.js",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
     "test:int": "node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run --project int",
@@ -52,11 +54,12 @@
     "lint:dead": "knip",
     "api:snapshot": "node scripts/wsdl-snapshot.mjs",
     "api:fields": "node scripts/api-fields.mjs",
+    "docs:tools": "node --import tsx --conditions=development scripts/readme-tools.mjs",
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "json-bigint": "^1.0.0",
+    "@modelcontextprotocol/node": "^2.1.1",
+    "@modelcontextprotocol/server": "^2.3.1",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -64,10 +67,10 @@
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@commitlint/types": "^21.2.0",
+    "@modelcontextprotocol/client": "^2.3.1",
     "@semantic-release/changelog": "^7.0.0",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^11.0.1",
-    "@types/json-bigint": "^1.0.4",
     "@types/node": "^26.4.1",
     "@vitest/coverage-v8": "^4.1.11",
     "knip": "^6.34.0",
@@ -103,7 +106,7 @@
     "yandex-direct",
     "api"
   ],
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Pavelsiba/yandex-direct-mcp-plus.git"

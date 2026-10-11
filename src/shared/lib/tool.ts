@@ -1,5 +1,5 @@
 // Дескриптор инструмента. В shared, а не в app: его импортирует каждый tools/<домен>/tool.ts.
-import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js"
+import type { ToolAnnotations } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 
 // По ним клиент решает, спрашивать ли пользователя: manage_*, умеющий удалять, — DESTRUCTIVE.

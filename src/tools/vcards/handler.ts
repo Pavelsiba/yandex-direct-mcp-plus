@@ -1,6 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
-import type { FieldOf } from "#shared/config/api-fields"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { PAGE_MAX_LIMIT } from "#shared/config/limits"
 import { formatResult } from "#shared/lib/format"
 import { apiIds } from "#shared/lib/id"
@@ -11,31 +11,9 @@ const NO_MONEY = { money: false } as const
 
 const DECIMAL_ID = /^[1-9]\d*$/
 
-// Весь VCardFieldEnum, кроме PointOnMap: точка на карте — вложенный объект с координатами,
-// в текстовой выдаче нечитаема, а адрес уже приходит полями Country…Apartment.
-const VCARD_FIELDS: FieldOf<"vcards", "VCardFieldEnum">[] = [
-  "Id",
-  "CampaignId",
-  "Country",
-  "City",
-  "CompanyName",
-  "WorkTime",
-  "Phone",
-  "Street",
-  "House",
-  "Building",
-  "Apartment",
-  "InstantMessenger",
-  "ExtraMessage",
-  "ContactEmail",
-  "Ogrn",
-  "ContactPerson",
-  "MetroStationId"
-]
-
 type AdsResponse = { result?: { Ads?: Array<{ TextAd?: { VCardId?: unknown } }> } }
 
-// VCardId приезжает строкой (json-bigint) либо числом, если ID короткий.
+// VCardId приезжает строкой, если не влезает в Number без потери точности, иначе числом.
 function collectVCardIds(response: AdsResponse): string[] {
   const ids = new Set<string>()
 
@@ -74,7 +52,7 @@ export async function handleListVcards(params: z.infer<typeof listVcardsSchema>)
 
   const request: Record<string, unknown> = {
     SelectionCriteria: { Ids: apiIds([...ids]) },
-    FieldNames: VCARD_FIELDS
+    FieldNames: [...API_FIELDS.vcards.VCardFieldEnum]
   }
   const page = buildPage(params)
   if (page) request.Page = page

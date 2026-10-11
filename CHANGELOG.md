@@ -1,9 +1,5 @@
 # Changelog
 
-История до отделения от апстрима (версии 3.0.0–5.0.0, проект
-`theYahia/yandex-direct-mcp`) — в
-[docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md).
-
 # [1.7.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.6.1...v1.7.0) (2026-09-22)
 
 

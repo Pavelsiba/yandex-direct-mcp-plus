@@ -84,7 +84,7 @@ export async function handleSetKeywordBids(
   ошибки в `*Results` и `LimitedBy` разбирает `format`;
 - **`Date.now()` / `new Date()` без аргумента / `Math.random()`** — такие значения
   приходят параметром или из подменяемого хелпера, иначе хендлер непроверяем;
-- **нативного `JSON.parse`/`stringify`** — только `json-bigint` и только в клиенте;
+- **нативного `JSON.parse`/`stringify`** — только `parseJson`/`stringifyJson` из `#shared/api/json`;
   GritQL-плагин Biome (`plugins/no-native-json.grit`) это ловит.
 
 Возвращает **строку** (`Promise<string>`) — так объявлен `ToolDescriptor`, а текст
@@ -145,9 +145,10 @@ export const setKeywordBidsTool = defineTool({
 `z.infer<Schema>`, иначе не соберётся. Расширение `.js` в относительных импортах
 обязательно — `moduleResolution: NodeNext`.
 
-**2. Реестр** — импорт и строка в массиве `tools` в `src/app/registry.ts`, в секции своего
-домена (там разделители-комментарии вида `// Кампании`). Больше нигде инструмент
-регистрировать не нужно: `app/server.ts` проходит по массиву сам.
+**2. Реестр** — импорт и строка в группе своего домена в `toolGroups`
+(`src/app/registry.ts`). Больше нигде инструмент регистрировать не нужно: `app/server.ts`
+проходит по плоскому `tools`, выведенному из групп. Затем `npm run docs:tools` — таблица
+инструментов в README собирается из реестра, отставший README валит юнит-тест.
 
 **Реестр собирается явными импортами, не глобом.** Glob прячет инструмент от knip — тот
 перестаёт видеть, кто что использует, и начинает считать живые экспорты мёртвыми.
@@ -213,5 +214,6 @@ npm run build         # MCP-клиенты запускают dist/app/index.js,
 - [ ] В хендлере нет множителя, разбора ошибок, часов, нативного JSON
 - [ ] Аннотация по худшему случаю, не по типичному
 - [ ] Дескриптор через `defineTool` в `tool.ts`, строка в `app/registry.ts`, импорт с `.js`
+- [ ] `npm run docs:tools` — README с новым инструментом
 - [ ] Тест проверяет и тело запроса (ID по сырой строке), и разбор ответа
 - [ ] typecheck / lint / knip / test / build — зелёные

@@ -18,6 +18,8 @@ const READ_METHODS = new Set([
   "hasSearchVolume"
 ])
 
+export const isReadMethod = (method: string): boolean => READ_METHODS.has(method)
+
 // Ответ-заглушка вместо настоящего: хендлер доходит до конца и не спотыкается о пустоту.
 const HELD_RESPONSE = { result: {} }
 
@@ -32,7 +34,7 @@ export async function runDryRun<T>(action: () => Promise<T>): Promise<{ output: 
 // Ответ-заглушка, если запрос отложен; undefined — запрос надо отправить.
 export function holdWrite(service: string, method: string, params: Record<string, unknown>): unknown {
   const requests = heldRequests.getStore()
-  if (!requests || READ_METHODS.has(method)) return undefined
+  if (!requests || isReadMethod(method)) return undefined
 
   requests.push({ service, method, params })
   return HELD_RESPONSE

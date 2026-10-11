@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Точка входа: поднимает сервер на stdio-транспорте и больше ничего не делает.
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+import { StdioServerTransport } from "@modelcontextprotocol/server/stdio"
 import { tools } from "#app/registry"
 import { createServer, readVersion } from "#app/server"
 

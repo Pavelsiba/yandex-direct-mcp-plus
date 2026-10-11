@@ -10,7 +10,12 @@ MCP-сервер (stdio) поверх API Яндекс.Директа v5: 59 и�
 
 Первая версия собрана на коде `theYahia/yandex-direct-mcp` (MIT, расширение до 48
 инструментов — DrSeedon, PR #7); дальше развивается самостоятельно, апстрим не
-отслеживается. Атрибуция — в `LICENSE` и README.
+отслеживается. Благодарность — в README.
+
+Лицензия — AGPL-3.0-only (версии до 1.7.0 — MIT). Код открыт, платный хостинг будет
+жить в отдельном закрытом репозитории и подключать этот пакет зависимостью. Владельца
+AGPL не связывает, пока код целиком его, поэтому чужой код в репозиторий попадает только
+с CLA — включая скопированные фрагменты под несовместимыми лицензиями.
 
 - Архитектура и инварианты — `docs/architecture.md`. Читать до того, как решать,
   куда класть новый код.
@@ -27,6 +32,7 @@ npm test             # vitest run --project unit (без сети)
 npm run test:watch
 npm run test:int     # сетевые тесты по боевому API — только осознанно
 npm run dev          # tsx src/app/index.ts, без сборки
+npm run dev:http     # удалённый сервер по HTTP из исходников (нужен YD_MCP_SECRET)
 npm run probe        # разовый скрипт с окружением: npm run probe -- <файл>.ts
 npm run lint         # biome check (формат + линт)
 npm run lint:fix     # biome check --write
@@ -34,6 +40,7 @@ npm run typecheck    # tsc --noEmit: src, тесты и конфиги
 npm run lint:dead    # knip
 npm run api:snapshot # WSDL → docs/api-v5.md (сеть, токен не нужен)
 npm run api:fields   # снимок → src/shared/config/api-fields.ts (офлайн)
+npm run docs:tools   # реестр → таблицы инструментов в README (офлайн)
 ```
 
 После правок исходников — `npm run build`: MCP-клиенты запускают собранный
@@ -84,7 +91,7 @@ src/
 **ID — строки, всегда.** 64-битные ID Директа (19 знаков) не помещаются в `Number`
 без потери точности. Наружу — десятичные строки через `idField`, внутрь — `BigInt`.
 `z.coerce` на ID-полях запрещён: он принял бы уже округлённое число и превратил его
-в правдоподобную строку. Разбор и сериализация JSON — только через `json-bigint` и
+в правдоподобную строку. Разбор и сериализация JSON — только через `parseJson`/`stringifyJson` и
 только в `shared/api`. Держит это GritQL-плагин Biome (`plugins/no-native-json.grit`);
 исключения помечены в самих файлах строкой `// biome-ignore-all lint/plugin`.
 Полный разбор — `docs/architecture.md`.
@@ -146,7 +153,7 @@ src/
 - `YANDEX_DIRECT_LOGIN` — Client-Login, нужен для агентских токенов.
 
 Локально значения живут в `.env` (закрыт `.gitignore`; образца нет, переменные
-перечислены таблицей в README).
+перечислены в README, раздел «Токен»).
 Читают его `npm run dev`, `npm start` и сервер из `.mcp.json` — все через флаг Node
 `--env-file-if-exists=.env`. Сам код `.env` не знает: `shared/config/env.ts` берёт
 только `process.env`, и это намеренно. Опубликованный пакет запускается MCP-клиентом
@@ -217,9 +224,7 @@ X» не является разрешением зафиксировать ре
   и `.json`, включая `.vscode`. JSONC он не портит — комментарии `tsconfig.json`
   переживают `format` побайтово, проверено. Правило `noQuickfixBiome` заодно
   ловит устаревшие имена действий в `.vscode/settings.json`.
-- Баг диалекта JSON Schema в `@modelcontextprotocol/sdk` (`mapMiniTarget` отдаёт
-  `draft-7` вместо `draft-2020-12`) ломает клиентов со строгой валидацией. Пробоем
-  03.09.2026 установлено, что от версии zod он не зависит: `draft-07` уходит и на
-  3.25.76 + SDK 1.29, и на 4.5.4 + SDK 1.30. Описания полей при этом доезжают —
-  и через `.meta({ description })`, и через легаси `.describe()`. При обновлении
-  SDK пробой повторять: поднять сервер, вызвать `listTools`, посмотреть `$schema`.
+- SDK — v2 (`@modelcontextprotocol/server`, в тестах `@modelcontextprotocol/client`),
+  не `@modelcontextprotocol/sdk` 1.x: в 1.x вплоть до 1.32.1 `tools/list` отдаёт
+  схемы в `draft-07` вместо `draft-2020-12`, и клиенты со строгой валидацией их
+  отклоняют. Диалект сторожит `app/server.unit.test.ts`.

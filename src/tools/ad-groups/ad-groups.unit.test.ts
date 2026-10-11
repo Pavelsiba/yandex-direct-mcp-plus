@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
 import { handleCreateAdGroup, handleDeleteAdGroups, handleListAdGroups } from "./handler.js"
+import { AD_GROUP_LIST_FIELDS, listAdGroupsSchema } from "./schema.js"
 
 installFetchMock()
 
@@ -18,6 +19,26 @@ describe("list_ad_groups", () => {
     await handleListAdGroups({ campaign_ids: ["1915016273214320641"] })
 
     expect(lastRawBody()).toContain('"CampaignIds":[1915016273214320641]')
+  })
+
+  it("по умолчанию запрашивает узкий набор полей", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AdGroups: [] } }))
+
+    await handleListAdGroups({ campaign_ids: ["123"] })
+
+    expect(lastBody().params.FieldNames).toEqual(AD_GROUP_LIST_FIELDS)
+  })
+
+  it("запрашивает поля, перечисленные в fields", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { AdGroups: [] } }))
+
+    await handleListAdGroups({ campaign_ids: ["123"], fields: ["Id", "NegativeKeywords", "TrackingParams"] })
+
+    expect(lastBody().params.FieldNames).toEqual(["Id", "NegativeKeywords", "TrackingParams"])
+  })
+
+  it("отклоняет поле, которого нет в AdGroupFieldEnum", () => {
+    expect(listAdGroupsSchema.safeParse({ campaign_ids: ["123"], fields: ["Bid"] }).success).toBe(false)
   })
 })
 
