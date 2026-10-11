@@ -42,6 +42,8 @@
     "dev": "tsx --env-file-if-exists=.env --conditions=development src/app/index.ts",
     "probe": "node --env-file-if-exists=.env --import tsx --conditions=development",
     "start": "node --env-file-if-exists=.env dist/app/index.js",
+    "dev:http": "tsx --env-file-if-exists=.env --conditions=development src/app/http.ts",
+    "start:http": "node --env-file-if-exists=.env dist/app/http.js",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
     "test:int": "node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run --project int",
@@ -56,6 +58,7 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
+    "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
     "zod": "^4.5.4"
   },

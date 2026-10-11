@@ -32,6 +32,7 @@ npm test             # vitest run --project unit (без сети)
 npm run test:watch
 npm run test:int     # сетевые тесты по боевому API — только осознанно
 npm run dev          # tsx src/app/index.ts, без сборки
+npm run dev:http     # удалённый сервер по HTTP из исходников (нужен YD_MCP_SECRET)
 npm run probe        # разовый скрипт с окружением: npm run probe -- <файл>.ts
 npm run lint         # biome check (формат + линт)
 npm run lint:fix     # biome check --write

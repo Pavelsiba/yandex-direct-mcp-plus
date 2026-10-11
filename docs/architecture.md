@@ -29,7 +29,10 @@ src/
     server.ts       создание McpServer, регистрация дескрипторов
     registry.ts     группы инструментов явными импортами
     readme.ts       таблицы инструментов для README из реестра
-    index.ts        точка входа (~20 строк)
+    index.ts        точка входа stdio (~20 строк)
+    http.ts         точка входа удалённого сервера (Streamable HTTP)
+    http-server.ts  HTTP без сессий: по McpServer на запрос, проверки Host и секрета
+    http-access.ts  настройки из окружения и проверка секрета — чистые функции
   tools/<домен>/  инструменты, сгруппированные по предметной области
     schema.ts       zod-контракт (граница snake_case → camelCase)
     handler.ts      сценарий
