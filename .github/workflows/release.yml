@@ -49,7 +49,7 @@ jobs:
       # (lib/get-git-auth-url.js). Пуш ушёл бы от github-actions, у которого bypass
       # в рулсетах нет, и упал бы на защите main.
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
@@ -60,7 +60,7 @@ jobs:
       # (об этом прямо предупреждает документация плагина). Аутентификацию несёт
       # переменная NPM_TOKEN на шаге Release, файл настройки для этого не нужен.
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -119,7 +119,7 @@ jobs:
       # в личном репозитории добавить нельзя — API отвечает, что интеграция
       # должна принадлежать источнику рулсета.
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: dev
           fetch-depth: 0
