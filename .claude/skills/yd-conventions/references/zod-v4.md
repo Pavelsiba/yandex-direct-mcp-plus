@@ -183,11 +183,8 @@ z.infer<typeof schema> / z.input<...> / z.output<...>
 
 ## Известная засада с JSON Schema
 
-`@modelcontextprotocol/sdk` отдаёт `$schema: draft-07` вместо `draft-2020-12`
-(`mapMiniTarget`), что ломает клиентов со строгой валидацией. Пробой 03.09.2026:
-**от версии zod не зависит** — `draft-07` уходит и на 3.25.76 + SDK 1.29, и на
-4.5.4 + SDK 1.30. Описания полей при этом доезжают: и через `.meta({ description })`,
-и через легаси `.describe()`.
-
-При обновлении SDK пробу повторять: поднять сервер, вызвать `listTools`, посмотреть
-`$schema`.
+`@modelcontextprotocol/sdk` 1.x отдаёт `$schema: draft-07` вместо `draft-2020-12`
+(`mapMiniTarget`), что ломает клиентов со строгой валидацией; от версии zod это не
+зависит. Поэтому проект на SDK v2 (`@modelcontextprotocol/server`), где схемы уходят
+в 2020-12. Описания полей доезжают через `.meta({ description })`. Диалект сторожит
+тест `app/server.unit.test.ts` — откат на 1.x его уронит.
