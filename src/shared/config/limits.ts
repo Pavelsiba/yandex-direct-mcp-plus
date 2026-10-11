@@ -5,6 +5,9 @@ export const REQUEST_TIMEOUT_MS = 15_000
 export const MAX_RETRIES = 3
 export const MAX_RETRY_DELAY_MS = 8_000
 
+// Сколько символов тела ответа показывать в тексте ошибки: HTML-заглушка иначе забила бы его.
+export const ERROR_BODY_PREVIEW_MAX = 300
+
 // Отчёт формируется офлайн: сервер отвечает 201/202 и просит повторить позже.
 export const REPORT_MAX_POLLS = 6
 export const REPORT_DEFAULT_RETRY_IN_SEC = 5

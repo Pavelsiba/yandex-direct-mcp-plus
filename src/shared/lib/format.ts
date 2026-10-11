@@ -19,7 +19,7 @@ const MONEY_KEYS = new Set([
   "Value"
 ])
 
-// Короткие ID json-bigint отдаёт числом, наружу ID всегда строка. Регистр значим:
+// ID в пределах Number.MAX_SAFE_INTEGER разбор отдаёт числом, наружу ID всегда строка. Регистр значим:
 // Bid и ContextBid кончаются на «id», без учёта регистра ставки стали бы строками.
 const ID_KEYS = /Ids?$/
 
