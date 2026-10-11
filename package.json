@@ -102,7 +102,7 @@
     "yandex-direct",
     "api"
   ],
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Pavelsiba/yandex-direct-mcp-plus.git"
