@@ -57,81 +57,95 @@ import { getStatisticsTool } from "#tools/statistics/tool"
 import { getTimeTargetingTool, setTimeTargetingTool } from "#tools/time-targeting/tool"
 import { deleteVcardsTool, listVcardsTool } from "#tools/vcards/tool"
 
-export const tools: readonly ToolDescriptor[] = [
-  // Кампании и стратегии
-  listCampaignsTool,
-  getCampaignTool,
-  createCampaignTool,
-  updateCampaignTool,
-  manageCampaignsTool,
-  getStrategyTool,
-  setStrategyTool,
-  setPriorityGoalsTool,
-  getTimeTargetingTool,
-  setTimeTargetingTool,
+// Группы — данные, а не комментарии: по ним собираются таблицы инструментов в README
+// (npm run docs:tools), и раскладка в реестре с документацией не расходится.
+export type ToolGroup = { readonly title: string; readonly tools: readonly ToolDescriptor[] }
 
-  // Группы объявлений
-  listAdGroupsTool,
-  createAdGroupTool,
-  deleteAdGroupsTool,
+export const toolGroups: readonly ToolGroup[] = [
+  {
+    title: "Кампании и стратегии",
+    tools: [
+      listCampaignsTool,
+      getCampaignTool,
+      createCampaignTool,
+      updateCampaignTool,
+      manageCampaignsTool,
+      getStrategyTool,
+      setStrategyTool,
+      setPriorityGoalsTool,
+      getTimeTargetingTool,
+      setTimeTargetingTool
+    ]
+  },
+  {
+    title: "Группы объявлений",
+    tools: [listAdGroupsTool, createAdGroupTool, deleteAdGroupsTool]
+  },
+  {
+    title: "Объявления",
+    tools: [listAdsTool, createTextAdTool, updateTextAdTool, manageAdsTool, moderateAdsTool]
+  },
+  {
+    title: "Ключевые фразы и ставки",
+    tools: [
+      listKeywordsTool,
+      addKeywordsTool,
+      updateKeywordsTool,
+      manageKeywordsTool,
+      setKeywordBidsTool,
+      getKeywordAuctionTool
+    ]
+  },
+  {
+    title: "Минус-фразы",
+    tools: [
+      getCampaignNegativeKeywordsTool,
+      setCampaignNegativeKeywordsTool,
+      setAdGroupNegativeKeywordsTool,
+      listNegativeKeywordSharedSetsTool,
+      manageNegativeKeywordSharedSetsTool,
+      linkNegativeKeywordSetsTool
+    ]
+  },
+  {
+    title: "Ассеты объявления",
+    tools: [
+      listSitelinksTool,
+      setSitelinksTool,
+      deleteSitelinksTool,
+      listAdExtensionsTool,
+      addAdExtensionsTool,
+      deleteAdExtensionsTool,
+      manageAdImagesTool,
+      listVcardsTool,
+      deleteVcardsTool
+    ]
+  },
+  {
+    title: "Таргетинг и корректировки",
+    tools: [
+      listAudienceTargetsTool,
+      setAudienceTargetsTool,
+      listDynamicTargetsTool,
+      manageDynamicTargetsTool,
+      listRetargetingListsTool,
+      addRetargetingListTool,
+      updateRetargetingListsTool,
+      deleteRetargetingListsTool,
+      getBidAdjustmentsTool,
+      addBidAdjustmentsTool,
+      setBidAdjustmentsTool,
+      deleteBidAdjustmentsTool
+    ]
+  },
+  {
+    title: "Отчёты",
+    tools: [getStatisticsTool, getSearchQueriesTool]
+  },
+  {
+    title: "Аккаунт и справочники",
+    tools: [getAccountBalanceTool, listBusinessesTool, getChangesTool, listFeedsTool, getRegionsTool, listTimeZonesTool]
+  }
+].map((group) => ({ ...group, tools: group.tools.map(withDryRun) }))
 
-  // Объявления
-  listAdsTool,
-  createTextAdTool,
-  updateTextAdTool,
-  manageAdsTool,
-  moderateAdsTool,
-
-  // Ключевые фразы и ставки
-  listKeywordsTool,
-  addKeywordsTool,
-  updateKeywordsTool,
-  manageKeywordsTool,
-  setKeywordBidsTool,
-  getKeywordAuctionTool,
-
-  // Минус-фразы
-  getCampaignNegativeKeywordsTool,
-  setCampaignNegativeKeywordsTool,
-  setAdGroupNegativeKeywordsTool,
-  listNegativeKeywordSharedSetsTool,
-  manageNegativeKeywordSharedSetsTool,
-  linkNegativeKeywordSetsTool,
-
-  // Ассеты объявления
-  listSitelinksTool,
-  setSitelinksTool,
-  deleteSitelinksTool,
-  listAdExtensionsTool,
-  addAdExtensionsTool,
-  deleteAdExtensionsTool,
-  manageAdImagesTool,
-  listVcardsTool,
-  deleteVcardsTool,
-
-  // Таргетинг и корректировки
-  listAudienceTargetsTool,
-  setAudienceTargetsTool,
-  listDynamicTargetsTool,
-  manageDynamicTargetsTool,
-  listRetargetingListsTool,
-  addRetargetingListTool,
-  updateRetargetingListsTool,
-  deleteRetargetingListsTool,
-  getBidAdjustmentsTool,
-  addBidAdjustmentsTool,
-  setBidAdjustmentsTool,
-  deleteBidAdjustmentsTool,
-
-  // Отчёты
-  getStatisticsTool,
-  getSearchQueriesTool,
-
-  // Аккаунт и справочники
-  getAccountBalanceTool,
-  listBusinessesTool,
-  getChangesTool,
-  listFeedsTool,
-  getRegionsTool,
-  listTimeZonesTool
-].map(withDryRun)
+export const tools: readonly ToolDescriptor[] = toolGroups.flatMap((group) => group.tools)

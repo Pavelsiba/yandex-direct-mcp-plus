@@ -7,7 +7,7 @@
       "@semantic-release/changelog",
       {
         "changelogFile": "CHANGELOG.md",
-        "changelogTitle": "# Changelog\n\nИстория до отделения от апстрима (версии 3.0.0–5.0.0, проект\n`theYahia/yandex-direct-mcp`) — в\n[docs/CHANGELOG-upstream.md](docs/CHANGELOG-upstream.md)."
+        "changelogTitle": "# Changelog"
       }
     ],
     [
