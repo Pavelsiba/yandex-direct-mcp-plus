@@ -76,6 +76,10 @@ npm run build
 
 В конфиге клиента вместо `npx` тогда стоит `"command": "node"`, а в `args` — абсолютный путь к `dist/app/index.js`.
 
+### Удалённый сервер
+
+Тот же сервер можно поднять по HTTP на своей машине — в Docker, за nginx с HTTPS — и подключаться к нему по адресу из claude.ai, с телефона или из Claude Desktop без установки Node. Вход закрыт секретом. Настройка — [docs/deploy.md](docs/deploy.md).
+
 ## Токен
 
 OAuth-токен выпускается для приложения, зарегистрированного в [Яндекс OAuth](https://oauth.yandex.ru/), с доступом к API Директа. Подробности — [регистрация приложения и получение токена](https://yandex.ru/dev/direct/doc/ru/token). Доступ к API нужно [запросить в интерфейсе Директа](https://yandex.ru/dev/direct/doc/ru/access-request) — заявку рассматривают от часа до нескольких суток.

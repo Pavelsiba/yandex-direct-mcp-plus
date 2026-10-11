@@ -1,0 +1,10 @@
+# В контекст сборки — только то, что нужно Dockerfile. Окружение с токеном не уезжает
+# в образ ни при каких условиях.
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.build.json
+!src
+src/**/*.test.ts
+src/testing
