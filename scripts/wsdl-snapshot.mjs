@@ -53,8 +53,12 @@ const OUT = "docs/api-v5.md"
 
 async function fetchXml(url, label) {
   const response = await fetch(url)
-  if (!response.ok) throw new Error(`${label}: HTTP ${response.status}`)
-  return response.text()
+  // Балансировщик Директа при недоступности отвечает 204 без тела, а 204 для fetch — ok:
+  // без этой проверки пустой ответ ушёл бы в снимок как «у сервиса ничего нет».
+  if (response.status !== 200) throw new Error(`${label}: HTTP ${response.status}`)
+  const xml = await response.text()
+  if (!xml.includes("<xsd:schema")) throw new Error(`${label}: в ответе нет XML-схемы`)
+  return xml
 }
 
 const fetchWsdl = (service) => fetchXml(`https://api.direct.yandex.com/v5/${service}?wsdl`, service)
@@ -120,6 +124,7 @@ let enumCount = 0
 
 for (const service of SERVICES) {
   const wsdl = await fetchWsdl(service)
+  if (operations(wsdl).length === 0) throw new Error(`${service}: в WSDL нет ни одного метода`)
   const rendered = renderService(service, wsdl)
   enumCount += enumerations(wsdl).length
   body.push(...rendered)
@@ -128,6 +133,7 @@ for (const service of SERVICES) {
 
 const general = await fetchXml(GENERAL_XSD, "general.xsd")
 const generalEnums = enumerations(general)
+if (generalEnums.length === 0) throw new Error("general.xsd: ни одного перечисления")
 enumCount += generalEnums.length
 body.push("## general.xsd", "", "Общие типы, импортируемые всеми сервисами. Методов нет.", "")
 for (const { name, values } of generalEnums) {
