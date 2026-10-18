@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   assertNoApiError,
   assertNoApiErrorV4,
+  assertNoHttpErrorBody,
   assertNoReportAuthError,
   DirectApiError,
   isTransientApiError
@@ -121,5 +122,11 @@ describe("разбор ошибок Директа", () => {
   it("пропускает прочие коды Reports", () => {
     expect(() => assertNoReportAuthError(REPORT_ERROR_XML(9000))).not.toThrow()
     expect(() => assertNoReportAuthError("")).not.toThrow()
+  })
+
+  it("тело HTTP-ошибки без ключа error или не JSON оставляет транспорту", () => {
+    expect(() => assertNoHttpErrorBody("Bad Request")).not.toThrow()
+    expect(() => assertNoHttpErrorBody(REPORT_ERROR_XML(9000))).not.toThrow()
+    expect(() => assertNoHttpErrorBody('{"result":{}}')).not.toThrow()
   })
 })
