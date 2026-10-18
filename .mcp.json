@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "yandex-direct": {
-      "command": "node",
-      "args": ["--env-file-if-exists=.env", "./dist/app/index.js"]
-    }
-  }
-}

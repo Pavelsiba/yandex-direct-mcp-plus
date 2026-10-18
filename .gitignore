@@ -31,9 +31,13 @@ yarn-error.log*
 !.vscode/settings.json
 !.vscode/extensions.json
 
-# Claude Code — локальное, у каждого своё
+# Агентская разработка — локальная, в репозиторий не попадает
+CLAUDE.md
 CLAUDE.local.md
-.claude/settings.local.json
+AGENTS.md
+.claude/
+.mcp.json
+docs/agents/
 
 # ОС
 .DS_Store
