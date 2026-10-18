@@ -8,6 +8,10 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    # Свежий релиз action — самое уязвимое место цепочки поставок: подменённую
+    # версию обычно отзывают в первые дни. Неделя выдержки это окно пропускает.
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]

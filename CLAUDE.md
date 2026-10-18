@@ -38,6 +38,8 @@ npm run lint         # biome check (формат + линт)
 npm run lint:fix     # biome check --write
 npm run typecheck    # tsc --noEmit: src, тесты и конфиги
 npm run lint:dead    # knip
+npm run lint:workflows # actionlint + zizmor по .github
+npm run lint:secrets # gitleaks по всей истории, с --redact
 npm run api:snapshot # WSDL → docs/api-v5.md (сеть, токен не нужен)
 npm run api:fields   # снимок → src/shared/config/api-fields.ts (офлайн)
 npm run docs:tools   # реестр → таблицы инструментов в README (офлайн)
@@ -215,6 +217,11 @@ X» не является разрешением зафиксировать ре
   срабатывает на `process.env`, написанном внутри файла. Сужать запрет ради этого нельзя:
   каждое исключение — карман для обхода, один такой (вырезка `--env-file` перед проверкой)
   05.09.2026 уже сработал. Чинится приёмом, а не шаблоном.
+- gitleaks, actionlint, zizmor и shellcheck — не npm-пакеты, `npm ci` их не ставит, а
+  хуки `secrets`/`workflows` без них валят коммит. Ставятся из winget (`Gitleaks.Gitleaks`,
+  `rhysd.actionlint`, `zizmor.zizmor`, `koalaman.shellcheck`); без режима разработчика
+  winget не создаёт ссылки в `WinGet\Links`, и каталоги пакетов приходится вписать в `PATH`
+  руками. Версии держать равными закреплённым в `ci.yml`.
 - Линтер и форматтер — **Biome**, не ESLint. Причина: `typescript-eslint` не
   поддерживает TypeScript 7 («does not support TS 7.0»), а его пир `<6.1.0` сидит
   в `@typescript-eslint/parser` и `typescript-estree`, так что подменой пакета это

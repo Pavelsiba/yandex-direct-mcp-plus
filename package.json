@@ -52,6 +52,8 @@
     "lint": "biome check",
     "lint:fix": "biome check --write",
     "lint:dead": "knip",
+    "lint:workflows": "actionlint && zizmor --no-progress .github",
+    "lint:secrets": "gitleaks git --redact --verbose --no-banner",
     "api:snapshot": "node scripts/wsdl-snapshot.mjs",
     "api:fields": "node scripts/api-fields.mjs",
     "docs:tools": "node --import tsx --conditions=development scripts/readme-tools.mjs",

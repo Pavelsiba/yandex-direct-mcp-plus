@@ -4,8 +4,12 @@ name: Release
 # (workflow_run) и работает лишь при его успехе и событии push, то есть после
 # мерджа PR из dev. Прогоны CI на pull_request отфильтрованы условием на event.
 # workflow_dispatch оставлен для ручного запуска, когда релиз надо догнать.
+#
+# workflow_run опасен, когда исполняет код из PR форка с правами базового репо.
+# Здесь чужого кода нет: триггер сужен до main, условие требует event == push,
+# а checkout явно берёт ref: main — то есть уже влитое.
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: ["CI"]
     types:
       - completed
@@ -117,8 +121,9 @@ jobs:
     steps:
       # Тем же PAT: на dev висит ci-required, а bypass для github-actions
       # в личном репозитории добавить нельзя — API отвечает, что интеграция
-      # должна принадлежать источнику рулсета.
-      - name: Checkout
+      # должна принадлежать источнику рулсета. Креды PAT остаются в checkout
+      # намеренно — ими идёт git push ниже; артефактов джоба не выгружает.
+      - name: Checkout # zizmor: ignore[artipacked]
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: dev
