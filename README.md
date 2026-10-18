@@ -244,8 +244,23 @@ npm test             # юнит-тесты, сеть подменена
 npm run lint         # Biome: формат и линт
 npm run typecheck    # типы в src, тестах и конфигах
 npm run lint:dead    # knip: неиспользуемый код и зависимости
+npm run lint:workflows # actionlint + zizmor: корректность и безопасность workflow
+npm run lint:secrets # gitleaks по всей истории
 npm run docs:tools   # таблицы инструментов в README из реестра
 ```
+
+gitleaks, actionlint, zizmor и shellcheck — не npm-пакеты; без них хуки pre-commit
+не пропустят коммит. На Windows:
+
+```powershell
+winget install -e --id Gitleaks.Gitleaks
+winget install -e --id rhysd.actionlint
+winget install -e --id zizmor.zizmor
+winget install -e --id koalaman.shellcheck
+```
+
+Без режима разработчика winget не создаёт ссылки в `%LOCALAPPDATA%\Microsoft\WinGet\Links`,
+и каталоги пакетов из `%LOCALAPPDATA%\Microsoft\WinGet\Packages` придётся добавить в `PATH`.
 
 Таблицы инструментов выше руками не правятся: после смены описания инструмента — `npm run docs:tools`, иначе юнит-тест покажет расхождение.
 
