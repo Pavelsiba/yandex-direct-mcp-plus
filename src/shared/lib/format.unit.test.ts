@@ -1,6 +1,55 @@
 // biome-ignore-all lint/plugin: тест разбирает собственный вывод форматтера
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import { formatResult, hasItemErrors } from "#shared/lib/format"
+import { FUNDS_MONEY_KEYS, formatResult, hasItemErrors, MONEY_KEYS } from "#shared/lib/format"
+
+// Поля xsd:long, которые не деньги: ID и счётчики. ID опознаются по окончанию, остальное — поимённо.
+const NOT_MONEY = new Set([
+  "Clicks",
+  "ClicksPerWeek",
+  "Impressions",
+  "InterestKey",
+  "Items",
+  "Limit",
+  "LimitedBy",
+  "NumberOfItems",
+  "NumberOfListings",
+  "Offset",
+  "Position",
+  "Weight",
+  // Стратегия ROI: коэффициент и процент, не суммы в валюте.
+  "Profitability",
+  "RoiCoef"
+])
+
+function longFieldsFromSnapshot(markdown: string): string[] {
+  const sections = [...markdown.matchAll(/^### Поля xsd:long\n\n(.+)$/gm)]
+  return [...new Set(sections.flatMap((section) => [...section[1].matchAll(/`([^`]+)`/g)].map((m) => m[1])))]
+}
+
+describe("денежные ключи", () => {
+  const longFields = longFieldsFromSnapshot(readFileSync("docs/api-v5.md", "utf8"))
+
+  it("снимок WSDL содержит поля xsd:long — иначе проверке не на чем стоять", () => {
+    expect(longFields.length).toBeGreaterThan(50)
+  })
+
+  it("каждое поле xsd:long из WSDL отнесено к деньгам или не-деньгам", () => {
+    const unclassified = longFields.filter(
+      (name) => !/Ids?$/.test(name) && !MONEY_KEYS.has(name) && !FUNDS_MONEY_KEYS.has(name) && !NOT_MONEY.has(name)
+    )
+    expect(unclassified).toEqual([])
+  })
+
+  it("переводит в рубли бюджет на обучение стратегии", () => {
+    const output = JSON.parse(
+      formatResult({ result: { ExplorationBudget: { MinimumExplorationBudget: 500_000_000 }, AverageCpa: 1_500_000 } })
+    )
+
+    expect(output.result.ExplorationBudget.MinimumExplorationBudget).toBe(500)
+    expect(output.result.AverageCpa).toBe(1.5)
+  })
+})
 
 describe("formatResult", () => {
   it("переводит денежные поля из микроединиц в рубли", () => {

@@ -22,7 +22,7 @@ export const listKeywordsTool = defineTool({
   name: "list_keywords",
   title: "Список ключевых слов",
   description:
-    "Ключевые фразы в группах объявлений: фразы, ставки (руб), статусы. По умолчанию возвращается узкий набор полей; нужны другие (StatisticsSearch, StatisticsNetwork, Productivity, ServingStatus и прочие из KeywordFieldEnum) — перечислите их в fields.",
+    "Ключевые фразы в группах объявлений: фразы, ставки (руб), статусы. По умолчанию возвращается узкий набор полей; нужны другие (StatisticsSearch, StatisticsNetwork, Productivity, ServingStatus и прочие из KeywordFieldEnum) — перечислите их в fields. Автотаргетинг — спецфраза ---autotargeting в той же группе; его категории запросов — с autotargeting: true.",
   annotations: READ,
   schema: listKeywordsSchema,
   handler: handleListKeywords
@@ -41,7 +41,9 @@ export const updateKeywordsTool = defineTool({
   name: "update_keywords",
   title: "Изменить ключевые слова",
   description:
-    "Изменить текст ключевых фраз и подстановочные переменные {param1}/{param2}. Правка текста может привести к появлению фразы с новым ID или к её удалению как дубликата — сверьтесь с list_keywords после вызова. Ставки меняет set_keyword_bids, статус — manage_keywords.",
+    "Изменить текст ключевых фраз, подстановочные переменные {param1}/{param2} и настройки автотаргетинга. Правка текста может привести к появлению фразы с новым ID или к её удалению как дубликата — сверьтесь с list_keywords после вызова. " +
+    "Автотаргетинг — фраза ---autotargeting: её ID берётся из list_keywords, категории запросов и брендов задаются autotargeting_categories / autotargeting_brand_options. Выключить автотаргетинг целиком — manage_keywords с suspend (delete Директ отбивает). " +
+    "Ставки меняет set_keyword_bids, статус — manage_keywords.",
   annotations: WRITE,
   schema: updateKeywordsSchema,
   handler: handleUpdateKeywords
@@ -61,8 +63,10 @@ export const getKeywordAuctionTool = defineTool({
   title: "Аукцион по фразам",
   description:
     "Сколько стоит трафик по фразам: текущие ставки и торги на поиске и в сетях. Всё в рублях. На поиске " +
-    "Search.AuctionBids — для каждого объёма трафика (TrafficVolume, %: 100 — максимум, доступный фразе) " +
-    "Bid — сколько поставить и Price — сколько спишется за клик; в сетях Network.Coverage — ставка под долю " +
+    "Search.AuctionBids — для каждого объёма трафика фразы TrafficVolume Bid — сколько поставить и Price — " +
+    "сколько спишется за клик. Объём трафика — индекс кликабельности места показа: 100 — первое место " +
+    "премиум-показов, следующие места — 85, 75, 65; выше 100 — места кликабельнее первого, например показ в " +
+    "расширенном формате. В сетях Network.Coverage — ставка под долю " +
     "аудитории (Probability, %). Отбор по одному уровню: фразы, группы или кампании. Торги видны при любой " +
     "стратегии, но ставкой управляются только при ручной: на автостратегии (WB_*, AVERAGE_CPA, AVERAGE_CPC и " +
     "прочие) ставки назначает Директ. Стратегию кампании проверяйте через get_strategy.",

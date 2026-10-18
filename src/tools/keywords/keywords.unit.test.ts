@@ -14,7 +14,8 @@ import {
   getKeywordAuctionSchema,
   listKeywordsSchema,
   setAutoKeywordBidsSchema,
-  setKeywordBidsSchema
+  setKeywordBidsSchema,
+  updateKeywordsSchema
 } from "./schema.js"
 
 installFetchMock()
@@ -56,6 +57,34 @@ describe("list_keywords", () => {
     const parsed = listKeywordsSchema.safeParse({ ad_group_ids: ["1"], fields: ["Id", "Productvity"] })
 
     expect(parsed.success).toBe(false)
+  })
+
+  it("с autotargeting запрашивает все категории и бренды отдельными списками", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Keywords: [] } }))
+
+    await handleListKeywords({ ad_group_ids: ["1"], autotargeting: true })
+
+    const { params } = lastBody()
+    expect(params.AutotargetingSettingsCategoriesFieldNames).toEqual([
+      "Exact",
+      "Narrow",
+      "Alternative",
+      "Accessory",
+      "Broader"
+    ])
+    expect(params.AutotargetingSettingsBrandOptionsFieldNames).toEqual([
+      "WithoutBrands",
+      "WithAdvertiserBrand",
+      "WithCompetitorsBrand"
+    ])
+  })
+
+  it("без autotargeting настройки автотаргетинга не запрашивает", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { Keywords: [] } }))
+
+    await handleListKeywords({ ad_group_ids: ["1"] })
+
+    expect(lastBody().params).not.toHaveProperty("AutotargetingSettingsCategoriesFieldNames")
   })
 
   it("схема не принимает пустой список полей", () => {
@@ -108,6 +137,87 @@ describe("update_keywords", () => {
   it("не ходит в сеть, когда менять нечего", async () => {
     await expect(handleUpdateKeywords({ keywords: [{ keyword_id: "222" }] })).rejects.toThrow("222")
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it("собирает AutotargetingSettings из категорий и брендов", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    const params = updateKeywordsSchema.parse({
+      keywords: [
+        {
+          keyword_id: "333",
+          autotargeting_categories: {
+            exact: "YES",
+            narrow: "YES",
+            alternative: "NO",
+            accessory: "NO",
+            broader: "NO"
+          },
+          autotargeting_brand_options: {
+            without_brands: "YES",
+            with_advertiser_brand: "YES",
+            with_competitors_brand: "NO"
+          }
+        }
+      ]
+    })
+    await handleUpdateKeywords(params)
+
+    expect(lastBody().params.Keywords).toEqual([
+      {
+        Id: 333,
+        AutotargetingSettings: {
+          Categories: { Exact: "YES", Narrow: "YES", Alternative: "NO", Accessory: "NO", Broader: "NO" },
+          BrandOptions: { WithoutBrands: "YES", WithAdvertiserBrand: "YES", WithCompetitorsBrand: "NO" }
+        }
+      }
+    ])
+  })
+
+  it("отправляет одни бренды без категорий", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    await handleUpdateKeywords({
+      keywords: [
+        {
+          keyword_id: "333",
+          autotargeting_brand_options: {
+            without_brands: "YES",
+            with_advertiser_brand: "NO",
+            with_competitors_brand: "NO"
+          }
+        }
+      ]
+    })
+
+    expect(lastBody().params.Keywords[0].AutotargetingSettings).toEqual({
+      BrandOptions: { WithoutBrands: "YES", WithAdvertiserBrand: "NO", WithCompetitorsBrand: "NO" }
+    })
+  })
+
+  it("схема не принимает неполный набор категорий", () => {
+    const parsed = updateKeywordsSchema.safeParse({
+      keywords: [{ keyword_id: "333", autotargeting_categories: { exact: "YES", broader: "NO" } }]
+    })
+
+    expect(parsed.success).toBe(false)
+  })
+
+  it("схема не принимает значение флага вне YES/NO", () => {
+    const parsed = updateKeywordsSchema.safeParse({
+      keywords: [
+        {
+          keyword_id: "333",
+          autotargeting_brand_options: {
+            without_brands: "yes",
+            with_advertiser_brand: "NO",
+            with_competitors_brand: "NO"
+          }
+        }
+      ]
+    })
+
+    expect(parsed.success).toBe(false)
   })
 })
 

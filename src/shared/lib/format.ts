@@ -6,12 +6,46 @@ import { isRecord } from "#shared/lib/record"
 
 // Только заведомо денежные ключи, иначе в рубли уехали бы счётчики и ID. Value — ценность
 // цели: конвертируются только числа, строковые Value из Settings (YES/NO) не трогаются.
-const MONEY_KEYS = new Set(["Amount", "Bid", "ContextBid", "WeeklySpendLimit", "BidCeiling", "Price", "Value"])
+// Полноту по полям xsd:long из снимка WSDL сторожит format.unit.test.ts.
+export const MONEY_KEYS = new Set([
+  "Amount",
+  "AverageCpa",
+  "AverageCpc",
+  "AverageCpi",
+  "AverageCpm",
+  "AverageCpv",
+  "Bid",
+  "BidCeiling",
+  "CompetitorsBids",
+  "ContextBid",
+  "Cpa",
+  "CurrentSearchPrice",
+  "FilterAverageCpa",
+  "FilterAverageCpc",
+  "MaxBid",
+  "MinimumExplorationBudget",
+  "MinSearchPrice",
+  "NetworkBid",
+  "OldPrice",
+  "Price",
+  "SearchBid",
+  "SpendLimit",
+  "Value",
+  "WeeklyBudgetRollover",
+  "WeeklySpendLimit"
+])
 
 // Средства кампании (CampaignFunds, SharedAccountFunds). Имена слишком общие для
 // глобального списка, поэтому в рубли они переводятся только под ключом Funds.
 const FUNDS_KEY = "Funds"
-const FUNDS_MONEY_KEYS = new Set(["Sum", "Balance", "BalanceBonus", "SumAvailableForTransfer", "Refund", "Spend"])
+export const FUNDS_MONEY_KEYS = new Set([
+  "Sum",
+  "Balance",
+  "BalanceBonus",
+  "SumAvailableForTransfer",
+  "Refund",
+  "Spend"
+])
 
 // ID в пределах Number.MAX_SAFE_INTEGER разбор отдаёт числом, наружу ID всегда строка. Регистр значим:
 // Bid и ContextBid кончаются на «id», без учёта регистра ставки стали бы строками.

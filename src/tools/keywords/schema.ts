@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
-import { AUCTION_PLACEMENTS, KEYWORD_ACTIONS } from "#shared/config/enums"
+import { AUCTION_PLACEMENTS, KEYWORD_ACTIONS, YES_NO } from "#shared/config/enums"
 import {
   AUTO_BID_RANGES,
   BID_TARGET_LIMITS,
@@ -31,6 +31,10 @@ export const listKeywordsSchema = z.object({
     .check(z.minLength(1, { error: "Укажите хотя бы одну группу" }))
     .meta({ description: "Группы, ключевые фразы которых нужно выбрать" }),
   fields: fieldsField(API_FIELDS.keywords.KeywordFieldEnum, KEYWORD_LIST_FIELDS),
+  autotargeting: z.boolean().optional().meta({
+    description:
+      "true — добавить к ответу AutotargetingSettings: категории запросов и брендов у фразы ---autotargeting (YES/NO). У обычных фраз поле пустое"
+  }),
   ...pageFields
 })
 
@@ -58,14 +62,42 @@ const userParam = (variable: string) =>
     .optional()
     .meta({ description: `Значение подстановочной переменной {${variable}} в ссылке объявления; null очищает` })
 
+const flag = (description: string) => z.literal(YES_NO).meta({ description })
+
+// Все флаги обязательны: результат не зависит от того, заменяет ли Директ набор целиком.
+const autotargetingCategories = z
+  .object({
+    exact: flag("Целевые запросы — прямо описывают товар из объявления"),
+    narrow: flag("Узкие запросы — товар с уточнениями"),
+    alternative: flag("Альтернативные запросы — замена товара"),
+    accessory: flag("Сопутствующие запросы — товары, которые берут вместе с этим"),
+    broader: flag("Широкие запросы — общая потребность, под которую подходит товар")
+  })
+  .optional()
+  .meta({
+    description:
+      "Категории запросов автотаргетинга, все пять сразу. Только для фразы ---autotargeting; текущие значения — list_keywords с autotargeting: true"
+  })
+
+const autotargetingBrandOptions = z
+  .object({
+    without_brands: flag("Запросы без упоминания брендов"),
+    with_advertiser_brand: flag("Запросы с брендом рекламодателя"),
+    with_competitors_brand: flag("Запросы с брендами конкурентов")
+  })
+  .optional()
+  .meta({ description: "Запросы с брендами и без, все три флага сразу. Только для фразы ---autotargeting" })
+
 const keywordUpdate = z.object({
-  keyword_id: idField("ID изменяемой ключевой фразы"),
+  keyword_id: idField("ID изменяемой ключевой фразы или автотаргетинга"),
   keyword: keywordText.optional().meta({
     description:
       "Новый текст фразы: не больше 7 слов без учёта стоп- и минус-слов, каждое слово до 35 символов. Директ может завести на месте изменённой фразы новую (с другим ID) или удалить её как дубликат уже существующей; у автотаргетинга текст не меняется вовсе"
   }),
   user_param1: userParam("param1"),
-  user_param2: userParam("param2")
+  user_param2: userParam("param2"),
+  autotargeting_categories: autotargetingCategories,
+  autotargeting_brand_options: autotargetingBrandOptions
 })
 
 export const updateKeywordsSchema = z.object({
@@ -145,7 +177,7 @@ export const setAutoKeywordBidsSchema = z.object({
     .object({
       traffic_volume: percentField(
         AUTO_BID_RANGES.trafficVolume,
-        "Желаемый объём трафика на поиске: 100 — максимум, доступный фразе"
+        "Желаемый объём трафика на поиске: 100 — как на первом месте премиум-показов; выше 100 правилом не задать"
       ),
       increase_percent: increasePercent,
       bid_ceiling: rublesField("Потолок ставки на поиске в рублях").optional()

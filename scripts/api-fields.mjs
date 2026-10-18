@@ -34,7 +34,8 @@ function parseFieldEnums(markdown) {
       continue
     }
 
-    const enumMatch = line.match(/^### (\w+FieldEnum)$/)
+    // \w*: у reports.xsd перечисление называется просто FieldEnum.
+    const enumMatch = line.match(/^### (\w*FieldEnum)$/)
     if (enumMatch) {
       enumName = enumMatch[1]
       continue

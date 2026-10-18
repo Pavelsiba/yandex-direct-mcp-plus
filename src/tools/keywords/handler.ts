@@ -49,10 +49,37 @@ const PLACEMENT_FIELDS = {
   network: { key: "NetworkFieldNames", fields: API_FIELDS.keywordbids.KeywordBidNetworkFieldEnum }
 } as const
 
+// Имена флагов AutotargetingSettings: satisfies не пустит имя, которого нет в general.xsd.
+const CATEGORY_FIELDS = {
+  exact: "Exact",
+  narrow: "Narrow",
+  alternative: "Alternative",
+  accessory: "Accessory",
+  broader: "Broader"
+} as const satisfies Record<string, FieldOf<"general.xsd", "AutotargetingCategoriesFieldEnum">>
+
+const BRAND_OPTION_FIELDS = {
+  without_brands: "WithoutBrands",
+  with_advertiser_brand: "WithAdvertiserBrand",
+  with_competitors_brand: "WithCompetitorsBrand"
+} as const satisfies Record<string, FieldOf<"general.xsd", "AutotargetingBrandOptionsFieldEnum">>
+
+function toApiFlags<TKey extends string>(
+  flags: Record<TKey, string>,
+  names: Record<TKey, string>
+): Record<string, string> {
+  return Object.fromEntries(Object.entries<string>(flags).map(([key, value]) => [names[key as TKey], value]))
+}
+
 export async function handleListKeywords(params: z.infer<typeof listKeywordsSchema>): Promise<string> {
   const requestParams: Record<string, unknown> = {
     SelectionCriteria: { AdGroupIds: apiIds(params.ad_group_ids) },
     FieldNames: params.fields ?? KEYWORD_LIST_FIELDS
+  }
+  // Настройки автотаргетинга запрашиваются своими списками, а не через FieldNames.
+  if (params.autotargeting) {
+    requestParams.AutotargetingSettingsCategoriesFieldNames = Object.values(CATEGORY_FIELDS)
+    requestParams.AutotargetingSettingsBrandOptionsFieldNames = Object.values(BRAND_OPTION_FIELDS)
   }
   const page = buildPage(params)
   if (page) requestParams.Page = page
@@ -75,6 +102,15 @@ function buildKeywordUpdate(update: KeywordUpdate): Record<string, unknown> {
   if (update.keyword !== undefined) item.Keyword = update.keyword
   if (update.user_param1 !== undefined) item.UserParam1 = update.user_param1
   if (update.user_param2 !== undefined) item.UserParam2 = update.user_param2
+
+  const settings: Record<string, unknown> = {}
+  if (update.autotargeting_categories) {
+    settings.Categories = toApiFlags(update.autotargeting_categories, CATEGORY_FIELDS)
+  }
+  if (update.autotargeting_brand_options) {
+    settings.BrandOptions = toApiFlags(update.autotargeting_brand_options, BRAND_OPTION_FIELDS)
+  }
+  if (Object.keys(settings).length > 0) item.AutotargetingSettings = settings
 
   if (Object.keys(item).length === 1) {
     throw new Error(`Для фразы ${update.keyword_id} не передано ни одного изменения.`)
