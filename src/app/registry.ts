@@ -1,6 +1,5 @@
 // Реестр инструментов: единственный список, который знает про все домены сразу.
 // Импорты явные, не глоб: glob прячет инструмент от knip и ломает типизацию списка.
-import { withDryRun } from "#app/dry-run"
 import type { ToolDescriptor } from "#shared/lib/tool"
 import { getAccountBalanceTool } from "#tools/account/tool"
 import { addAdExtensionsTool, deleteAdExtensionsTool, listAdExtensionsTool } from "#tools/ad-extensions/tool"
@@ -146,6 +145,6 @@ export const toolGroups: readonly ToolGroup[] = [
     title: "Аккаунт и справочники",
     tools: [getAccountBalanceTool, listBusinessesTool, getChangesTool, listFeedsTool, getRegionsTool, listTimeZonesTool]
   }
-].map((group) => ({ ...group, tools: group.tools.map(withDryRun) }))
+]
 
 export const tools: readonly ToolDescriptor[] = toolGroups.flatMap((group) => group.tools)

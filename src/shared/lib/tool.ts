@@ -32,7 +32,9 @@ export function defineTool<Schema extends z.ZodObject>(tool: ToolInput<Schema>):
     title: tool.title,
     description: tool.description,
     annotations: tool.annotations,
-    schema: tool.schema,
+    // Незнакомый параметр — ошибка, а не тишина: срезанный ключ (опечатка, снятый dry_run)
+    // молча превратил бы вызов в другой.
+    schema: tool.schema.strict(),
     // Без parse: SDK уже провалидировал этой схемой, повторный .transform умножил бы
     // рубли на миллион дважды.
     run: (params: unknown) => tool.handler(params as z.infer<Schema>)
