@@ -47,6 +47,15 @@ export const KEYWORD_TEXT_MAX = 4_096
 export const KEYWORD_USER_PARAM_MAX = 255
 export const MAX_KEYWORDS_PER_UPDATE = 1_000
 
+// Пакет ставок KeywordBids.set/setAuto: предел свой для каждого уровня целей.
+export const BID_TARGET_LIMITS = { campaigns: 10, adGroups: 1_000, keywords: 10_000 } as const
+// Правило setAuto, проценты: объём трафика на поиске, доля аудитории в сетях, надбавка.
+export const AUTO_BID_RANGES = {
+  trafficVolume: { min: 5, max: 100 },
+  coverage: { min: 1, max: 100 },
+  increasePercent: { min: 0, max: 1_000 }
+} as const
+
 // Коэффициент корректировки, проценты.
 export const BID_MODIFIER_RANGE = { min: 0, max: 1300 } as const
 export const MAX_ADJUSTMENTS_PER_CALL = 1_000

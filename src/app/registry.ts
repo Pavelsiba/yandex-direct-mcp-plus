@@ -33,6 +33,7 @@ import {
   getKeywordAuctionTool,
   listKeywordsTool,
   manageKeywordsTool,
+  setAutoKeywordBidsTool,
   setKeywordBidsTool,
   updateKeywordsTool
 } from "#tools/keywords/tool"
@@ -92,6 +93,7 @@ export const toolGroups: readonly ToolGroup[] = [
       updateKeywordsTool,
       manageKeywordsTool,
       setKeywordBidsTool,
+      setAutoKeywordBidsTool,
       getKeywordAuctionTool
     ]
   },
