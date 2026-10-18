@@ -97,7 +97,8 @@ export const AD_IMAGE_TYPES = ["REGULAR", "WIDE", "FIXED_IMAGE", "AUTO"] as cons
 
 export const AD_IMAGE_ACTIONS = ["add", "get", "delete"] as const
 
-export const ASSOCIATED_FLAGS = ["YES", "NO"] as const
+// YesNoEnum из general.xsd.
+export const YES_NO = ["YES", "NO"] as const
 
 export const RETARGETING_TYPES = ["RETARGETING", "AUDIENCE"] as const
 export const RETARGETING_RULE_OPERATORS = ["ALL", "ANY", "NONE"] as const

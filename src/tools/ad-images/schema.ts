@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { AD_IMAGE_ACTIONS, AD_IMAGE_TYPES, ASSOCIATED_FLAGS } from "#shared/config/enums"
+import { AD_IMAGE_ACTIONS, AD_IMAGE_TYPES, YES_NO } from "#shared/config/enums"
 import { AD_IMAGE_NAME_MAX, MAX_IDS_PER_CALL, MAX_IMAGES_PER_CALL } from "#shared/config/limits"
 import { pageFields } from "#shared/lib/pagination"
 
@@ -42,7 +42,7 @@ export const manageAdImagesSchema = z.object({
     .optional()
     .meta({ description: "Хеши изображений: фильтр при action=get, обязателен при action=delete" }),
   associated: z
-    .literal(ASSOCIATED_FLAGS)
+    .literal(YES_NO)
     .optional()
     .meta({ description: "Фильтр при action=get: YES — только привязанные к объявлениям, NO — только свободные" }),
   ...pageFields
