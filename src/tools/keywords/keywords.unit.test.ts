@@ -1,15 +1,21 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса; проверка ID сравнивает сырую строку
 import { beforeEach, describe, expect, it } from "vitest"
-import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
+import { installFetchMock, lastRawBody, lastRequestUrl, mockFetch, okResponse } from "#testing/fetch-mock"
 import {
   handleAddKeywords,
   handleGetKeywordAuction,
   handleListKeywords,
   handleManageKeywords,
+  handleSetAutoKeywordBids,
   handleSetKeywordBids,
   handleUpdateKeywords
 } from "./handler.js"
-import { getKeywordAuctionSchema, listKeywordsSchema, setKeywordBidsSchema } from "./schema.js"
+import {
+  getKeywordAuctionSchema,
+  listKeywordsSchema,
+  setAutoKeywordBidsSchema,
+  setKeywordBidsSchema
+} from "./schema.js"
 
 installFetchMock()
 
@@ -122,54 +128,127 @@ describe("set_keyword_bids", () => {
   beforeEach(() => mockFetch.mockReset())
 
   it("требует ровно один уровень целей", async () => {
-    const params = setKeywordBidsSchema.parse({ bid: 30 })
+    const params = setKeywordBidsSchema.parse({ search_bid: 30 })
     await expect(handleSetKeywordBids(params)).rejects.toThrow("ровно один уровень")
 
-    const twoLevels = setKeywordBidsSchema.parse({ keyword_ids: ["123"], campaign_ids: ["456"], bid: 30 })
+    const twoLevels = setKeywordBidsSchema.parse({ keyword_ids: ["123"], campaign_ids: ["456"], search_bid: 30 })
     await expect(handleSetKeywordBids(twoLevels)).rejects.toThrow("ровно один уровень")
 
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it("называет поле ставки по уровню целей", async () => {
+  it("ставит ставки через KeywordBids с полем по уровню целей", async () => {
     mockFetch.mockResolvedValue(okResponse({ result: { SetResults: [] } }))
 
-    await handleSetKeywordBids(setKeywordBidsSchema.parse({ ad_group_ids: ["123"], bid: 30 }))
-    expect(lastBody().params.Bids[0].AdGroupId).toBe(123)
+    await handleSetKeywordBids(setKeywordBidsSchema.parse({ ad_group_ids: ["1915016273214320641"], search_bid: 30 }))
+    expect(lastRequestUrl()).toMatch(/\/keywordbids$/)
+    expect(lastBody().method).toBe("set")
+    expect(lastRawBody()).toContain('"KeywordBids":[{"AdGroupId":1915016273214320641')
 
-    await handleSetKeywordBids(setKeywordBidsSchema.parse({ campaign_ids: ["456"], bid: 30 }))
-    expect(lastBody().params.Bids[0].CampaignId).toBe(456)
+    await handleSetKeywordBids(setKeywordBidsSchema.parse({ campaign_ids: ["456"], search_bid: 30 }))
+    expect(lastBody().params.KeywordBids[0].CampaignId).toBe(456)
   })
 
   it("конвертирует рубли в микроединицы схемой, а не хендлером", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { SetResults: [] } }))
-    const params = setKeywordBidsSchema.parse({ keyword_ids: ["123"], bid: 12.5, context_bid: 7 })
+    const params = setKeywordBidsSchema.parse({ keyword_ids: ["123"], search_bid: 12.5, network_bid: 7 })
 
     await handleSetKeywordBids(params)
 
-    expect(lastBody().params.Bids[0]).toMatchObject({ Bid: 12_500_000, ContextBid: 7_000_000 })
+    expect(lastBody().params.KeywordBids[0]).toEqual({ KeywordId: 123, SearchBid: 12_500_000, NetworkBid: 7_000_000 })
   })
 
-  it("отказывается ставить ставку, не получив ни одной суммы", async () => {
+  it("переводит флаг автоставки автотаргетинга в YES/NO и принимает его без суммы", async () => {
+    mockFetch.mockResolvedValue(okResponse({ result: { SetResults: [] } }))
+
+    await handleSetKeywordBids(setKeywordBidsSchema.parse({ keyword_ids: ["123"], autotargeting_auto_bid: true }))
+    expect(lastBody().params.KeywordBids[0]).toEqual({ KeywordId: 123, AutotargetingSearchBidIsAuto: "YES" })
+
+    await handleSetKeywordBids(setKeywordBidsSchema.parse({ keyword_ids: ["123"], autotargeting_auto_bid: false }))
+    expect(lastBody().params.KeywordBids[0].AutotargetingSearchBidIsAuto).toBe("NO")
+  })
+
+  it("отказывается ставить ставку, не получив ни одного значения", async () => {
     const params = setKeywordBidsSchema.parse({ keyword_ids: ["123"] })
 
-    await expect(handleSetKeywordBids(params)).rejects.toThrow("bid и/или context_bid")
+    await expect(handleSetKeywordBids(params)).rejects.toThrow("search_bid, network_bid")
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it("схема не пропускает пакет кампаний сверх лимита Директа", () => {
+    const campaignIds = Array.from({ length: 11 }, (_, index) => String(index + 1))
+
+    expect(setKeywordBidsSchema.safeParse({ campaign_ids: campaignIds, search_bid: 30 }).success).toBe(false)
+  })
+})
+
+describe("set_auto_keyword_bids", () => {
+  beforeEach(() => mockFetch.mockReset())
+
+  it("собирает правило поиска и сетей с надбавкой и потолком в микроединицах", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { SetAutoResults: [] } }))
+    const params = setAutoKeywordBidsSchema.parse({
+      ad_group_ids: ["1915016273214320641"],
+      search: { traffic_volume: 75, increase_percent: 10, bid_ceiling: 40 },
+      network: { coverage: 50 }
+    })
+
+    await handleSetAutoKeywordBids(params)
+
+    expect(lastRequestUrl()).toMatch(/\/keywordbids$/)
+    expect(lastBody().method).toBe("setAuto")
+    expect(lastRawBody()).toContain('"AdGroupId":1915016273214320641')
+    expect(lastBody().params.KeywordBids[0].BiddingRule).toEqual({
+      SearchByTrafficVolume: { TargetTrafficVolume: 75, IncreasePercent: 10, BidCeiling: 40_000_000 },
+      NetworkByCoverage: { TargetCoverage: 50 }
+    })
+  })
+
+  it("отказывается без правила и без уровня целей, не ходя в сеть", async () => {
+    await expect(handleSetAutoKeywordBids(setAutoKeywordBidsSchema.parse({ keyword_ids: ["1"] }))).rejects.toThrow(
+      "search и/или network"
+    )
+    await expect(
+      handleSetAutoKeywordBids(setAutoKeywordBidsSchema.parse({ search: { traffic_volume: 100 } }))
+    ).rejects.toThrow("ровно один уровень")
+
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it("схема держит проценты в диапазонах Директа", () => {
+    const parse = (search: Record<string, number>) =>
+      setAutoKeywordBidsSchema.safeParse({ keyword_ids: ["1"], search }).success
+
+    expect(parse({ traffic_volume: 5 })).toBe(true)
+    expect(parse({ traffic_volume: 4 })).toBe(false)
+    expect(parse({ traffic_volume: 100, increase_percent: 1001 })).toBe(false)
+    expect(parse({ traffic_volume: 50.5 })).toBe(false)
   })
 })
 
 describe("get_keyword_auction", () => {
   beforeEach(() => mockFetch.mockReset())
 
-  it("отбирает по уровню целей именем множественного числа", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ result: { Bids: [] } }))
+  it("запрашивает торги обеих площадок через KeywordBids по уровню целей", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { KeywordBids: [] } }))
 
     await handleGetKeywordAuction(getKeywordAuctionSchema.parse({ campaign_ids: ["1915016273214320641"] }))
 
+    expect(lastRequestUrl()).toMatch(/\/keywordbids$/)
     expect(lastBody().method).toBe("get")
     expect(lastRawBody()).toContain('"CampaignIds":[1915016273214320641]')
-    expect(lastBody().params.FieldNames).toContain("AuctionBids")
-    expect(lastBody().params.FieldNames).toContain("MinSearchPrice")
+    expect(lastBody().params.FieldNames).not.toContain("StrategyPriority")
+    expect(lastBody().params.SearchFieldNames).toContain("AuctionBids")
+    expect(lastBody().params.NetworkFieldNames).toContain("Coverage")
+  })
+
+  it("не спрашивает поля площадки, которую не выбрали", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { KeywordBids: [] } }))
+
+    await handleGetKeywordAuction(getKeywordAuctionSchema.parse({ keyword_ids: ["1"], placements: ["search"] }))
+
+    expect(lastBody().params.SearchFieldNames).toBeDefined()
+    expect(lastBody().params).not.toHaveProperty("NetworkFieldNames")
   })
 
   it("требует ровно один уровень целей", async () => {
@@ -178,21 +257,20 @@ describe("get_keyword_auction", () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  // Лесенка приходит микроединицами, а CompetitorsBids — голым массивом чисел: без
-  // переноса ключа вглубь массива ставки конкурентов остались бы в микроединицах.
-  it("переводит в рубли всю аукционную выдачу, включая ставки конкурентов", async () => {
+  it("переводит в рубли ставки и торги обеих площадок, проценты оставляет числами", async () => {
     mockFetch.mockResolvedValueOnce(
       okResponse({
         result: {
-          Bids: [
+          KeywordBids: [
             {
               KeywordId: 1234567890,
-              Bid: 300000,
-              MinSearchPrice: 300000,
-              CurrentSearchPrice: null,
-              CompetitorsBids: [45100000, 9700000],
-              AuctionBids: [{ Position: "P11", Bid: 45100000, Price: 16000000 }],
-              SearchPrices: [{ Position: "PREMIUMFIRST", Price: 45100000 }]
+              ServingStatus: "ELIGIBLE",
+              Search: {
+                Bid: 300000,
+                AutotargetingSearchBidIsAuto: "NO",
+                AuctionBids: { AuctionBidItems: [{ TrafficVolume: 100, Bid: 45100000, Price: 16000000 }] }
+              },
+              Network: { Bid: 7000000, Coverage: { CoverageItems: [{ Probability: 62.5, Bid: 3200000 }] } }
             }
           ]
         }
@@ -202,14 +280,12 @@ describe("get_keyword_auction", () => {
     const output = JSON.parse(
       await handleGetKeywordAuction(getKeywordAuctionSchema.parse({ keyword_ids: ["1234567890"] }))
     )
-    const bid = output.result.Bids[0]
+    const bid = output.result.KeywordBids[0]
 
-    expect(bid.Bid).toBe(0.3)
-    expect(bid.MinSearchPrice).toBe(0.3)
-    expect(bid.CurrentSearchPrice).toBeNull()
-    expect(bid.CompetitorsBids).toEqual([45.1, 9.7])
-    expect(bid.AuctionBids[0]).toEqual({ Position: "P11", Bid: 45.1, Price: 16 })
-    expect(bid.SearchPrices[0]).toEqual({ Position: "PREMIUMFIRST", Price: 45.1 })
     expect(bid.KeywordId).toBe("1234567890")
+    expect(bid.Search.Bid).toBe(0.3)
+    expect(bid.Search.AuctionBids.AuctionBidItems[0]).toEqual({ TrafficVolume: 100, Bid: 45.1, Price: 16 })
+    expect(bid.Network.Bid).toBe(7)
+    expect(bid.Network.Coverage.CoverageItems[0]).toEqual({ Probability: 62.5, Bid: 3.2 })
   })
 })

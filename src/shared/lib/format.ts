@@ -6,18 +6,7 @@ import { isRecord } from "#shared/lib/record"
 
 // Только заведомо денежные ключи, иначе в рубли уехали бы счётчики и ID. Value — ценность
 // цели: конвертируются только числа, строковые Value из Settings (YES/NO) не трогаются.
-const MONEY_KEYS = new Set([
-  "Amount",
-  "Bid",
-  "ContextBid",
-  "WeeklySpendLimit",
-  "BidCeiling",
-  "Price",
-  "CurrentSearchPrice",
-  "MinSearchPrice",
-  "CompetitorsBids",
-  "Value"
-])
+const MONEY_KEYS = new Set(["Amount", "Bid", "ContextBid", "WeeklySpendLimit", "BidCeiling", "Price", "Value"])
 
 // Средства кампании (CampaignFunds, SharedAccountFunds). Имена слишком общие для
 // глобального списка, поэтому в рубли они переводятся только под ключом Funds.

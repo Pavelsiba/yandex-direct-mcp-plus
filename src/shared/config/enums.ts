@@ -8,6 +8,9 @@ export const CAMPAIGN_STATUSES = ["ACCEPTED", "DRAFT", "MODERATION", "REJECTED"]
 
 export const KEYWORD_ACTIONS = ["suspend", "resume", "delete"] as const
 
+// Площадки торгов KeywordBids.get: каждая — свой набор полей (SearchFieldNames, NetworkFieldNames).
+export const AUCTION_PLACEMENTS = ["search", "network"] as const
+
 export const AD_ACTIONS = ["suspend", "resume", "archive", "unarchive", "moderate", "delete"] as const
 
 export const AD_STATES = ["ON", "OFF", "OFF_BY_MONITORING", "SUSPENDED", "ARCHIVED"] as const

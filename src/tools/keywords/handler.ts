@@ -1,6 +1,6 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
-import type { FieldOf } from "#shared/config/api-fields"
+import { API_FIELDS, type FieldOf } from "#shared/config/api-fields"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
@@ -9,6 +9,7 @@ import type {
   getKeywordAuctionSchema,
   listKeywordsSchema,
   manageKeywordsSchema,
+  setAutoKeywordBidsSchema,
   setKeywordBidsSchema,
   updateKeywordsSchema
 } from "./schema.js"
@@ -32,23 +33,21 @@ function selectBidTarget(params: BidTargetParams): BidTarget {
   return targets[0]
 }
 
-// AuctionBids — позиции кодами P11–P24, SearchPrices — словами; у фразы без показов
-// CurrentSearchPrice и ContextCoverage бывают null.
-const AUCTION_FIELDS: FieldOf<"bids", "BidFieldEnum">[] = [
+// StrategyPriority не запрашивается: Директ его больше не использует, а в выдаче он читался бы
+// как рычаг автостратегии.
+const AUCTION_FIELDS: FieldOf<"keywordbids", "KeywordBidFieldEnum">[] = [
   "KeywordId",
-  "CampaignId",
   "AdGroupId",
-  "Bid",
-  "ContextBid",
-  "CurrentSearchPrice",
-  "MinSearchPrice",
-  "AuctionBids",
-  "CompetitorsBids",
-  "SearchPrices",
-  "ContextCoverage",
-  "ServingStatus",
-  "StrategyPriority"
+  "CampaignId",
+  "ServingStatus"
 ]
+
+// Поля площадки запрашиваются только для выбранных: AuctionBids и Coverage справка запрещает
+// спрашивать у кампании, где показы на этой площадке выключены.
+const PLACEMENT_FIELDS = {
+  search: { key: "SearchFieldNames", fields: API_FIELDS.keywordbids.KeywordBidSearchFieldEnum },
+  network: { key: "NetworkFieldNames", fields: API_FIELDS.keywordbids.KeywordBidNetworkFieldEnum }
+} as const
 
 export async function handleListKeywords(params: z.infer<typeof listKeywordsSchema>): Promise<string> {
   const requestParams: Record<string, unknown> = {
@@ -95,19 +94,55 @@ export async function handleManageKeywords(params: z.infer<typeof manageKeywords
   return formatResult(data)
 }
 
+function buildBidValues(params: z.infer<typeof setKeywordBidsSchema>): Record<string, unknown> {
+  const { search_bid, network_bid, autotargeting_auto_bid } = params
+  const values: Record<string, unknown> = {}
+  if (search_bid !== undefined) values.SearchBid = search_bid
+  if (network_bid !== undefined) values.NetworkBid = network_bid
+  if (autotargeting_auto_bid !== undefined) values.AutotargetingSearchBidIsAuto = autotargeting_auto_bid ? "YES" : "NO"
+
+  if (Object.keys(values).length === 0) {
+    throw new Error("Укажите search_bid, network_bid (в рублях) и/или autotargeting_auto_bid.")
+  }
+  return values
+}
+
 export async function handleSetKeywordBids(params: z.infer<typeof setKeywordBidsSchema>): Promise<string> {
   const target = selectBidTarget(params)
+  const values = buildBidValues(params)
 
-  if (params.bid === undefined && params.context_bid === undefined) {
-    throw new Error("Укажите bid и/или context_bid (в рублях).")
+  const bids = target.ids.map((id) => ({ [target.field]: apiId(id), ...values }))
+  return formatResult(await apiPost("keywordbids", "set", { KeywordBids: bids }))
+}
+
+type AutoBidRule = { increase_percent?: number; bid_ceiling?: number }
+
+// Необязательные части правила не отправляются вовсе: пропущенная надбавка у Директа значит «без надбавки».
+function ruleExtras({ increase_percent, bid_ceiling }: AutoBidRule): Record<string, number> {
+  const extras: Record<string, number> = {}
+  if (increase_percent !== undefined) extras.IncreasePercent = increase_percent
+  if (bid_ceiling !== undefined) extras.BidCeiling = bid_ceiling
+  return extras
+}
+
+function buildBiddingRule(params: z.infer<typeof setAutoKeywordBidsSchema>): Record<string, unknown> {
+  const { search, network } = params
+  const rule: Record<string, unknown> = {}
+  if (search) rule.SearchByTrafficVolume = { TargetTrafficVolume: search.traffic_volume, ...ruleExtras(search) }
+  if (network) rule.NetworkByCoverage = { TargetCoverage: network.coverage, ...ruleExtras(network) }
+
+  if (Object.keys(rule).length === 0) {
+    throw new Error("Укажите правило search и/или network.")
   }
+  return rule
+}
 
-  const amounts: Record<string, number> = {}
-  if (params.bid !== undefined) amounts.Bid = params.bid
-  if (params.context_bid !== undefined) amounts.ContextBid = params.context_bid
+export async function handleSetAutoKeywordBids(params: z.infer<typeof setAutoKeywordBidsSchema>): Promise<string> {
+  const target = selectBidTarget(params)
+  const rule = buildBiddingRule(params)
 
-  const bids = target.ids.map((id) => ({ [target.field]: apiId(id), ...amounts }))
-  return formatResult(await apiPost("bids", "set", { Bids: bids }))
+  const bids = target.ids.map((id) => ({ [target.field]: apiId(id), BiddingRule: rule }))
+  return formatResult(await apiPost("keywordbids", "setAuto", { KeywordBids: bids }))
 }
 
 export async function handleGetKeywordAuction(params: z.infer<typeof getKeywordAuctionSchema>): Promise<string> {
@@ -117,8 +152,12 @@ export async function handleGetKeywordAuction(params: z.infer<typeof getKeywordA
     SelectionCriteria: { [target.criterion]: apiIds(target.ids) },
     FieldNames: AUCTION_FIELDS
   }
+  for (const placement of params.placements) {
+    const { key, fields } = PLACEMENT_FIELDS[placement]
+    requestParams[key] = [...fields]
+  }
   const page = buildPage(params)
   if (page) requestParams.Page = page
 
-  return formatResult(await apiPost("bids", "get", requestParams))
+  return formatResult(await apiPost("keywordbids", "get", requestParams))
 }
