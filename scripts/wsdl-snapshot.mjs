@@ -7,8 +7,8 @@
 //
 // Запуск: npm run api:snapshot
 //
-// Разбор регулярками, а не XML-парсером, намеренно: нужны два узких среза — операции и
-// перечисления, — и ради них тянуть зависимость в проект не стоит.
+// Разбор регулярками, а не XML-парсером, намеренно: нужны узкие срезы — операции,
+// перечисления и имена полей xsd:long, — и ради них тянуть зависимость в проект не стоит.
 
 import { writeFileSync } from "node:fs"
 
@@ -80,20 +80,35 @@ function enumerations(wsdl) {
   return result.sort((a, b) => a.name.localeCompare(b.name))
 }
 
+// Деньги в v5 — xsd:long в микроединицах, но тем же типом идут ID и счётчики. Список имён
+// держит format.unit.test.ts: каждое должно быть явно отнесено к деньгам или не-деньгам,
+// иначе новое денежное поле уйдёт наружу микроединицами.
+function longFields(xml) {
+  const found = new Set()
+  for (const match of xml.matchAll(/<xsd:element\b[^>]*>/g)) {
+    const name = match[0].match(/\bname="([^"]+)"/)?.[1]
+    if (name && /\btype="xsd:long"/.test(match[0])) found.add(name)
+  }
+  return [...found].sort()
+}
+
+function renderLongFields(xml) {
+  const names = longFields(xml)
+  return names.length ? ["### Поля xsd:long", "", names.map((name) => `\`${name}\``).join(", "), ""] : []
+}
+
 function renderService(service, wsdl) {
   const lines = [`## ${service}`, ""]
   const ops = operations(wsdl)
   lines.push(`Методы: ${ops.length ? ops.map((op) => `\`${op}\``).join(", ") : "—"}`, "")
 
   const enums = enumerations(wsdl)
-  if (enums.length === 0) {
-    lines.push("Перечислений нет.", "")
-    return lines
-  }
+  if (enums.length === 0) lines.push("Перечислений нет.", "")
 
   for (const { name, values } of enums) {
     lines.push(`### ${name}`, "", values.map((value) => `\`${value}\``).join(", "), "")
   }
+  lines.push(...renderLongFields(wsdl))
   return lines
 }
 
@@ -139,6 +154,7 @@ body.push("## general.xsd", "", "Общие типы, импортируемые
 for (const { name, values } of generalEnums) {
   body.push(`### ${name}`, "", values.map((value) => `\`${value}\``).join(", "), "")
 }
+body.push(...renderLongFields(general))
 console.error("✔ general.xsd")
 
 header.splice(4, 0, `Сервисов: ${SERVICES.length} плюс общий \`general.xsd\`. Перечислений: ${enumCount}.`, "")
