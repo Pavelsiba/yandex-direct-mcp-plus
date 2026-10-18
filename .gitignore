@@ -38,6 +38,8 @@ AGENTS.md
 .claude/
 .mcp.json
 docs/agents/
+# Одноразовые пробы API: внутри репозитория работают подпути #shared/*
+.scratch/
 
 # ОС
 .DS_Store
