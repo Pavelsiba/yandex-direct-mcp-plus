@@ -2,11 +2,13 @@
 
 Сгенерировано `npm run api:snapshot` 2026-10-18. **Руками не править** — перезапишется.
 
-Сервисов: 27 плюс общий `general.xsd`. Перечислений: 216.
+Сервисов: 27 плюс `reports.xsd` и общий `general.xsd`. Перечислений: 221.
 
 Первоисточник допустимых значений: `xsd:enumeration` в WSDL сервиса, а не страницы
 справочника — те отдают неполные списки. WSDL доступен без токена:
 `curl -s "https://api.direct.yandex.com/v5/<service>?wsdl"`.
+
+За сервисами идёт `reports.xsd` — спецификация отчёта ReportService, у которого нет WSDL.
 
 Последним разделом идёт `general.xsd` — общие типы, импортируемые всеми сервисами.
 Перечисления оттуда (пол, возраст, платёжеспособность, раскладка выдачи) в WSDL
@@ -957,6 +959,30 @@
 ### Поля xsd:long
 
 `CampaignId`, `Id`, `MetroStationId`
+
+## reports
+
+Схема спецификации отчёта (`reports.xsd`), WSDL у сервиса нет.
+
+### DateRangeTypeEnum
+
+`ALL_TIME`, `AUTO`, `CUSTOM_DATE`, `LAST_14_DAYS`, `LAST_30_DAYS`, `LAST_365_DAYS`, `LAST_3_DAYS`, `LAST_5_DAYS`, `LAST_7_DAYS`, `LAST_90_DAYS`, `LAST_BUSINESS_WEEK`, `LAST_MONTH`, `LAST_WEEK`, `LAST_WEEK_SUN_SAT`, `THIS_MONTH`, `THIS_WEEK_MON_TODAY`, `THIS_WEEK_SUN_TODAY`, `TODAY`, `YESTERDAY`
+
+### FieldEnum
+
+`AdFormat`, `AdGroupId`, `AdGroupName`, `AdId`, `AdNetworkType`, `AdUrl`, `Age`, `AudienceTargetId`, `AutotargetingBrandOption`, `AvgClickPosition`, `AvgCpc`, `AvgCpm`, `AvgEffectiveBid`, `AvgImpressionFrequency`, `AvgImpressionPosition`, `AvgPageviews`, `AvgTrafficVolume`, `AvgVideoCompleteCost`, `BounceRate`, `Bounces`, `CPV`, `CampaignId`, `CampaignName`, `CampaignType`, `CampaignUrlPath`, `CarrierType`, `ClickType`, `Clicks`, `ClientLogin`, `ConversionRate`, `Conversions`, `Cost`, `CostPerConversion`, `Criteria`, `CriteriaId`, `CriteriaType`, `Criterion`, `CriterionId`, `CriterionType`, `Ctr`, `Date`, `Device`, `DynamicTextAdTargetId`, `ExternalNetworkName`, `Gender`, `GoalsRoi`, `ImpressionReach`, `ImpressionShare`, `Impressions`, `IncomeGrade`, `Keyword`, `LocationOfPresenceId`, `LocationOfPresenceName`, `MatchType`, `MatchedKeyword`, `MobilePlatform`, `Month`, `OfferUrl`, `Placement`, `Profit`, `PurchaseGoals`, `PurchaseGoalsRoi`, `PurchaseProfit`, `PurchaseRevenue`, `Quarter`, `Query`, `Revenue`, `RlAdjustmentId`, `Sessions`, `Slot`, `SmartAdTargetId`, `SmartBannerFilterId`, `SocialMediaLink`, `SocialMediaName`, `TargetingCategory`, `TargetingLocationId`, `TargetingLocationName`, `VideoComplete`, `VideoCompleteRate`, `VideoFirstQuartile`, `VideoFirstQuartileRate`, `VideoMidpoint`, `VideoMidpointRate`, `VideoThirdQuartile`, `VideoThirdQuartileRate`, `VideoViews`, `VideoViewsRate`, `Views`, `Week`, `WeightedCtr`, `WeightedImpressions`, `Year`
+
+### FilterOperatorEnum
+
+`DOES_NOT_START_WITH_ALL_IGNORE_CASE`, `DOES_NOT_START_WITH_IGNORE_CASE`, `EQUALS`, `GREATER_THAN`, `IN`, `LESS_THAN`, `NOT_EQUALS`, `NOT_IN`, `STARTS_WITH_ANY_IGNORE_CASE`, `STARTS_WITH_IGNORE_CASE`
+
+### FormatEnum
+
+`TSV`
+
+### ReportTypeEnum
+
+`ACCOUNT_PERFORMANCE_REPORT`, `ADGROUP_PERFORMANCE_REPORT`, `AD_PERFORMANCE_REPORT`, `CAMPAIGN_PERFORMANCE_REPORT`, `CRITERIA_PERFORMANCE_REPORT`, `CUSTOM_REPORT`, `REACH_AND_FREQUENCY_PERFORMANCE_REPORT`, `SEARCH_QUERY_PERFORMANCE_REPORT`
 
 ## general.xsd
 

@@ -6,6 +6,18 @@ import { API_FIELDS } from "./api-fields.js"
 // UNKNOWN бывает только в ответе.
 export const CAMPAIGN_STATUSES = ["ACCEPTED", "DRAFT", "MODERATION", "REJECTED"] as const
 
+// ReportTypeEnum из reports.xsd без SEARCH_QUERY_PERFORMANCE_REPORT: поисковые запросы
+// строит отдельный инструмент со своими полями по умолчанию.
+export const STATISTICS_REPORT_TYPES = [
+  "CAMPAIGN_PERFORMANCE_REPORT",
+  "ADGROUP_PERFORMANCE_REPORT",
+  "AD_PERFORMANCE_REPORT",
+  "CRITERIA_PERFORMANCE_REPORT",
+  "ACCOUNT_PERFORMANCE_REPORT",
+  "CUSTOM_REPORT",
+  "REACH_AND_FREQUENCY_PERFORMANCE_REPORT"
+] as const
+
 export const KEYWORD_ACTIONS = ["suspend", "resume", "delete"] as const
 
 // Площадки торгов KeywordBids.get: каждая — свой набор полей (SearchFieldNames, NetworkFieldNames).
