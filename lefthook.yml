@@ -38,6 +38,19 @@ pre-commit:
       glob: "{src/**/*.ts,package.json,knip.json}"
       run: npm run lint:dead
 
+    # Секреты — до того, как попадут в историю: 03.09.2026 боевой токен уехал в
+    # .mcp.json именно коммитом. Смотрит только индекс, поэтому быстро и всегда.
+    # --redact обязателен: без него находка печатается в терминал целиком.
+    - name: secrets
+      skip_empty: false
+      run: gitleaks git --pre-commit --staged --redact --verbose --no-banner
+
+    # actionlint — корректность workflow (ключи, выражения, shellcheck по run:),
+    # zizmor — их безопасность (права, креды, триггеры). Пересекаются слабо.
+    - name: workflows
+      glob: ".github/**/*.yml"
+      run: npm run lint:workflows
+
 commit-msg:
   jobs:
     - name: commitlint
