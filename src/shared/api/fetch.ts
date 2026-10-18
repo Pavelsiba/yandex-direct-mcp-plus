@@ -1,5 +1,5 @@
 // Транспорт: заголовки, повторы, таймаут. Знает про HTTP и токен, не знает про домен.
-import { assertNoReportAuthError } from "#shared/api/errors"
+import { assertNoHttpErrorBody, assertNoReportAuthError } from "#shared/api/errors"
 import { parseJson } from "#shared/api/json"
 import { getClientLogin, getToken } from "#shared/config/env"
 import { ERROR_BODY_PREVIEW_MAX, MAX_RETRIES, MAX_RETRY_DELAY_MS, REQUEST_TIMEOUT_MS } from "#shared/config/limits"
@@ -87,6 +87,7 @@ export async function fetchWithRetry(url: string, options: RequestInit = {}, ret
 
       const body = await response.text().catch(() => "")
       assertNoReportAuthError(body)
+      assertNoHttpErrorBody(body)
       throw new Error(`HTTP ${response.status}: ${response.statusText}. ${previewBody(body)}`)
     } catch (error) {
       clearTimeout(timer)

@@ -1,33 +1,42 @@
-// post-checkout: локальные файлы агентской разработки переживают смену ветки.
+// post-checkout, post-merge, post-rewrite: локальные файлы агентской разработки переживают
+// смену ветки, pull и rebase.
 //
 // Они в .gitignore, но в старых коммитах отслеживались. Переход на такой коммит молча
-// перезаписывает их версией из git, переход обратно — удаляет с диска. Последняя локальная
-// версия лежит в <git-dir>/agent-files и обновляется после каждого переключения, где файлы
-// не отслеживаются. Удалённое хук возвращает оттуда, о перезаписанном — предупреждает.
+// перезаписывает их версией из git, переход обратно — удаляет с диска; fast-forward в pull
+// удаляет так же, как переключение, но post-checkout не вызывает. Последняя локальная версия
+// лежит в <git-dir>/agent-files и обновляется после каждого события, где файлы не
+// отслеживаются. Удалённое хук возвращает оттуда, о перезаписанном — предупреждает.
 //
-// Запуск — lefthook, аргументы git: <прежний HEAD> <новый HEAD> <1 — смена ветки>.
+// Запуск — lefthook: <checkout|merge|rewrite>, у checkout следом аргументы git
+// <прежний HEAD> <новый HEAD> <1 — смена ветки>.
 
 import { execFileSync } from "node:child_process"
-import { cpSync, existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs"
+import { dirname, join } from "node:path"
 
 const PATHS = ["CLAUDE.md", ".mcp.json", ".claude"]
 
-const [previous, , branchSwitch] = process.argv.slice(2)
-if (branchSwitch !== "1") process.exit(0)
+const [event, ...gitArgs] = process.argv.slice(2)
+if (event === "checkout" && gitArgs[2] !== "1") process.exit(0)
+// amend файлов не трогает и ORIG_HEAD не обновляет: по устаревшему хук вернул бы удалённое руками.
+if (event === "rewrite" && gitArgs[0] === "amend") process.exit(0)
+// merge и rebase прежний HEAD не передают, но оставляют его в ORIG_HEAD.
+const previous = event === "checkout" ? gitArgs[0] : "ORIG_HEAD"
 
 const git = (...args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
 
 // В worktree .git — файл, поэтому каталог берётся у git, а не склеивается руками.
 const BACKUP = join(git("rev-parse", "--git-dir").trim(), "agent-files")
 
-function trackedAt(ref, path) {
+function trackedFiles(ref, path) {
   try {
-    return git("ls-tree", "-r", "--name-only", ref, "--", path).trim() !== ""
+    return git("ls-tree", "-r", "--name-only", ref, "--", path).split("\n").filter(Boolean)
   } catch {
-    return false
+    return []
   }
 }
+
+const trackedAt = (ref, path) => trackedFiles(ref, path).length > 0
 
 function files(path) {
   if (!existsSync(path)) return []
@@ -50,21 +59,27 @@ function differs(path) {
 for (const path of PATHS) {
   const backup = join(BACKUP, path)
 
-  // Локальная копия — первой: в прежней ветке могла лежать чужая версия из git.
-  if (!existsSync(path)) {
-    if (existsSync(backup)) {
-      cpSync(backup, path, { recursive: true })
-      console.error(`agent-files: ${path} удалён сменой ветки — возвращён из ${backup}`)
-    } else if (trackedAt(previous, path)) {
-      git("restore", `--source=${previous}`, "--worktree", "--", path)
-      console.error(`agent-files: ${path} удалён сменой ветки — возвращён из прежней`)
+  // Пофайлово и только то, что git удалил сам — отслеживалось в прежнем коммите: от каталога
+  // уцелевает часть, и проверка одного .claude приняла бы урезанный каталог за целый, а ниже
+  // затёрла бы им копию. Удалённое руками остаётся удалённым.
+  // Локальная копия — первой: в прежнем коммите могла лежать чужая версия из git.
+  for (const file of trackedFiles(previous, path)) {
+    if (existsSync(file)) continue
+    const copy = join(BACKUP, file)
+    if (existsSync(copy)) {
+      mkdirSync(dirname(file), { recursive: true })
+      cpSync(copy, file)
+      console.error(`agent-files: ${file} удалён операцией git — возвращён из ${BACKUP}`)
+    } else {
+      git("restore", `--source=${previous}`, "--worktree", "--", file)
+      console.error(`agent-files: ${file} удалён операцией git — возвращён из ${previous}`)
     }
-    continue
   }
+  if (!existsSync(path)) continue
 
   if (trackedAt("HEAD", path)) {
     if (existsSync(backup) && differs(path)) {
-      console.error(`agent-files: ${path} перезаписан версией из ветки; локальная копия — ${backup}`)
+      console.error(`agent-files: ${path} перезаписан версией из коммита; локальная копия — ${backup}`)
     }
     continue
   }

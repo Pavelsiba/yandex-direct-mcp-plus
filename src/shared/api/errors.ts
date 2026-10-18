@@ -1,4 +1,5 @@
 // Разбор ошибок Директа. Хендлеры сюда не заглядывают: их дело — сценарий.
+import { parseJson } from "#shared/api/json"
 import { getErrorHint } from "#shared/lib/error-hints"
 
 type ApiErrorV5 = {
@@ -90,4 +91,16 @@ const REPORT_ERROR_CODE = /<reports:errorCode>(\d+)<\/reports:errorCode>/
 export function assertNoReportAuthError(body: string): void {
   const code = REPORT_ERROR_CODE.exec(body)?.[1]
   if (code && isAuthError(code)) throw authError()
+}
+
+// Лимит частоты (56) Reports отдаёт не XML, а телом v5 с HTTP 400: без разбора код и
+// подсказка терялись в «HTTP 400: Bad Request».
+export function assertNoHttpErrorBody(body: string): void {
+  let data: unknown
+  try {
+    data = parseJson(body)
+  } catch {
+    return
+  }
+  assertNoApiError(data)
 }

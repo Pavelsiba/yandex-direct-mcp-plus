@@ -147,6 +147,19 @@ describe("get_statistics", () => {
     expect(lastBody().params.FieldNames).toEqual(["Date", "Conversions"])
   })
 
+  it("на лимит частоты отдаёт код 56 с подсказкой, а не голый HTTP 400", async () => {
+    mockFetch.mockResolvedValueOnce(
+      errorResponse(
+        400,
+        `{"error":{"request_id":"1","error_string":"Превышен лимит запросов метода",` +
+          `"error_detail":"Данный метод можно запрашивать не чаще чем 1 раз в 10 секунд","error_code":"56"}}`
+      )
+    )
+
+    await expect(statistics({ campaign_ids: ["123"] })).rejects.toThrow(/\[56\].*10 секунд.*Что делать: .*Выждите/)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
   // Reports отвечает HTTP 400 и XML: без разбора наружу уходило бы «HTTP 400: Error»
   // с XML-простынёй в хвосте, из которой причина не видна.
   it("на недействительный токен объясняет причину, а не показывает HTTP 400 с XML", async () => {

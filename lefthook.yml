@@ -57,11 +57,22 @@ commit-msg:
       run: npx commitlint --edit {1}
 
 # Файлы агентской разработки в .gitignore, но в старых коммитах отслеживаются: смена
-# ветки их молча перезаписывает или удаляет. Подробности — в самом скрипте.
+# ветки, а затем pull или rebase их молча перезаписывают или удаляют. Подробности —
+# в самом скрипте.
 post-checkout:
   jobs:
     - name: agent-files
-      run: node scripts/agent-files-guard.mjs {1} {2} {3}
+      run: node scripts/agent-files-guard.mjs checkout {1} {2} {3}
+
+post-merge:
+  jobs:
+    - name: agent-files
+      run: node scripts/agent-files-guard.mjs merge
+
+post-rewrite:
+  jobs:
+    - name: agent-files
+      run: node scripts/agent-files-guard.mjs rewrite {1}
 
 # Гард на пуш. pre-commit ловит только попытку закоммитить, находясь на main,
 # и не мешает `git push origin HEAD:main` из ветки задачи — а это как раз тот
