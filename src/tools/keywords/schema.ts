@@ -62,9 +62,11 @@ const userParam = (variable: string) =>
     .optional()
     .meta({ description: `Значение подстановочной переменной {${variable}} в ссылке объявления; null очищает` })
 
-const flag = (description: string) => z.literal(YES_NO).meta({ description })
+const flag = (description: string) => z.literal(YES_NO).optional().meta({ description })
 
-// Все флаги обязательны: результат не зависит от того, заменяет ли Директ набор целиком.
+const hasAnyFlag = (flags: Record<string, unknown>) => Object.values(flags).some((value) => value !== undefined)
+
+// Директ сливает переданные флаги с текущими, поэтому любой из них можно опустить.
 const autotargetingCategories = z
   .object({
     exact: flag("Целевые запросы — прямо описывают товар из объявления"),
@@ -73,10 +75,11 @@ const autotargetingCategories = z
     accessory: flag("Сопутствующие запросы — товары, которые берут вместе с этим"),
     broader: flag("Широкие запросы — общая потребность, под которую подходит товар")
   })
+  .refine(hasAnyFlag, { error: "Укажите хотя бы одну категорию автотаргетинга" })
   .optional()
   .meta({
     description:
-      "Категории запросов автотаргетинга, все пять сразу. Только для фразы ---autotargeting; текущие значения — list_keywords с autotargeting: true"
+      "Категории запросов автотаргетинга. Меняются только переданные, остальные остаются прежними. Только для фразы ---autotargeting; текущие значения — list_keywords с autotargeting: true"
   })
 
 const autotargetingBrandOptions = z
@@ -85,8 +88,12 @@ const autotargetingBrandOptions = z
     with_advertiser_brand: flag("Запросы с брендом рекламодателя"),
     with_competitors_brand: flag("Запросы с брендами конкурентов")
   })
+  .refine(hasAnyFlag, { error: "Укажите хотя бы один флаг брендов" })
   .optional()
-  .meta({ description: "Запросы с брендами и без, все три флага сразу. Только для фразы ---autotargeting" })
+  .meta({
+    description:
+      "Запросы с брендами и без. Меняются только переданные флаги, остальные остаются прежними. Только для фразы ---autotargeting"
+  })
 
 const keywordUpdate = z.object({
   keyword_id: idField("ID изменяемой ключевой фразы или автотаргетинга"),

@@ -195,9 +195,37 @@ describe("update_keywords", () => {
     })
   })
 
-  it("схема не принимает неполный набор категорий", () => {
+  it("отправляет только переданные флаги категорий и брендов", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
+
+    const params = updateKeywordsSchema.parse({
+      keywords: [
+        {
+          keyword_id: "333",
+          autotargeting_categories: { accessory: "YES" },
+          autotargeting_brand_options: { with_competitors_brand: "NO" }
+        }
+      ]
+    })
+    await handleUpdateKeywords(params)
+
+    expect(lastBody().params.Keywords[0].AutotargetingSettings).toEqual({
+      Categories: { Accessory: "YES" },
+      BrandOptions: { WithCompetitorsBrand: "NO" }
+    })
+  })
+
+  it("схема не принимает пустой набор категорий", () => {
     const parsed = updateKeywordsSchema.safeParse({
-      keywords: [{ keyword_id: "333", autotargeting_categories: { exact: "YES", broader: "NO" } }]
+      keywords: [{ keyword_id: "333", autotargeting_categories: {} }]
+    })
+
+    expect(parsed.success).toBe(false)
+  })
+
+  it("схема не принимает пустой набор брендов", () => {
+    const parsed = updateKeywordsSchema.safeParse({
+      keywords: [{ keyword_id: "333", autotargeting_brand_options: {} }]
     })
 
     expect(parsed.success).toBe(false)
@@ -208,11 +236,7 @@ describe("update_keywords", () => {
       keywords: [
         {
           keyword_id: "333",
-          autotargeting_brand_options: {
-            without_brands: "yes",
-            with_advertiser_brand: "NO",
-            with_competitors_brand: "NO"
-          }
+          autotargeting_brand_options: { without_brands: "yes" }
         }
       ]
     })
