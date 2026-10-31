@@ -65,10 +65,14 @@ const BRAND_OPTION_FIELDS = {
 } as const satisfies Record<string, FieldOf<"general.xsd", "AutotargetingBrandOptionsFieldEnum">>
 
 function toApiFlags<TKey extends string>(
-  flags: Record<TKey, string>,
+  flags: Partial<Record<TKey, string>>,
   names: Record<TKey, string>
 ): Record<string, string> {
-  return Object.fromEntries(Object.entries<string>(flags).map(([key, value]) => [names[key as TKey], value]))
+  return Object.fromEntries(
+    Object.entries<string | undefined>(flags)
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .map(([key, value]) => [names[key as TKey], value])
+  )
 }
 
 export async function handleListKeywords(params: z.infer<typeof listKeywordsSchema>): Promise<string> {
