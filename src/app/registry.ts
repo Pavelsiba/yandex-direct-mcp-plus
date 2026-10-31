@@ -5,7 +5,13 @@ import { getAccountBalanceTool } from "#tools/account/tool"
 import { addAdExtensionsTool, deleteAdExtensionsTool, listAdExtensionsTool } from "#tools/ad-extensions/tool"
 import { createAdGroupTool, deleteAdGroupsTool, listAdGroupsTool } from "#tools/ad-groups/tool"
 import { manageAdImagesTool } from "#tools/ad-images/tool"
-import { createTextAdTool, listAdsTool, manageAdsTool, moderateAdsTool, updateTextAdTool } from "#tools/ads/tool"
+import {
+  createResponsiveAdTool,
+  listAdsTool,
+  manageAdsTool,
+  moderateAdsTool,
+  updateResponsiveAdTool
+} from "#tools/ads/tool"
 import { listAudienceTargetsTool, setAudienceTargetsTool } from "#tools/audience-targets/tool"
 import {
   addBidAdjustmentsTool,
@@ -83,7 +89,7 @@ export const toolGroups: readonly ToolGroup[] = [
   },
   {
     title: "Объявления",
-    tools: [listAdsTool, createTextAdTool, updateTextAdTool, manageAdsTool, moderateAdsTool]
+    tools: [listAdsTool, createResponsiveAdTool, updateResponsiveAdTool, manageAdsTool, moderateAdsTool]
   },
   {
     title: "Ключевые фразы и ставки",

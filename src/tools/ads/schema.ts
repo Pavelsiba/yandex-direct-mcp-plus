@@ -1,11 +1,11 @@
 import { z } from "zod"
 import { AD_ACTIONS, AD_STATES, AD_STATUSES, AD_TYPES } from "#shared/config/enums"
 import {
-  AD_TEXT_LIMITS,
   MAX_AD_GROUPS_PER_CALL,
   MAX_ADS_PER_MODERATION,
   MAX_CAMPAIGNS_PER_ADS_CALL,
-  MAX_IDS_PER_CALL
+  MAX_IDS_PER_CALL,
+  RESPONSIVE_AD_LIMITS
 } from "#shared/config/limits"
 import { idField } from "#shared/lib/id"
 import { pageFields } from "#shared/lib/pagination"
@@ -49,51 +49,60 @@ export const listAdsSchema = z
     error: "Укажите хотя бы одно из ad_ids, ad_group_ids, campaign_ids: без них Директ не отбирает объявления"
   })
 
-export const createTextAdSchema = z.object({
+const titleField = z
+  .string()
+  .check(
+    z.minLength(1, { error: "Заголовок не может быть пустым" }),
+    z.maxLength(RESPONSIVE_AD_LIMITS.title, { error: `Заголовок длиннее ${RESPONSIVE_AD_LIMITS.title} символов` })
+  )
+
+const textField = z
+  .string()
+  .check(
+    z.minLength(1, { error: "Текст не может быть пустым" }),
+    z.maxLength(RESPONSIVE_AD_LIMITS.text, { error: `Текст длиннее ${RESPONSIVE_AD_LIMITS.text} символов` })
+  )
+
+const titlesField = z.array(titleField).check(
+  z.minLength(1, { error: "Нужен хотя бы один заголовок" }),
+  z.maxLength(RESPONSIVE_AD_LIMITS.titles, {
+    error: `Заголовков допустимо не больше ${RESPONSIVE_AD_LIMITS.titles}`
+  })
+)
+
+const textsField = z
+  .array(textField)
+  .check(
+    z.minLength(1, { error: "Нужен хотя бы один текст" }),
+    z.maxLength(RESPONSIVE_AD_LIMITS.texts, { error: `Текстов допустимо не больше ${RESPONSIVE_AD_LIMITS.texts}` })
+  )
+
+const TITLES_DESCRIPTION = `Заголовки, от 1 до ${RESPONSIVE_AD_LIMITS.titles}, каждый до ${RESPONSIVE_AD_LIMITS.title} символов`
+const TEXTS_DESCRIPTION = `Тексты, от 1 до ${RESPONSIVE_AD_LIMITS.texts}, каждый до ${RESPONSIVE_AD_LIMITS.text} символов`
+
+export const createResponsiveAdSchema = z.object({
   ad_group_id: idField("ID группы, в которой создаётся объявление"),
-  title: z
-    .string()
-    .check(
-      z.minLength(1, { error: "Заголовок не может быть пустым" }),
-      z.maxLength(AD_TEXT_LIMITS.title, { error: `Заголовок длиннее ${AD_TEXT_LIMITS.title} символов` })
-    )
-    .meta({ description: `Заголовок объявления, до ${AD_TEXT_LIMITS.title} символов` }),
-  title2: z
-    .string()
-    .check(z.maxLength(AD_TEXT_LIMITS.title2, { error: `Второй заголовок длиннее ${AD_TEXT_LIMITS.title2} символов` }))
-    .optional()
-    .meta({ description: `Второй заголовок, до ${AD_TEXT_LIMITS.title2} символов` }),
-  text: z
-    .string()
-    .check(
-      z.minLength(1, { error: "Текст не может быть пустым" }),
-      z.maxLength(AD_TEXT_LIMITS.text, { error: `Текст длиннее ${AD_TEXT_LIMITS.text} символов` })
-    )
-    .meta({ description: `Текст объявления, до ${AD_TEXT_LIMITS.text} символов` }),
+  titles: titlesField.meta({ description: TITLES_DESCRIPTION }),
+  texts: textsField.meta({ description: TEXTS_DESCRIPTION }),
   href: z
     .string()
     .check(z.minLength(1, { error: "Ссылка не может быть пустой" }))
     .meta({ description: "Ссылка на сайт" })
 })
 
-export const updateTextAdSchema = z.object({
+export const updateResponsiveAdSchema = z.object({
   ad_id: idField("ID обновляемого объявления"),
-  title: z
-    .string()
-    .check(z.maxLength(AD_TEXT_LIMITS.title, { error: `Заголовок длиннее ${AD_TEXT_LIMITS.title} символов` }))
+  titles: titlesField
     .optional()
-    .meta({ description: "Новый заголовок" }),
-  title2: z
-    .string()
-    .check(z.maxLength(AD_TEXT_LIMITS.title2, { error: `Второй заголовок длиннее ${AD_TEXT_LIMITS.title2} символов` }))
+    .meta({ description: `${TITLES_DESCRIPTION}. Заменяют прежние целиком: передайте полный набор` }),
+  texts: textsField
     .optional()
-    .meta({ description: "Новый второй заголовок" }),
-  text: z
+    .meta({ description: `${TEXTS_DESCRIPTION}. Заменяют прежние целиком: передайте полный набор` }),
+  href: z
     .string()
-    .check(z.maxLength(AD_TEXT_LIMITS.text, { error: `Текст длиннее ${AD_TEXT_LIMITS.text} символов` }))
+    .check(z.minLength(1, { error: "Ссылка не может быть пустой" }))
     .optional()
-    .meta({ description: "Новый текст объявления" }),
-  href: z.string().optional().meta({ description: "Новая ссылка на сайт" })
+    .meta({ description: "Новая ссылка на сайт" })
 })
 
 export const manageAdsSchema = z.object({
