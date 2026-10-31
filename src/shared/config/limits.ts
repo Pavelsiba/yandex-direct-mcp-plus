@@ -29,7 +29,7 @@ export const MAX_PRIORITY_GOALS = 30
 // своего числа в справке нет.
 export const MAX_IDS_PER_CALL = 10_000
 
-export const AD_TEXT_LIMITS = { title: 56, title2: 30, text: 81 } as const
+export const RESPONSIVE_AD_LIMITS = { title: 56, text: 81, titles: 7, texts: 3 } as const
 
 export const SITELINK_LIMITS = { title: 30, href: 1024, description: 60, perSet: 8 } as const
 export const MAX_SITELINK_SETS_PER_CALL = 1_000

@@ -14,12 +14,17 @@ const READ_METHODS = new Set([
   "hasSearchVolume"
 ])
 
-export async function apiPost(service: string, method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+export async function apiPost(
+  service: string,
+  method: string,
+  params: Record<string, unknown> = {},
+  baseUrl: string = BASE_URL
+): Promise<unknown> {
   const write = !READ_METHODS.has(method)
   return retryWhen(
     (error) => isTransientApiError(error, { write }),
     async () => {
-      const response = await fetchWithRetry(`${BASE_URL}${service}`, {
+      const response = await fetchWithRetry(`${baseUrl}${service}`, {
         method: "POST",
         headers: commonHeaders(),
         body: stringifyJson({ method, params })

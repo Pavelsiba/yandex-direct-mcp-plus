@@ -1,8 +1,14 @@
 // biome-ignore-all lint/plugin: тест разбирает тело запроса; проверка ID сравнивает сырую строку
 import { beforeEach, describe, expect, it } from "vitest"
-import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
-import { handleCreateTextAd, handleListAds, handleManageAds, handleModerateAds, handleUpdateTextAd } from "./handler.js"
-import { listAdsSchema } from "./schema.js"
+import { installFetchMock, lastRawBody, lastRequestUrl, mockFetch, okResponse } from "#testing/fetch-mock"
+import {
+  handleCreateResponsiveAd,
+  handleListAds,
+  handleManageAds,
+  handleModerateAds,
+  handleUpdateResponsiveAd
+} from "./handler.js"
+import { createResponsiveAdSchema, listAdsSchema } from "./schema.js"
 
 installFetchMock()
 
@@ -13,13 +19,13 @@ function lastBody() {
 describe("list_ads", () => {
   beforeEach(() => mockFetch.mockReset())
 
-  it("запрашивает тексты вместе со списком объявлений", async () => {
+  it("запрашивает все заголовки и тексты в полях комбинаторного объявления", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
 
     await handleListAds({ ad_group_ids: ["123"] })
 
-    expect(lastBody().params.TextAdFieldNames).toContain("Title")
-    expect(lastBody().params.TextAdFieldNames).toContain("Href")
+    expect(lastBody().params.ResponsiveAdFieldNames).toEqual(expect.arrayContaining(["Titles", "Texts", "Href"]))
+    expect(lastBody().params).not.toHaveProperty("TextAdFieldNames")
   })
 
   it("запрашивает тип объявления и пояснение модерации", async () => {
@@ -32,45 +38,32 @@ describe("list_ads", () => {
     )
   })
 
-  it("запрашивает привязки сайтлинков, визитки и изображения", async () => {
+  it("берёт поля комбинаторного объявления из перечисления, кроме объектов модерации", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
 
     await handleListAds({ ad_group_ids: ["123"] })
 
-    expect(lastBody().params.TextAdFieldNames).toEqual(
-      expect.arrayContaining(["SitelinkSetId", "VCardId", "AdImageHash"])
+    const fields: string[] = lastBody().params.ResponsiveAdFieldNames
+    expect(fields).toEqual(
+      expect.arrayContaining(["SitelinkSetId", "AdImages", "VideoExtensions", "BusinessId", "AdExtensions"])
     )
-  })
-
-  it("берёт поля текстового объявления из перечисления, кроме объектов модерации", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ result: { Ads: [] } }))
-
-    await handleListAds({ ad_group_ids: ["123"] })
-
-    const fields: string[] = lastBody().params.TextAdFieldNames
-    expect(fields).toEqual(expect.arrayContaining(["FinalUrl", "DisplayUrlPath", "BusinessId", "AdExtensions"]))
     expect(fields.filter((field) => field.endsWith("Moderation"))).toEqual([])
   })
 
-  it("отдаёт привязки строками независимо от разрядности", async () => {
+  it("отдаёт заголовки, тексты и привязки комбинаторного объявления без потери разрядности", async () => {
     mockFetch.mockResolvedValueOnce(
-      okResponse({
-        result: {
-          Ads: [
-            {
-              Id: "1919964803537252737",
-              TextAd: { SitelinkSetId: 5794001114, VCardId: 12345678, AdImageHash: "abc123" }
-            }
-          ]
-        }
-      })
+      okResponse(
+        '{"result":{"Ads":[{"Id":1919964803537252737,"Type":"RESPONSIVE_AD","ResponsiveAd":{' +
+          '"Titles":[{"Title":"Свежий улов","Status":"ACCEPTED"},{"Title":"Раки с доставкой","Status":"ACCEPTED"}],' +
+          '"Texts":[{"Text":"Доставка за час","Status":"ACCEPTED"}],"SitelinkSetId":1234567890123456789}}]}}'
+      )
     )
 
     const output = await handleListAds({ ad_group_ids: ["123"] })
 
-    expect(output).toContain('"SitelinkSetId": "5794001114"')
-    expect(output).toContain('"VCardId": "12345678"')
-    expect(output).toContain('"AdImageHash": "abc123"')
+    expect(output).toContain('"Id": "1919964803537252737"')
+    expect(output).toContain('"Title": "Раки с доставкой"')
+    expect(output).toContain('"SitelinkSetId": "1234567890123456789"')
   })
 
   // Голый `{ "result": {} }` модель читает как поломку инструмента и додумывает причину.
@@ -141,59 +134,56 @@ describe("listAdsSchema", () => {
   })
 })
 
-describe("create_text_ad", () => {
+describe("create_responsive_ad", () => {
   beforeEach(() => mockFetch.mockReset())
 
-  it("не отправляет Title2, когда второго заголовка нет", async () => {
+  it("создаёт ResponsiveAd через v501", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [] } }))
 
-    await handleCreateTextAd({
+    await handleCreateResponsiveAd({
       ad_group_id: "1915016273214320641",
-      title: "Свежий улов",
-      text: "Доставка за час",
+      titles: ["Свежий улов", "Раки с доставкой"],
+      texts: ["Доставка за час"],
       href: "https://example.com"
     })
 
-    expect(lastBody().params.Ads[0].TextAd).toEqual({
-      Title: "Свежий улов",
-      Text: "Доставка за час",
+    expect(lastRequestUrl()).toBe("https://api.direct.yandex.com/json/v501/ads")
+    expect(lastBody().params.Ads[0].ResponsiveAd).toEqual({
+      Titles: ["Свежий улов", "Раки с доставкой"],
+      Texts: ["Доставка за час"],
       Href: "https://example.com"
     })
     expect(lastRawBody()).toContain('"AdGroupId":1915016273214320641')
   })
-})
 
-describe("create_text_ad со вторым заголовком", () => {
-  beforeEach(() => mockFetch.mockReset())
+  it("не принимает больше 7 заголовков и больше 3 текстов", () => {
+    const base = { ad_group_id: "123", href: "https://example.com" }
 
-  it("добавляет Title2, когда второй заголовок передан", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ result: { AddResults: [] } }))
-
-    await handleCreateTextAd({
-      ad_group_id: "123",
-      title: "Свежий улов",
-      title2: "Доставка по городу",
-      text: "Доставка за час",
-      href: "https://example.com"
-    })
-
-    expect(lastBody().params.Ads[0].TextAd.Title2).toBe("Доставка по городу")
+    expect(
+      createResponsiveAdSchema.safeParse({ ...base, titles: Array(8).fill("Заголовок"), texts: ["Текст"] }).success
+    ).toBe(false)
+    expect(
+      createResponsiveAdSchema.safeParse({ ...base, titles: ["Заголовок"], texts: Array(4).fill("Текст") }).success
+    ).toBe(false)
+    expect(createResponsiveAdSchema.safeParse({ ...base, titles: [], texts: ["Текст"] }).success).toBe(false)
   })
 })
 
-describe("update_text_ad", () => {
+describe("update_responsive_ad", () => {
   beforeEach(() => mockFetch.mockReset())
 
-  it("шлёт только те поля, которые переданы", async () => {
+  it("шлёт через v501 только те поля, которые переданы", async () => {
     mockFetch.mockResolvedValueOnce(okResponse({ result: { UpdateResults: [] } }))
 
-    await handleUpdateTextAd({ ad_id: "123", text: "Новый текст" })
+    await handleUpdateResponsiveAd({ ad_id: "1925678256797749363", texts: ["Новый текст"] })
 
-    expect(lastBody().params.Ads[0].TextAd).toEqual({ Text: "Новый текст" })
+    expect(lastRequestUrl()).toBe("https://api.direct.yandex.com/json/v501/ads")
+    expect(lastBody().params.Ads[0].ResponsiveAd).toEqual({ Texts: ["Новый текст"] })
+    expect(lastRawBody()).toContain('"Id":1925678256797749363')
   })
 
   it("отказывается работать вхолостую", async () => {
-    await expect(handleUpdateTextAd({ ad_id: "123" })).rejects.toThrow("Нечего обновлять")
+    await expect(handleUpdateResponsiveAd({ ad_id: "123" })).rejects.toThrow("Нечего обновлять")
     expect(mockFetch).not.toHaveBeenCalled()
   })
 })
