@@ -21,7 +21,11 @@ export const listAdsTool = defineTool({
 export const createTextAdTool = defineTool({
   name: "create_text_ad",
   title: "Создать объявление",
-  description: "Создать текстовое объявление: заголовок (≤56), второй заголовок (≤30), текст (≤81), ссылка.",
+  description:
+    "Создать текстовое объявление: заголовок (≤56), второй заголовок (≤30), текст (≤81), ссылка. " +
+    "Директ заводит его как комбинаторное и отвечает предупреждением 10251 — объявление при этом создано, " +
+    "повторять вызов не нужно. Через этот сервер оно и дальше читается как TEXT_AD, в интерфейсе Директа — " +
+    "как комбинаторное.",
   annotations: WRITE,
   schema: createTextAdSchema,
   handler: handleCreateTextAd
@@ -30,7 +34,10 @@ export const createTextAdTool = defineTool({
 export const updateTextAdTool = defineTool({
   name: "update_text_ad",
   title: "Обновить объявление",
-  description: "Обновить текстовое объявление: заголовок, текст, ссылка. Изменённое объявление уходит на модерацию.",
+  description:
+    "Обновить текстовое объявление: заголовок, текст, ссылка. Изменённое объявление уходит на модерацию. " +
+    "Предупреждение 10252 об устаревшем API текстовых объявлений означает, что правка применена: так Директ " +
+    "отвечает на объявления, созданные как комбинаторные.",
   annotations: IDEMPOTENT,
   schema: updateTextAdSchema,
   handler: handleUpdateTextAd
