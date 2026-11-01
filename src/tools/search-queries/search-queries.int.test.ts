@@ -7,13 +7,9 @@ import { getSearchQueriesSchema } from "./schema.js"
 
 const DAY_MS = 86_400_000
 const yesterday = new Date(Date.now() - DAY_MS).toISOString().slice(0, 10)
-// Reports отвечает ошибкой 56 «не чаще чем 1 раз в 10 секунд»: файл может идти сразу за
-// smoke statistics.
-const REPORT_INTERVAL_MS = 11_000
 
 describe.skipIf(!CONFIGURED)("smoke search-queries", () => {
   it("принимает поля по умолчанию", { timeout: 120_000 }, async () => {
-    await new Promise<void>((resolve) => setTimeout(resolve, REPORT_INTERVAL_MS))
     const params = getSearchQueriesSchema.parse({
       campaign_ids: [await firstCampaignId()],
       date_from: yesterday,
