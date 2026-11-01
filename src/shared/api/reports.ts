@@ -1,6 +1,7 @@
 // ReportService отдаёт TSV и работает офлайн: 200 — отчёт готов, 201 — поставлен
 // в очередь, 202 — ещё формируется, повторить через retryIn секунд.
 // Док: https://yandex.ru/dev/direct/doc/en/codes
+import { withToken } from "#shared/api/authorized"
 import { commonHeaders, fetchWithRetry, logUnits } from "#shared/api/fetch"
 import { stringifyJson } from "#shared/api/json"
 import { REPORT_URL } from "#shared/config/endpoints"
@@ -12,9 +13,9 @@ export type ReportOptions = {
   skipColumnHeader?: boolean
 }
 
-function reportHeaders(opts: ReportOptions): Record<string, string> {
+function reportHeaders(token: string, opts: ReportOptions): Record<string, string> {
   return {
-    ...commonHeaders(),
+    ...commonHeaders(token),
     processingMode: "auto",
     returnMoneyInMicros: "false",
     skipReportHeader: opts.skipReportHeader === false ? "false" : "true",
@@ -30,8 +31,11 @@ function retryInSeconds(response: Response): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : REPORT_DEFAULT_RETRY_IN_SEC
 }
 
-export async function apiReport(params: Record<string, unknown>, opts: ReportOptions = {}): Promise<string> {
-  const headers = reportHeaders(opts)
+export function apiReport(params: Record<string, unknown>, opts: ReportOptions = {}): Promise<string> {
+  return withToken((token) => pollReport(reportHeaders(token, opts), params))
+}
+
+async function pollReport(headers: Record<string, string>, params: Record<string, unknown>): Promise<string> {
   const body = stringifyJson({ params })
 
   for (let poll = 0; poll <= REPORT_MAX_POLLS; poll++) {

@@ -13,6 +13,7 @@ import {
   updateResponsiveAdTool
 } from "#tools/ads/tool"
 import { listAudienceTargetsTool, setAudienceTargetsTool } from "#tools/audience-targets/tool"
+import { authStatusTool, finishLoginTool, logoutTool, startLoginTool } from "#tools/auth/tool"
 import {
   addBidAdjustmentsTool,
   deleteBidAdjustmentsTool,
@@ -68,7 +69,13 @@ import { deleteVcardsTool, listVcardsTool } from "#tools/vcards/tool"
 // (npm run docs:tools), и раскладка в реестре с документацией не расходится.
 export type ToolGroup = { readonly title: string; readonly tools: readonly ToolDescriptor[] }
 
+const loginTools: readonly ToolDescriptor[] = [startLoginTool, finishLoginTool, authStatusTool, logoutTool]
+
 export const toolGroups: readonly ToolGroup[] = [
+  {
+    title: "Подключение",
+    tools: loginTools
+  },
   {
     title: "Кампании и стратегии",
     tools: [
@@ -158,3 +165,7 @@ export const toolGroups: readonly ToolGroup[] = [
 ]
 
 export const tools: readonly ToolDescriptor[] = toolGroups.flatMap((group) => group.tools)
+
+// Для общего сервера: вход там свой, по спеке remote MCP, а start_login положил бы токен
+// одного пользователя в файл, общий для всех. Идёт в паре с requireRequestToken.
+export const hostedTools: readonly ToolDescriptor[] = tools.filter((tool) => !loginTools.includes(tool))
