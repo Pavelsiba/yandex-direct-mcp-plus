@@ -17,3 +17,22 @@ updates:
         patterns: ["*"]
     commit-message:
       prefix: ci
+
+  # npm: зависимости пакета — fix(deps), чтобы обновление уехало релизом; dev — chore,
+  # без релиза. Неделя выдержки — по той же причине, что у actions.
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      production:
+        dependency-type: production
+      development:
+        dependency-type: development
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
