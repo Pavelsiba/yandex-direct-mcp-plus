@@ -236,6 +236,35 @@ describe("formatResult", () => {
 
     expect(output).toMatch(/❌ AddResults\[0\] \[3500\].*\n\s+Что делать: .*бесполезно/)
   })
+
+  it("выносит отказ Live v4 из data.ActionsResult строкой ❌ с подсказкой", () => {
+    const output = formatResult(
+      {
+        data: {
+          ActionsResult: [
+            {
+              Login: "ivan-petrov@yandex.ru",
+              AccountID: null,
+              Errors: [{ FaultCode: 259, FaultString: "This client does not exist", FaultDetail: "" }]
+            }
+          ],
+          Accounts: []
+        }
+      },
+      { money: false }
+    )
+
+    expect(output).toMatch(
+      /^❌ ActionsResult\[0\] \[259\] This client does not exist\n\s+Что делать: .*не адрес почты.*YANDEX_DIRECT_LOGIN/
+    )
+    expect(hasItemErrors(output)).toBe(true)
+  })
+
+  it("не добавляет шапку к ответу v4 без отказов", () => {
+    const output = formatResult({ data: { ActionsResult: [], Accounts: [{ AccountID: 1, Amount: "10.00" }] } })
+
+    expect(output.startsWith("{")).toBe(true)
+  })
 })
 
 describe("hasItemErrors", () => {
