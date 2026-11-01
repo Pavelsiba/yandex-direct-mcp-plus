@@ -1,7 +1,7 @@
 // Транспорт: заголовки, повторы, таймаут. Знает про HTTP и токен, не знает про домен.
 import { assertNoHttpErrorBody, assertNoReportAuthError } from "#shared/api/errors"
 import { parseJson } from "#shared/api/json"
-import { getClientLogin, getToken } from "#shared/config/env"
+import { getClientLogin } from "#shared/config/env"
 import { ERROR_BODY_PREVIEW_MAX, MAX_RETRIES, MAX_RETRY_DELAY_MS, REQUEST_TIMEOUT_MS } from "#shared/config/limits"
 
 const UNAVAILABLE_HINT = "API Директа, вероятно, временно недоступен — повторите позже."
@@ -11,9 +11,9 @@ function previewBody(body: string): string {
   return flat.length > ERROR_BODY_PREVIEW_MAX ? `${flat.slice(0, ERROR_BODY_PREVIEW_MAX)}…` : flat
 }
 
-export function commonHeaders(): Record<string, string> {
+export function commonHeaders(token: string): Record<string, string> {
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${getToken()}`,
+    Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
     "Accept-Language": "ru"
   }
@@ -61,6 +61,12 @@ let transport: Transport = (url, options) => fetch(url, options)
 
 export function setTransport(next: Transport): void {
   transport = next
+}
+
+// Один запрос без повторов и разбора статуса — для OAuth: его ошибки приходят HTTP 400 с
+// телом { error, error_description }, и разбирает их вызывающий.
+export function sendOnce(url: string, options: RequestInit): Promise<Response> {
+  return transport(url, { ...options, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
 }
 
 export async function fetchWithRetry(url: string, options: RequestInit = {}, retries = MAX_RETRIES): Promise<Response> {

@@ -9,7 +9,9 @@ async function main(): Promise<void> {
   await server.connect(new StdioServerTransport())
 
   // stdout занят транспортом MCP — любые сообщения только в stderr.
-  console.error(`[yd-mcp] v${readVersion()} запущен. ${tools.length} инструментов. Требуется YANDEX_DIRECT_TOKEN.`)
+  console.error(
+    `[yd-mcp] v${readVersion()} запущен. ${tools.length} инструментов. Токен — YANDEX_DIRECT_TOKEN или вход из диалога (start_login).`
+  )
 }
 
 main().catch((error) => {

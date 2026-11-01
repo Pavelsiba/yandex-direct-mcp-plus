@@ -39,7 +39,8 @@ src/
     tool.ts         дескриптор: имя, заголовок, описание, аннотации, схема, хендлер
     *.unit.test.ts  тесты рядом с кодом
   shared/
-    api/            json, errors, parse, fetch, client (v5), reports, v4
+    api/            json, errors, parse, fetch, authorized, client (v5), reports, v4
+    auth/           вход из диалога (PKCE), файл входа, источник токена на запрос
     lib/            money, id, pagination, format, date, report, tool
     config/         endpoints, env, limits, enums
   testing/        подмена транспорта для тестов; в сборку не попадает

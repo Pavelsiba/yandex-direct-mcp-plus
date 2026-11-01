@@ -1,4 +1,5 @@
 // JSON API v5 — основной клиент: один POST на сервис с телом { method, params }.
+import { withToken } from "#shared/api/authorized"
 import { assertNoApiError, isTransientApiError } from "#shared/api/errors"
 import { commonHeaders, fetchWithRetry, logUnits, readJson, retryWhen } from "#shared/api/fetch"
 import { stringifyJson } from "#shared/api/json"
@@ -21,19 +22,21 @@ export async function apiPost(
   baseUrl: string = BASE_URL
 ): Promise<unknown> {
   const write = !READ_METHODS.has(method)
-  return retryWhen(
-    (error) => isTransientApiError(error, { write }),
-    async () => {
-      const response = await fetchWithRetry(`${baseUrl}${service}`, {
-        method: "POST",
-        headers: commonHeaders(),
-        body: stringifyJson({ method, params })
-      })
-      const units = logUnits(response)
+  return withToken((token) =>
+    retryWhen(
+      (error) => isTransientApiError(error, { write }),
+      async () => {
+        const response = await fetchWithRetry(`${baseUrl}${service}`, {
+          method: "POST",
+          headers: commonHeaders(token),
+          body: stringifyJson({ method, params })
+        })
+        const units = logUnits(response)
 
-      const data = await readJson(response)
-      assertNoApiError(data, units)
-      return data
-    }
+        const data = await readJson(response)
+        assertNoApiError(data, units)
+        return data
+      }
+    )
   )
 }

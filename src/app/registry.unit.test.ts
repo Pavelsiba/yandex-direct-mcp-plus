@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
-import { tools } from "#app/registry"
+import { hostedTools, tools } from "#app/registry"
 import { idField, regionIdField } from "#shared/lib/id"
 
 const ID_FIELD = /_ids?$/
@@ -26,6 +26,14 @@ function isIdField(schema: z.ZodType): boolean {
 }
 
 describe("реестр инструментов", () => {
+  it("для общего сервера отдаёт все инструменты, кроме входа из диалога", () => {
+    const login = ["start_login", "finish_login", "auth_status", "logout"]
+
+    expect(hostedTools.map((tool) => tool.name)).toEqual(
+      tools.map((tool) => tool.name).filter((name) => !login.includes(name))
+    )
+  })
+
   it("не содержит инструментов с одинаковыми именами", () => {
     const names = tools.map((tool) => tool.name)
 

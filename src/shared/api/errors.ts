@@ -1,5 +1,6 @@
 // Разбор ошибок Директа. Хендлеры сюда не заглядывают: их дело — сценарий.
 import { parseJson } from "#shared/api/json"
+import type { TokenSource } from "#shared/auth/token"
 import { getErrorHint } from "#shared/lib/error-hints"
 
 type ApiErrorV5 = {
@@ -11,14 +12,24 @@ type ApiErrorV5 = {
 
 // 53 — токен истёк, отозван или неверен. v5 отдаёт её с HTTP 200, v4 — с пустым
 // error_detail, Reports — HTTP 400 и XML. Текст заменяется целиком: из родного не понять, что делать.
-const AUTH_ERROR_CODE = 53
+export const AUTH_ERROR_CODE = 53
 
-const AUTH_ERROR_MESSAGE = [
-  "Токен Яндекс.Директа не принят: истёк, отозван или задан неверно.",
-  "Это не сбой сети и не временная ошибка — повторять вызов бесполезно.",
-  "Нужен новый OAuth-токен (https://yandex.ru/dev/direct/doc/ru/token):",
-  "передайте его в переменной YANDEX_DIRECT_TOKEN в конфигурации MCP-клиента и перезапустите сервер."
-].join(" ")
+const AUTH_ERROR_HEAD =
+  "Токен Яндекс.Директа не принят: истёк, отозван или задан неверно. Это не сбой сети и не временная ошибка — повторять вызов бесполезно."
+const RELOGIN = "войдите заново из диалога: start_login, затем finish_login с кодом."
+const NEW_ENV_TOKEN =
+  "нужен новый OAuth-токен (https://yandex.ru/dev/direct/doc/ru/token) в переменной YANDEX_DIRECT_TOKEN конфигурации MCP-клиента, затем перезапуск сервера."
+
+// Что делать, зависит от того, откуда взят токен; источник неизвестен — обе ветки.
+const AUTH_ADVICE: Record<TokenSource | "unknown", string> = {
+  login: `Сохранённый вход больше не действует — ${RELOGIN}`,
+  env: `Токен взят из YANDEX_DIRECT_TOKEN: ${NEW_ENV_TOKEN} Либо уберите переменную и ${RELOGIN}`,
+  request: "Токен передан вместе с запросом — его нужно обновить там, откуда он пришёл.",
+  unknown: `Если входили из диалога — ${RELOGIN} Если токен задан в окружении — ${NEW_ENV_TOKEN}`
+}
+
+export const authErrorMessage = (source?: TokenSource): string =>
+  `${AUTH_ERROR_HEAD} ${AUTH_ADVICE[source ?? "unknown"]}`
 
 // Ошибка запроса с кодом Директа: текст адресован модели, код — коду, который решает,
 // повторять ли запрос.
@@ -52,7 +63,7 @@ function isAuthError(code: unknown): boolean {
   return Number(code) === AUTH_ERROR_CODE
 }
 
-const authError = (requestId?: string) => new DirectApiError(AUTH_ERROR_MESSAGE, AUTH_ERROR_CODE, requestId)
+const authError = (requestId?: string) => new DirectApiError(authErrorMessage(), AUTH_ERROR_CODE, requestId)
 
 function withAdvice(message: string, code: unknown, units?: string): string {
   const parts = [message]
