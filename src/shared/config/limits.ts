@@ -13,6 +13,12 @@ export const REPORT_MAX_POLLS = 6
 export const REPORT_DEFAULT_RETRY_IN_SEC = 5
 export const REPORT_MAX_RETRY_IN_SEC = 15
 
+// Прогноз Live v4 формируется в среднем до минуты; готовность опрашивается по GetForecastList.
+// queueRetries — сколько раз ждать места в очереди: в ней не больше пяти несформированных
+// отчётов на пользователя, место освобождается за секунды.
+export const FORECAST_POLL = { intervalMs: 5_000, maxPolls: 18, queueRetries: 6 } as const
+export const FORECAST_MAX_PHRASES = 100
+
 export const PAGE_MAX_LIMIT = 10_000
 
 export const MAX_CAMPAIGNS_PER_CALL = 1_000

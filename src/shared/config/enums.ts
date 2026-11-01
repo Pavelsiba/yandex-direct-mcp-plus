@@ -20,6 +20,9 @@ export const STATISTICS_REPORT_TYPES = [
 
 export const KEYWORD_ACTIONS = ["suspend", "resume", "delete"] as const
 
+// Currency в CreateNewForecast (Live v4): у v4 нет снимка WSDL, список — из справки метода.
+export const FORECAST_CURRENCIES = ["RUB", "BYN", "KZT", "TRY", "UAH", "USD", "EUR", "CHF"] as const
+
 // Площадки торгов KeywordBids.get: каждая — свой набор полей (SearchFieldNames, NetworkFieldNames).
 export const AUCTION_PLACEMENTS = ["search", "network"] as const
 
