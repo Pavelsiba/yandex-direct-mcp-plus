@@ -100,12 +100,17 @@ jobs:
       #
       # Переменных GIT_AUTHOR_*/GIT_COMMITTER_* здесь быть не должно — разбор в
       # комментарии к шагу «Личность релизного коммита» выше.
+      #
+      # GITHUB_REF задаётся явно: у workflow_run он указывает на ветку по умолчанию,
+      # а это dev. semantic-release берёт ветку из него (env-ci), видит dev вместо main
+      # и выходит успехом без релиза — так 01.11.2026 не вышел 2.0.0. Checkout выше
+      # уже стоит на main, переменная лишь сообщает это semantic-release.
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
-        run: npx semantic-release
+        run: GITHUB_REF=refs/heads/main npx semantic-release
 
   # Релизный цикл оставляет в main два коммита, которых нет в dev: мердж-коммит
   # PR и chore(release) от semantic-release. Без обратного мерджа дрейф копится —

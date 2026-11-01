@@ -53,6 +53,7 @@
     "lint:fix": "biome check --write",
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
     "lint:dead": "knip",
+    "lint:audit": "npm audit --omit=dev",
     "lint:workflows": "actionlint && zizmor --no-progress .github",
     "lint:secrets": "gitleaks git --redact --verbose --no-banner",
     "api:snapshot": "node scripts/wsdl-snapshot.mjs",
@@ -61,9 +62,9 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "@modelcontextprotocol/node": "^2.1.1",
+    "@modelcontextprotocol/node": "^2.1.2",
     "@modelcontextprotocol/server": "^2.3.1",
-    "zod": "^4.5.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
