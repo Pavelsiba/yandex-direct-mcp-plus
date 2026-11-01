@@ -1,0 +1,8 @@
+// Тест не должен уходить в сеть: свежая копия модуля после resetModules получает боевой
+// транспорт вместо подменённого installFetchMock (docs/architecture.md, «Шов транспорта»).
+`vi.resetModules($args)` as $hit where {
+    register_diagnostic(
+        span = $hit,
+        message = "vi.resetModules() запрещён: свежая копия shared/api/fetch уйдёт в боевой API в обход installFetchMock. Кэш модуля сбрасывается его экспортом (как clearDictionaryCache)."
+    )
+}

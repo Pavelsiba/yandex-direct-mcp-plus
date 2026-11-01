@@ -52,6 +52,7 @@ const getStatusText = (status: AuthStatus, now: number): string => {
 }
 
 // Первым аргументом SDK передаёт параметры вызова, поэтому часы и путь — вторыми.
+// biome-ignore lint/plugin/determinism: параметр по умолчанию — шов, тест передаёт свои часы
 export async function handleAuthStatus(_params: unknown, now: number = Date.now()): Promise<string> {
   return getStatusText(await getAuthStatus(), now)
 }

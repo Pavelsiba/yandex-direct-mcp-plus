@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: разбирается собственный вывод форматтера, ID в нём уже строки
+// biome-ignore-all lint/plugin/no-native-json: разбирается собственный вывод форматтера, ID в нём уже строки
 // Обвязка сетевых smoke-тестов: один читающий вызов на домен против боевого API.
 // Проверяет то, что юнит на подменённом транспорте проверить не может: FieldNames из снимка
 // приняты, форма ответа та же (разбор strict — новый ключ значит «пересобери снимок»),
@@ -142,5 +142,6 @@ export function expectRubles(rawMicros: unknown, rubles: unknown): void {
   }
 
   expect(typeof rawMicros, "денежное поле пришло не числом").toBe("number")
+  // biome-ignore lint/plugin/no-micros-literal: сверка с сырым ответом, независимая от shared/lib/money
   expect(rubles).toBe((rawMicros as number) / 1_000_000)
 }

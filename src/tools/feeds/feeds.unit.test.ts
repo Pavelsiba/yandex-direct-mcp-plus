@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: тест разбирает тело запроса
+// biome-ignore-all lint/plugin/no-native-json: тест разбирает тело запроса
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
 import { handleListFeeds } from "./handler.js"

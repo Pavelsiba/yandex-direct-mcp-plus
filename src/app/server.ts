@@ -11,7 +11,7 @@ const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 
 export function readVersion(): string {
   try {
-    // biome-ignore lint/plugin: package.json, идентификаторов Директа здесь нет
+    // biome-ignore lint/plugin/no-native-json: package.json, идентификаторов Директа здесь нет
     const pkg = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
     return typeof pkg.version === "string" ? pkg.version : "0.0.0"
   } catch {

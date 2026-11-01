@@ -17,6 +17,7 @@ export function startLogin(random?: (size: number) => Buffer): string {
 
 export async function finishLogin(
   code: string,
+  // biome-ignore lint/plugin/determinism: параметр по умолчанию — шов, тест передаёт свои часы
   { now = Date.now(), path = getCredentialsPath() }: { now?: number; path?: string } = {}
 ): Promise<{ path: string; expiresAt: number }> {
   if (!pendingVerifier) {

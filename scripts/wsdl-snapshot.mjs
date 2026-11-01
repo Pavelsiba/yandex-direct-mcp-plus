@@ -116,6 +116,7 @@ function renderService(service, wsdl) {
   return lines
 }
 
+// biome-ignore lint/plugin/determinism: дата снимка — момент запуска скрипта
 const today = new Date().toISOString().slice(0, 10)
 const header = [
   "# API Яндекс.Директа v5 — снимок WSDL",

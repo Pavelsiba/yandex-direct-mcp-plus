@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: тест разбирает тело запроса; проверка ID сравнивает сырую строку
+// biome-ignore-all lint/plugin/no-native-json: тест разбирает тело запроса; проверка ID сравнивает сырую строку
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { apiPost } from "#shared/api/client"
 import { MAX_RETRIES } from "#shared/config/limits"

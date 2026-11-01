@@ -70,6 +70,7 @@ async function loginToken(path: string, now: number): Promise<string> {
 }
 
 export async function resolveToken({
+  // biome-ignore lint/plugin/determinism: параметр по умолчанию — шов, тест передаёт свои часы
   now = Date.now(),
   path = getCredentialsPath()
 }: ClockAndPath = {}): Promise<ResolvedToken> {

@@ -29,6 +29,17 @@
         "noExplicitAny": "error"
       },
       "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": ["@modelcontextprotocol/sdk", "@modelcontextprotocol/sdk/**"],
+                "message": "SDK 1.x отдаёт схемы в draft-07, строгие клиенты их отклоняют. Пакеты v2: @modelcontextprotocol/server, /node, /client."
+              }
+            ]
+          }
+        },
         "useNodejsImportProtocol": "error",
         "useConsistentTypeDefinitions": {
           "level": "error",
@@ -39,7 +50,13 @@
       }
     }
   },
-  "plugins": ["./plugins/no-native-json.grit"],
+  "plugins": [
+    "./plugins/no-native-json.grit",
+    "./plugins/zod-v4.grit",
+    "./plugins/no-micros-literal.grit",
+    "./plugins/determinism.grit",
+    "./plugins/no-reset-modules.grit"
+  ],
   "overrides": [
     {
       "includes": ["src/tools/**"],
@@ -61,6 +78,10 @@
                   {
                     "group": ["../**"],
                     "message": "Выход за пределы домена относительным путём: границы объявляются через #shared/*."
+                  },
+                  {
+                    "group": ["@modelcontextprotocol/sdk", "@modelcontextprotocol/sdk/**"],
+                    "message": "SDK 1.x отдаёт схемы в draft-07, строгие клиенты их отклоняют. Пакеты v2: @modelcontextprotocol/server, /node, /client."
                   }
                 ]
               }
@@ -81,6 +102,10 @@
                   {
                     "group": ["#tools/**", "#app/**", "../**"],
                     "message": "shared не знает про tools и app: транспортный слой остаётся переиспользуемым (docs/architecture.md)."
+                  },
+                  {
+                    "group": ["@modelcontextprotocol/sdk", "@modelcontextprotocol/sdk/**"],
+                    "message": "SDK 1.x отдаёт схемы в draft-07, строгие клиенты их отклоняют. Пакеты v2: @modelcontextprotocol/server, /node, /client."
                   }
                 ]
               }
