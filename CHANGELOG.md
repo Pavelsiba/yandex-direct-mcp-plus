@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v2.0.0...v2.0.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **release:** релиз вызывается из CI на пуше в main, а не через workflow_run ([a7debda](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/a7debda8f70e316fe96767e68217c529c7153e63))
+
 # [2.0.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.8.0...v2.0.0) (2026-11-01)
 
 
