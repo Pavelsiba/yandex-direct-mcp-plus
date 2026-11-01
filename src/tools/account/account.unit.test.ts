@@ -42,12 +42,17 @@ describe("get_account_balance", () => {
     expect(lastBody().param.SelectionCriteria).toEqual({ Logins: ["another-client"] })
   })
 
-  it("не делит баланс на миллион: v4 присылает сумму в валюте аккаунта", async () => {
-    mockFetch.mockResolvedValueOnce(okResponse({ data: { Accounts: [{ Amount: 1234.56 }] } }))
+  it("не делит баланс на миллион: v4 присылает сумму строкой в валюте аккаунта", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okResponse({ data: { Accounts: [{ Amount: "1234.56", AmountAvailableForTransfer: "1000.00" }] } })
+    )
 
     const output = await handleGetAccountBalance({})
 
-    expect(JSON.parse(output).data.Accounts[0].Amount).toBe(1234.56)
+    expect(JSON.parse(output).data.Accounts[0]).toMatchObject({
+      Amount: "1234.56",
+      AmountAvailableForTransfer: "1000.00"
+    })
   })
 
   it("сообщает об ошибке v4, пришедшей телом", async () => {
