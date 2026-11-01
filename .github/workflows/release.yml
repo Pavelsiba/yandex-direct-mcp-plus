@@ -1,20 +1,20 @@
 name: Release
 
-# Релиз идёт только с main: стартует по завершении workflow «CI» на main
-# (workflow_run) и работает лишь при его успехе и событии push, то есть после
-# мерджа PR из dev. Прогоны CI на pull_request отфильтрованы условием на event.
-# workflow_dispatch оставлен для ручного запуска, когда релиз надо догнать.
+# Релиз идёт только с main: его вызывает джоба release в ci.yml после зелёного
+# ci-ok на пуше в main, то есть после мерджа PR из dev. workflow_dispatch — для
+# ручного запуска с ref main, когда релиз надо догнать.
 #
-# workflow_run опасен, когда исполняет код из PR форка с правами базового репо.
-# Здесь чужого кода нет: триггер сужен до main, условие требует event == push,
-# а checkout явно берёт ref: main — то есть уже влитое.
+# Не workflow_run: такой прогон GitHub исполняет от имени ветки по умолчанию, а это
+# dev. semantic-release видел dev и выходил без релиза, а после подмены GITHUB_REF
+# npm отбил provenance — OIDC-токен прогона подписан на refs/heads/dev (2.0.0,
+# 01.11.2026). Вызов из CI на пуше в main даёт и GITHUB_REF, и токен на main.
 on:
-  workflow_run: # zizmor: ignore[dangerous-triggers]
-    workflows: ["CI"]
-    types:
-      - completed
-    branches:
-      - main
+  workflow_call:
+    secrets:
+      SEMANTIC_RELEASE_PAT:
+        required: true
+      NPM_TOKEN:
+        required: true
   workflow_dispatch:
 
 permissions:
@@ -28,10 +28,8 @@ env:
 jobs:
   release:
     name: Release
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
+    # Ручной запуск с другой ветки отсекается здесь, а не тихим «нет релиза» внутри.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -100,17 +98,12 @@ jobs:
       #
       # Переменных GIT_AUTHOR_*/GIT_COMMITTER_* здесь быть не должно — разбор в
       # комментарии к шагу «Личность релизного коммита» выше.
-      #
-      # GITHUB_REF задаётся явно: у workflow_run он указывает на ветку по умолчанию,
-      # а это dev. semantic-release берёт ветку из него (env-ci), видит dev вместо main
-      # и выходит успехом без релиза — так 01.11.2026 не вышел 2.0.0. Checkout выше
-      # уже стоит на main, переменная лишь сообщает это semantic-release.
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
-        run: GITHUB_REF=refs/heads/main npx semantic-release
+        run: npx semantic-release
 
   # Релизный цикл оставляет в main два коммита, которых нет в dev: мердж-коммит
   # PR и chore(release) от semantic-release. Без обратного мерджа дрейф копится —

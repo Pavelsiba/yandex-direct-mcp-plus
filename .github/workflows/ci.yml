@@ -241,3 +241,20 @@ jobs:
           test "${{ needs.secrets.result }}" = "success"
           test "${{ needs.workflows.result }}" = "success"
           test "${{ needs.test.result }}" = "success"
+
+  # Релиз — после ci-ok и только на пуше в main (мердж PR из dev). Права выдаются
+  # здесь: вызванный workflow не получит больше, чем у вызывающей джобы.
+  # Синтаксис $/..., который советует zizmor, actionlint пока не знает.
+  release:
+    name: Release
+    needs: ci-ok
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    uses: ./.github/workflows/release.yml # zizmor: ignore[self-repository]
+    secrets:
+      SEMANTIC_RELEASE_PAT: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

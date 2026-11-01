@@ -1,5 +1,40 @@
 # Changelog
 
+# [2.0.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.8.0...v2.0.0) (2026-11-01)
+
+
+* feat(ads)!: объявления создаются и правятся как комбинаторные через v501 ([cd28c83](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/cd28c833687dd0ac5448068598cabc73c673f84d))
+* feat(keywords)!: ставки через KeywordBids и правило под объём трафика ([fc4178c](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/fc4178c35b083069b75ab50622075aaddaf94c62))
+* feat(tools)!: убран dry_run, незнакомые параметры отклоняются схемой ([5848010](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/5848010ba8096e9c92a46389424d7c83e7412f23)), closes [#92](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/92)
+
+
+### Bug Fixes
+
+* **ads:** предупреждения 10251 и 10252 описаны как успешный результат ([9332411](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/9332411f0c87a4fcb316f6bc6f3ee0c111605d14)), closes [#101](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/101)
+* **deps:** zod 4.6.7 и @hono/node-server 2.x без уязвимостей, аудит зависимостей в CI ([854cc6b](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/854cc6bb77759cfa1959e702dedbbf5e06941105))
+* **errors:** лимит частоты 56 от Reports отдаётся с кодом и подсказкой ([39a866b](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/39a866bdd40e56cc80dffb2bb43cc04c1309b135))
+* **format:** отказы Live v4 из ActionsResult выводятся строкой ❌ с подсказкой ([cbbad1d](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/cbbad1db0997762366053a7b17cd434875926c3e))
+* **format:** цены стратегий и бюджеты переводятся в рубли ([3ec8c75](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/3ec8c75e136d4a73efa49ae32bb1c9b71a23cab2))
+
+
+### Features
+
+* **ad-groups:** добавлен update_ad_group — название, регионы и UTM-разметка ([94c91d3](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/94c91d3f898bf96ab4abdd1f7e1e662005d13462)), closes [#60](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/60)
+* **forecast:** добавлен get_keyword_forecast — прогноз показов и цены клика по фразам без кампании ([4688ec4](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/4688ec426c125c2eaca1560a1484e139df156743)), closes [#47](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/47)
+* **keywords:** категории и бренды автотаргетинга — чтение и запись ([d2796ca](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/d2796cab5333d0665fa7c8e0bb83a62e00af9e43))
+* **keywords:** флаги автотаргетинга передаются по отдельности ([6390886](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/63908864c893f578218f9adada73548e2f0f42b8)), closes [#100](https://github.com/Pavelsiba/yandex-direct-mcp-plus/issues/100)
+* **statistics:** отчёты по группам, объявлениям, фразам и аккаунту ([dd097a7](https://github.com/Pavelsiba/yandex-direct-mcp-plus/commit/dd097a70c3bcd161e8d3dd53dcef1f064476d347))
+
+
+### BREAKING CHANGES
+
+* create_text_ad и update_text_ad заменены на create_responsive_ad
+и update_responsive_ad: вместо title/title2/text — titles[] и texts[].
+* у set_keyword_bids bid/context_bid переименованы в search_bid/network_bid;
+get_keyword_auction отдаёт торги KeywordBids (Search/Network) вместо позиций P11–P24.
+* параметра dry_run больше нет; лишний ключ в вызове любого инструмента —
+ошибка валидации, а не молча отброшенное поле.
+
 # [1.8.0](https://github.com/Pavelsiba/yandex-direct-mcp-plus/compare/v1.7.0...v1.8.0) (2026-10-11)
 
 
