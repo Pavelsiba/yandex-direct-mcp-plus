@@ -34,6 +34,7 @@ import { getChangesTool } from "#tools/changes/tool"
 import { getRegionsTool, listTimeZonesTool } from "#tools/dictionaries/tool"
 import { listDynamicTargetsTool, manageDynamicTargetsTool } from "#tools/dynamic-targets/tool"
 import { listFeedsTool } from "#tools/feeds/tool"
+import { getKeywordForecastTool } from "#tools/forecast/tool"
 import {
   addKeywordsTool,
   getKeywordAuctionTool,
@@ -100,7 +101,8 @@ export const toolGroups: readonly ToolGroup[] = [
       manageKeywordsTool,
       setKeywordBidsTool,
       setAutoKeywordBidsTool,
-      getKeywordAuctionTool
+      getKeywordAuctionTool,
+      getKeywordForecastTool
     ]
   },
   {
