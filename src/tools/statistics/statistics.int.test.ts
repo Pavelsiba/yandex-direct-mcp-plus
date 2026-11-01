@@ -1,6 +1,6 @@
 // Сетевой smoke: поля по умолчанию каждого типа отчёта Директ принимает и отдаёт столбцами
 // в том же порядке. Только чтение; отчёты расходуют свой дневной лимит, поэтому период узкий.
-import { beforeEach, describe, expect, it } from "vitest"
+import { describe, expect, it } from "vitest"
 import { STATISTICS_REPORT_TYPES } from "#shared/config/enums"
 import { CONFIGURED, firstCampaignId } from "#testing/smoke"
 import { DEFAULT_FIELDS, handleGetStatistics } from "./handler.js"
@@ -8,12 +8,8 @@ import { getStatisticsSchema } from "./schema.js"
 
 const DAY_MS = 86_400_000
 const yesterday = new Date(Date.now() - DAY_MS).toISOString().slice(0, 10)
-// Reports отвечает ошибкой 56 «не чаще чем 1 раз в 10 секунд», хотя справка обещает 20 запросов.
-const REPORT_INTERVAL_MS = 11_000
 
 describe.skipIf(!CONFIGURED)("smoke statistics", () => {
-  beforeEach(() => new Promise<void>((resolve) => setTimeout(resolve, REPORT_INTERVAL_MS)), REPORT_INTERVAL_MS * 2)
-
   it.each(STATISTICS_REPORT_TYPES)("%s принимает поля по умолчанию", { timeout: 120_000 }, async (reportType) => {
     const campaignIds = reportType === "ACCOUNT_PERFORMANCE_REPORT" ? undefined : [await firstCampaignId()]
     const params = getStatisticsSchema.parse({
