@@ -1,0 +1,23 @@
+// Схема — документация для модели (docs/architecture.md, «Схемы — конвенции zod v4»).
+// z.coerce на ID принял бы уже округлённое 19-значное число и сделал из него правдоподобную
+// строку; z.enum и .describe() — диалект v3.
+or {
+    `z.coerce` as $hit where {
+        register_diagnostic(
+            span = $hit,
+            message = "z.coerce запрещён: на ID он примет уже округлённое число и спрячет потерю точности. ID — idField из #shared/lib/id, числа — z.int()/z.number()."
+        )
+    },
+    `z.enum($args)` as $hit where {
+        register_diagnostic(
+            span = $hit,
+            message = "z.enum — диалект zod v3. Перечисление — z.literal([...]) со значениями из WSDL (docs/api-v5.md)."
+        )
+    },
+    `$schema.describe($args)` as $hit where {
+        register_diagnostic(
+            span = $hit,
+            message = ".describe() — легаси zod v3. Описание поля — .meta({ description })."
+        )
+    }
+}

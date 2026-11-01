@@ -4,8 +4,9 @@
 // Полный разбор — docs/architecture.md, раздел «Инвариант: 64-битные ID».
 //
 // Правило глобальное: overrides плагины не отключает (проверено на 2.5.11),
-// поэтому исключения помечаются в самих файлах строкой
-//   // biome-ignore-all lint/plugin: причина
+// поэтому исключения помечаются в самих файлах строкой с именем плагина — голое
+// lint/plugin заглушило бы и остальные плагины из biome.json:
+//   // biome-ignore-all lint/plugin/no-native-json: причина
 `JSON.$method($args)` where {
     $method <: or { `parse`, `stringify` },
     register_diagnostic(

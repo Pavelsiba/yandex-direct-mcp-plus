@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: тест разбирает собственный вывод форматтера
+// biome-ignore-all lint/plugin/no-native-json: тест разбирает собственный вывод форматтера
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { FUNDS_MONEY_KEYS, formatResult, hasItemErrors, MONEY_KEYS } from "#shared/lib/format"

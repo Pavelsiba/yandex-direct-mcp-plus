@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: сериализуется нормализованное дерево, ID в нём уже строки
+// biome-ignore-all lint/plugin/no-native-json: сериализуется нормализованное дерево, ID в нём уже строки
 // Единый формат ответа инструментов: деньги в рублях, ID строками, сверху — уведомления Директа.
 import { getErrorHint } from "#shared/lib/error-hints"
 import { microsToRubles } from "#shared/lib/money"

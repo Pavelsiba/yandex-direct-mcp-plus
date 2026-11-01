@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: тест разбирает тела запросов
+// biome-ignore-all lint/plugin/no-native-json: тест разбирает тела запросов
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { FORECAST_MAX_PHRASES, FORECAST_POLL } from "#shared/config/limits"
 import { installFetchMock, lastRequestUrl, mockFetch, okResponse } from "#testing/fetch-mock"

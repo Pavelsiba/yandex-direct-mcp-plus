@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: фикстуры ответов; ID в них задаются сырой строкой, а не числом
+// biome-ignore-all lint/plugin/no-native-json: фикстуры ответов; ID в них задаются сырой строкой, а не числом
 // Подмена транспорта для unit-тестов через шов transport из #shared/api/fetch.
 import { vi } from "vitest"
 import { setTransport, type Transport } from "#shared/api/fetch"

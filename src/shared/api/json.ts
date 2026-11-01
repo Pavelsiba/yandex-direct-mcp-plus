@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: единственное место в проекте, где вызывается разбор JSON
+// biome-ignore-all lint/plugin/no-native-json: единственное место в проекте, где вызывается разбор JSON
 // 19-значные ID родной JSON.parse без reviver молча округляет в чужой, но валидный ID.
 // Reviver берёт такие числа из исходного текста строкой. Разбор JSON — только здесь,
 // держит GritQL-плагин Biome.

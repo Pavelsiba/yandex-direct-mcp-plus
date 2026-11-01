@@ -285,7 +285,9 @@ diff файла показывает ровно то, что поменял Ян
   а не замечание на ревью. Правило глобальное: `overrides` плагины не отключает
   (проверено на Biome 2.5.11), поэтому исключения — `format.ts`, тесты, чтение
   `package.json`, `dictionaries.ts` — помечены в самих файлах через
-  `// biome-ignore-all lint/plugin` или `// biome-ignore lint/plugin` с причиной.
+  `// biome-ignore-all lint/plugin/no-native-json` с причиной. Имя плагина
+  обязательно: голое `lint/plugin` глушит и остальные плагины из `biome.json`
+  (`zod-v4`, `no-micros-literal`, `determinism`, `no-reset-modules`).
 - **Тест по реестру** (`src/app/registry.unit.test.ts`). Реестр дескрипторов дал то,
   чего не было в плоской раскладке: один тест обходит **все** инструменты и проверяет,
   что каждое поле на `_id`/`_ids` построено через `idField` и что 19-значное число

@@ -1,0 +1,9 @@
+// Детерминизм: часы и случайность внутри кода делают его непроверяемым. Значение приходит
+// параметром; законный шов — параметр по умолчанию, он помечается
+//   // biome-ignore lint/plugin/determinism: причина
+or { `Date.now()`, `Math.random()`, `new Date()` } as $hit where {
+    register_diagnostic(
+        span = $hit,
+        message = "Часы и случайность — параметром (или параметром по умолчанию с biome-ignore lint/plugin/determinism), а не вызовом в теле: иначе код не проверить тестом."
+    )
+}

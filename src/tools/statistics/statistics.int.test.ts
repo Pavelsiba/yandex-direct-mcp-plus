@@ -7,6 +7,7 @@ import { DEFAULT_FIELDS, handleGetStatistics } from "./handler.js"
 import { getStatisticsSchema } from "./schema.js"
 
 const DAY_MS = 86_400_000
+// biome-ignore lint/plugin/determinism: сетевой тест берёт вчерашний день боевого аккаунта
 const yesterday = new Date(Date.now() - DAY_MS).toISOString().slice(0, 10)
 
 describe.skipIf(!CONFIGURED)("smoke statistics", () => {

@@ -1,4 +1,4 @@
-// biome-ignore-all lint/plugin: тест разбирает тело запроса; ID в фикстурах заданы сырой строкой
+// biome-ignore-all lint/plugin/no-native-json: тест разбирает тело запроса; ID в фикстурах заданы сырой строкой
 import { beforeEach, describe, expect, it } from "vitest"
 import { installFetchMock, lastRawBody, mockFetch, okResponse } from "#testing/fetch-mock"
 import { handleDeleteVcards, handleListVcards } from "./handler.js"
