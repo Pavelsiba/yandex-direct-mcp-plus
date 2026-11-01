@@ -4,7 +4,7 @@ import type { FieldOf } from "#shared/config/api-fields"
 import { reportName } from "#shared/lib/report"
 import type { getSearchQueriesSchema } from "./schema.js"
 
-const DEFAULT_FIELDS: FieldOf<"reports", "FieldEnum">[] = [
+export const DEFAULT_FIELDS: FieldOf<"reports", "FieldEnum">[] = [
   "Query",
   "CampaignId",
   "CampaignName",
