@@ -1,6 +1,6 @@
-import { DESTRUCTIVE, defineTool, READ, WRITE } from "#shared/lib/tool"
-import { handleCreateAdGroup, handleDeleteAdGroups, handleListAdGroups } from "./handler.js"
-import { createAdGroupSchema, deleteAdGroupsSchema, listAdGroupsSchema } from "./schema.js"
+import { DESTRUCTIVE, defineTool, IDEMPOTENT, READ, WRITE } from "#shared/lib/tool"
+import { handleCreateAdGroup, handleDeleteAdGroups, handleListAdGroups, handleUpdateAdGroup } from "./handler.js"
+import { createAdGroupSchema, deleteAdGroupsSchema, listAdGroupsSchema, updateAdGroupSchema } from "./schema.js"
 
 export const listAdGroupsTool = defineTool({
   name: "list_ad_groups",
@@ -21,6 +21,18 @@ export const createAdGroupTool = defineTool({
   annotations: WRITE,
   schema: createAdGroupSchema,
   handler: handleCreateAdGroup
+})
+
+export const updateAdGroupTool = defineTool({
+  name: "update_ad_group",
+  title: "Обновить группу",
+  description:
+    "Изменить группу объявлений без пересоздания: название, регионы показа (полный список, заменяет прежний) и/или " +
+    "UTM-разметку ссылок. Минус-фразы группы — set_ad_group_negative_keywords, наборы — link_negative_keyword_sets, " +
+    "автотаргетинг — update_keywords.",
+  annotations: IDEMPOTENT,
+  schema: updateAdGroupSchema,
+  handler: handleUpdateAdGroup
 })
 
 export const deleteAdGroupsTool = defineTool({

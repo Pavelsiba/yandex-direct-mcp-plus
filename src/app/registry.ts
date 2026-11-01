@@ -3,7 +3,7 @@
 import type { ToolDescriptor } from "#shared/lib/tool"
 import { getAccountBalanceTool } from "#tools/account/tool"
 import { addAdExtensionsTool, deleteAdExtensionsTool, listAdExtensionsTool } from "#tools/ad-extensions/tool"
-import { createAdGroupTool, deleteAdGroupsTool, listAdGroupsTool } from "#tools/ad-groups/tool"
+import { createAdGroupTool, deleteAdGroupsTool, listAdGroupsTool, updateAdGroupTool } from "#tools/ad-groups/tool"
 import { manageAdImagesTool } from "#tools/ad-images/tool"
 import {
   createResponsiveAdTool,
@@ -85,7 +85,7 @@ export const toolGroups: readonly ToolGroup[] = [
   },
   {
     title: "Группы объявлений",
-    tools: [listAdGroupsTool, createAdGroupTool, deleteAdGroupsTool]
+    tools: [listAdGroupsTool, createAdGroupTool, updateAdGroupTool, deleteAdGroupsTool]
   },
   {
     title: "Объявления",
