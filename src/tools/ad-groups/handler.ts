@@ -3,7 +3,7 @@ import { apiPost } from "#shared/api/client"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
-import type { createAdGroupSchema, deleteAdGroupsSchema, listAdGroupsSchema } from "./schema.js"
+import type { createAdGroupSchema, deleteAdGroupsSchema, listAdGroupsSchema, updateAdGroupSchema } from "./schema.js"
 import { AD_GROUP_LIST_FIELDS } from "./schema.js"
 
 export async function handleListAdGroups(params: z.infer<typeof listAdGroupsSchema>): Promise<string> {
@@ -28,6 +28,21 @@ export async function handleCreateAdGroup(params: z.infer<typeof createAdGroupSc
     ]
   })
   return formatResult(data)
+}
+
+export async function handleUpdateAdGroup(params: z.infer<typeof updateAdGroupSchema>): Promise<string> {
+  const { ad_group_id, name, region_ids, tracking_params } = params
+  if (name === undefined && region_ids === undefined && tracking_params === undefined) {
+    throw new Error("Нечего обновлять: укажите name, region_ids и/или tracking_params.")
+  }
+
+  const adGroup: Record<string, unknown> = { Id: apiId(ad_group_id) }
+  if (name !== undefined) adGroup.Name = name
+  if (region_ids !== undefined) adGroup.RegionIds = apiIds(region_ids)
+  // TrackingParams в WSDL не nillable: разметка снимается пустой строкой, а не null.
+  if (tracking_params !== undefined) adGroup.TrackingParams = tracking_params ?? ""
+
+  return formatResult(await apiPost("adgroups", "update", { AdGroups: [adGroup] }))
 }
 
 export async function handleDeleteAdGroups(params: z.infer<typeof deleteAdGroupsSchema>): Promise<string> {

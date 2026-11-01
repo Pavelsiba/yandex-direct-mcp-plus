@@ -7,8 +7,8 @@
 //
 // Запуск: npm run api:snapshot
 //
-// Разбор регулярками, а не XML-парсером, намеренно: нужны два узких среза — операции и
-// перечисления, — и ради них тянуть зависимость в проект не стоит.
+// Разбор регулярками, а не XML-парсером, намеренно: нужны узкие срезы — операции,
+// перечисления и имена полей xsd:long, — и ради них тянуть зависимость в проект не стоит.
 
 import { writeFileSync } from "node:fs"
 
@@ -49,6 +49,10 @@ const SERVICES = [
 // перечислений, не с чем сверить: в WSDL сервиса их нет, и drift Яндекса diff не покажет.
 const GENERAL_XSD = "https://soap.direct.yandex.ru/v5/general.xsd"
 
+// У ReportService нет WSDL: спецификация отчёта описана отдельной схемой, и только в ней
+// лежат типы отчётов и имена полей FieldNames.
+const REPORTS_XSD = "https://api.direct.yandex.com/v5/reports.xsd"
+
 const OUT = "docs/api-v5.md"
 
 async function fetchXml(url, label) {
@@ -80,20 +84,35 @@ function enumerations(wsdl) {
   return result.sort((a, b) => a.name.localeCompare(b.name))
 }
 
+// Деньги в v5 — xsd:long в микроединицах, но тем же типом идут ID и счётчики. Список имён
+// держит format.unit.test.ts: каждое должно быть явно отнесено к деньгам или не-деньгам,
+// иначе новое денежное поле уйдёт наружу микроединицами.
+function longFields(xml) {
+  const found = new Set()
+  for (const match of xml.matchAll(/<xsd:element\b[^>]*>/g)) {
+    const name = match[0].match(/\bname="([^"]+)"/)?.[1]
+    if (name && /\btype="xsd:long"/.test(match[0])) found.add(name)
+  }
+  return [...found].sort()
+}
+
+function renderLongFields(xml) {
+  const names = longFields(xml)
+  return names.length ? ["### Поля xsd:long", "", names.map((name) => `\`${name}\``).join(", "), ""] : []
+}
+
 function renderService(service, wsdl) {
   const lines = [`## ${service}`, ""]
   const ops = operations(wsdl)
   lines.push(`Методы: ${ops.length ? ops.map((op) => `\`${op}\``).join(", ") : "—"}`, "")
 
   const enums = enumerations(wsdl)
-  if (enums.length === 0) {
-    lines.push("Перечислений нет.", "")
-    return lines
-  }
+  if (enums.length === 0) lines.push("Перечислений нет.", "")
 
   for (const { name, values } of enums) {
     lines.push(`### ${name}`, "", values.map((value) => `\`${value}\``).join(", "), "")
   }
+  lines.push(...renderLongFields(wsdl))
   return lines
 }
 
@@ -106,6 +125,8 @@ const header = [
   "Первоисточник допустимых значений: `xsd:enumeration` в WSDL сервиса, а не страницы",
   "справочника — те отдают неполные списки. WSDL доступен без токена:",
   '`curl -s "https://api.direct.yandex.com/v5/<service>?wsdl"`.',
+  "",
+  "За сервисами идёт `reports.xsd` — спецификация отчёта ReportService, у которого нет WSDL.",
   "",
   "Последним разделом идёт `general.xsd` — общие типы, импортируемые всеми сервисами.",
   "Перечисления оттуда (пол, возраст, платёжеспособность, раскладка выдачи) в WSDL",
@@ -131,6 +152,16 @@ for (const service of SERVICES) {
   console.error(`✔ ${service}`)
 }
 
+const reports = await fetchXml(REPORTS_XSD, "reports.xsd")
+const reportEnums = enumerations(reports)
+if (reportEnums.length === 0) throw new Error("reports.xsd: ни одного перечисления")
+enumCount += reportEnums.length
+body.push("## reports", "", "Схема спецификации отчёта (`reports.xsd`), WSDL у сервиса нет.", "")
+for (const { name, values } of reportEnums) {
+  body.push(`### ${name}`, "", values.map((value) => `\`${value}\``).join(", "), "")
+}
+console.error("✔ reports.xsd")
+
 const general = await fetchXml(GENERAL_XSD, "general.xsd")
 const generalEnums = enumerations(general)
 if (generalEnums.length === 0) throw new Error("general.xsd: ни одного перечисления")
@@ -139,8 +170,14 @@ body.push("## general.xsd", "", "Общие типы, импортируемые
 for (const { name, values } of generalEnums) {
   body.push(`### ${name}`, "", values.map((value) => `\`${value}\``).join(", "), "")
 }
+body.push(...renderLongFields(general))
 console.error("✔ general.xsd")
 
-header.splice(4, 0, `Сервисов: ${SERVICES.length} плюс общий \`general.xsd\`. Перечислений: ${enumCount}.`, "")
+header.splice(
+  4,
+  0,
+  `Сервисов: ${SERVICES.length} плюс \`reports.xsd\` и общий \`general.xsd\`. Перечислений: ${enumCount}.`,
+  ""
+)
 writeFileSync(OUT, `${header.join("\n")}\n${body.join("\n")}`, "utf8")
-console.error(`\n${OUT}: ${SERVICES.length} сервисов + general.xsd, ${enumCount} перечислений.`)
+console.error(`\n${OUT}: ${SERVICES.length} сервисов + reports.xsd + general.xsd, ${enumCount} перечислений.`)

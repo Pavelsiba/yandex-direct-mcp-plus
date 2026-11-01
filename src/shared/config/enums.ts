@@ -6,7 +6,25 @@ import { API_FIELDS } from "./api-fields.js"
 // UNKNOWN бывает только в ответе.
 export const CAMPAIGN_STATUSES = ["ACCEPTED", "DRAFT", "MODERATION", "REJECTED"] as const
 
+// ReportTypeEnum из reports.xsd без SEARCH_QUERY_PERFORMANCE_REPORT: поисковые запросы
+// строит отдельный инструмент со своими полями по умолчанию.
+export const STATISTICS_REPORT_TYPES = [
+  "CAMPAIGN_PERFORMANCE_REPORT",
+  "ADGROUP_PERFORMANCE_REPORT",
+  "AD_PERFORMANCE_REPORT",
+  "CRITERIA_PERFORMANCE_REPORT",
+  "ACCOUNT_PERFORMANCE_REPORT",
+  "CUSTOM_REPORT",
+  "REACH_AND_FREQUENCY_PERFORMANCE_REPORT"
+] as const
+
 export const KEYWORD_ACTIONS = ["suspend", "resume", "delete"] as const
+
+// Currency в CreateNewForecast (Live v4): у v4 нет снимка WSDL, список — из справки метода.
+export const FORECAST_CURRENCIES = ["RUB", "BYN", "KZT", "TRY", "UAH", "USD", "EUR", "CHF"] as const
+
+// Площадки торгов KeywordBids.get: каждая — свой набор полей (SearchFieldNames, NetworkFieldNames).
+export const AUCTION_PLACEMENTS = ["search", "network"] as const
 
 export const AD_ACTIONS = ["suspend", "resume", "archive", "unarchive", "moderate", "delete"] as const
 
@@ -94,7 +112,8 @@ export const AD_IMAGE_TYPES = ["REGULAR", "WIDE", "FIXED_IMAGE", "AUTO"] as cons
 
 export const AD_IMAGE_ACTIONS = ["add", "get", "delete"] as const
 
-export const ASSOCIATED_FLAGS = ["YES", "NO"] as const
+// YesNoEnum из general.xsd.
+export const YES_NO = ["YES", "NO"] as const
 
 export const RETARGETING_TYPES = ["RETARGETING", "AUDIENCE"] as const
 export const RETARGETING_RULE_OPERATORS = ["ALL", "ANY", "NONE"] as const

@@ -4,8 +4,12 @@ name: Release
 # (workflow_run) и работает лишь при его успехе и событии push, то есть после
 # мерджа PR из dev. Прогоны CI на pull_request отфильтрованы условием на event.
 # workflow_dispatch оставлен для ручного запуска, когда релиз надо догнать.
+#
+# workflow_run опасен, когда исполняет код из PR форка с правами базового репо.
+# Здесь чужого кода нет: триггер сужен до main, условие требует event == push,
+# а checkout явно берёт ref: main — то есть уже влитое.
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: ["CI"]
     types:
       - completed
@@ -49,7 +53,7 @@ jobs:
       # (lib/get-git-auth-url.js). Пуш ушёл бы от github-actions, у которого bypass
       # в рулсетах нет, и упал бы на защите main.
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
@@ -60,7 +64,7 @@ jobs:
       # (об этом прямо предупреждает документация плагина). Аутентификацию несёт
       # переменная NPM_TOKEN на шаге Release, файл настройки для этого не нужен.
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -117,9 +121,10 @@ jobs:
     steps:
       # Тем же PAT: на dev висит ci-required, а bypass для github-actions
       # в личном репозитории добавить нельзя — API отвечает, что интеграция
-      # должна принадлежать источнику рулсета.
-      - name: Checkout
-        uses: actions/checkout@v7
+      # должна принадлежать источнику рулсета. Креды PAT остаются в checkout
+      # намеренно — ими идёт git push ниже; артефактов джоба не выгружает.
+      - name: Checkout # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: dev
           fetch-depth: 0

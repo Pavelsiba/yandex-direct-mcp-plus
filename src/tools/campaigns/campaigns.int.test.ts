@@ -1,7 +1,7 @@
 // Сетевой smoke: форма ответа campaigns.get на боевом API. Только чтение.
 import { describe, it } from "vitest"
 import { API_FIELDS } from "#shared/config/api-fields"
-import { CONFIGURED, expectRubles, smokeRead } from "#testing/smoke"
+import { CONFIGURED, expectRubles, resultItems, smokeRead } from "#testing/smoke"
 
 const FIELDS = API_FIELDS.campaigns.CampaignFieldEnum
 
@@ -19,8 +19,8 @@ describe.skipIf(!CONFIGURED)("smoke campaigns.get", () => {
   })
 })
 
-type Campaigns = { result: { Campaigns: { DailyBudget?: { Amount?: unknown } }[] } }
+type Campaign = { DailyBudget?: { Amount?: unknown } }
 
 function firstBudget(payload: unknown): unknown {
-  return (payload as Campaigns).result.Campaigns.find((campaign) => campaign.DailyBudget)?.DailyBudget?.Amount
+  return resultItems<Campaign>(payload, "Campaigns").find((campaign) => campaign.DailyBudget)?.DailyBudget?.Amount
 }

@@ -1,13 +1,25 @@
 import { DESTRUCTIVE, defineTool, IDEMPOTENT, READ, WRITE } from "#shared/lib/tool"
-import { handleCreateTextAd, handleListAds, handleManageAds, handleModerateAds, handleUpdateTextAd } from "./handler.js"
-import { createTextAdSchema, listAdsSchema, manageAdsSchema, moderateAdsSchema, updateTextAdSchema } from "./schema.js"
+import {
+  handleCreateResponsiveAd,
+  handleListAds,
+  handleManageAds,
+  handleModerateAds,
+  handleUpdateResponsiveAd
+} from "./handler.js"
+import {
+  createResponsiveAdSchema,
+  listAdsSchema,
+  manageAdsSchema,
+  moderateAdsSchema,
+  updateResponsiveAdSchema
+} from "./schema.js"
 
 export const listAdsTool = defineTool({
   name: "list_ads",
   title: "Список объявлений",
   description:
-    "Объявления: заголовки, тексты, ссылки, статусы, тип и подтип объявления, привязанные сайтлинки, " +
-    "визитка и изображение. Причина отказа модерации приходит в StatusClarification. " +
+    "Объявления: все заголовки и тексты, ссылки, статусы, тип и подтип объявления, привязанные сайтлинки, " +
+    "изображения и видео. Текстовые объявления Директ отдаёт комбинаторными (RESPONSIVE_AD). Причина отказа модерации приходит в StatusClarification. " +
     "Отбор по ID объявлений, группам или кампаниям — хотя бы одно из трёх; сужается состоянием, статусом и типом. " +
     "Без фильтра по состоянию архивные приходят наравне с активными. Список может быть неполным: объявления, тексты которых генерирует " +
     "нейросеть Яндекса, через API недоступны и в выдачу не попадают, а по ответу это никак не видно. Поэтому " +
@@ -18,22 +30,28 @@ export const listAdsTool = defineTool({
   handler: handleListAds
 })
 
-export const createTextAdTool = defineTool({
-  name: "create_text_ad",
-  title: "Создать объявление",
-  description: "Создать текстовое объявление: заголовок (≤56), второй заголовок (≤30), текст (≤81), ссылка.",
+export const createResponsiveAdTool = defineTool({
+  name: "create_responsive_ad",
+  title: "Создать комбинаторное объявление",
+  description:
+    "Создать комбинаторное объявление: от 1 до 7 заголовков (≤56 символов), от 1 до 3 текстов (≤81) и ссылка; " +
+    "варианты показа Директ собирает из них сам. Текстовые объявления через API больше не создаются — " +
+    "Директ заводит их комбинаторными. В группе — не больше 3 неархивных комбинаторных объявлений.",
   annotations: WRITE,
-  schema: createTextAdSchema,
-  handler: handleCreateTextAd
+  schema: createResponsiveAdSchema,
+  handler: handleCreateResponsiveAd
 })
 
-export const updateTextAdTool = defineTool({
-  name: "update_text_ad",
-  title: "Обновить объявление",
-  description: "Обновить текстовое объявление: заголовок, текст, ссылка. Изменённое объявление уходит на модерацию.",
+export const updateResponsiveAdTool = defineTool({
+  name: "update_responsive_ad",
+  title: "Обновить комбинаторное объявление",
+  description:
+    "Обновить комбинаторное объявление: заголовки, тексты, ссылка. Набор заголовков или текстов заменяется " +
+    "целиком — передайте полный, вместе с теми, что не меняются; текущие показывает list_ads. " +
+    "Изменённое объявление уходит на модерацию.",
   annotations: IDEMPOTENT,
-  schema: updateTextAdSchema,
-  handler: handleUpdateTextAd
+  schema: updateResponsiveAdSchema,
+  handler: handleUpdateResponsiveAd
 })
 
 export const manageAdsTool = defineTool({

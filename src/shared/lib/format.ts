@@ -6,23 +6,46 @@ import { isRecord } from "#shared/lib/record"
 
 // Только заведомо денежные ключи, иначе в рубли уехали бы счётчики и ID. Value — ценность
 // цели: конвертируются только числа, строковые Value из Settings (YES/NO) не трогаются.
-const MONEY_KEYS = new Set([
+// Полноту по полям xsd:long из снимка WSDL сторожит format.unit.test.ts.
+export const MONEY_KEYS = new Set([
   "Amount",
+  "AverageCpa",
+  "AverageCpc",
+  "AverageCpi",
+  "AverageCpm",
+  "AverageCpv",
   "Bid",
-  "ContextBid",
-  "WeeklySpendLimit",
   "BidCeiling",
-  "Price",
-  "CurrentSearchPrice",
-  "MinSearchPrice",
   "CompetitorsBids",
-  "Value"
+  "ContextBid",
+  "Cpa",
+  "CurrentSearchPrice",
+  "FilterAverageCpa",
+  "FilterAverageCpc",
+  "MaxBid",
+  "MinimumExplorationBudget",
+  "MinSearchPrice",
+  "NetworkBid",
+  "OldPrice",
+  "Price",
+  "SearchBid",
+  "SpendLimit",
+  "Value",
+  "WeeklyBudgetRollover",
+  "WeeklySpendLimit"
 ])
 
 // Средства кампании (CampaignFunds, SharedAccountFunds). Имена слишком общие для
 // глобального списка, поэтому в рубли они переводятся только под ключом Funds.
 const FUNDS_KEY = "Funds"
-const FUNDS_MONEY_KEYS = new Set(["Sum", "Balance", "BalanceBonus", "SumAvailableForTransfer", "Refund", "Spend"])
+export const FUNDS_MONEY_KEYS = new Set([
+  "Sum",
+  "Balance",
+  "BalanceBonus",
+  "SumAvailableForTransfer",
+  "Refund",
+  "Spend"
+])
 
 // ID в пределах Number.MAX_SAFE_INTEGER разбор отдаёт числом, наружу ID всегда строка. Регистр значим:
 // Bid и ContextBid кончаются на «id», без учёта регистра ставки стали бы строками.
@@ -70,12 +93,32 @@ function formatNotice(prefix: string, key: string, index: number, notification: 
 export const hasItemErrors = (output: string): boolean =>
   output.split("\n").some((line) => line.startsWith(ITEM_ERROR_MARK))
 
+type V4Fault = { FaultCode?: number; FaultString?: string; FaultDetail?: string }
+
+// Live v4 кладёт отказ по логину в data.ActionsResult[].Errors со своими именами полей, а
+// Accounts при этом просто пустой — без строки ❌ модель прочла бы это как «счетов нет».
+function v4ActionNotices(data: unknown): string[] {
+  const actions = isRecord(data) ? data.ActionsResult : undefined
+  if (!Array.isArray(actions)) return []
+
+  return actions.flatMap((action, index) =>
+    ((action?.Errors ?? []) as V4Fault[]).map((fault) =>
+      formatNotice(ITEM_ERROR_MARK, "ActionsResult", index, {
+        Code: fault.FaultCode,
+        Message: fault.FaultString,
+        Details: fault.FaultDetail
+      })
+    )
+  )
+}
+
 // Отказы по объектам лежат в *Results, обрезка выборки — в LimitedBy, и всё это приходит
 // с HTTP 200: без шапки модель прочла бы частичный отказ как успех.
 function collectNotices(data: unknown): string {
-  const lines: string[] = []
-  const result = isRecord(data) ? data.result : undefined
-  if (!isRecord(result)) return ""
+  if (!isRecord(data)) return ""
+  const lines = v4ActionNotices(data.data)
+  const result = data.result
+  if (!isRecord(result)) return lines.join("\n")
 
   if (typeof result.LimitedBy === "number") {
     lines.push(

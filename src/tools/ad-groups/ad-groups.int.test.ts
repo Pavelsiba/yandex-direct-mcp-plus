@@ -4,11 +4,20 @@
 // живым вызовом, а не прогоном тестов: наружу уходило то число, то строка, и зависело
 // это от величины значения, а не от поля.
 //
-// Только чтение: полигон не нужен, ничего не создаётся и не меняется.
-import { describe, expect, it } from "vitest"
+// Чтение полигона не требует; запись update_ad_group — ниже, только на полигон.
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { API_FIELDS } from "#shared/config/api-fields"
-import { CONFIGURED, collectIds, firstCampaignId, parseOutput, smokeRead } from "#testing/smoke"
-import { handleListAdGroups } from "./handler.js"
+import {
+  CONFIGURED,
+  collectIds,
+  expectPolygonDraft,
+  firstCampaignId,
+  parseOutput,
+  resultItems,
+  smokeRead
+} from "#testing/smoke"
+import { handleListAdGroups, handleUpdateAdGroup } from "./handler.js"
+import { updateAdGroupSchema } from "./schema.js"
 
 describe.skipIf(!CONFIGURED)("форма ID в ответе боевого API", () => {
   it("отдаёт каждый ID строкой, какой бы разрядности он ни был", async () => {
@@ -22,6 +31,62 @@ describe.skipIf(!CONFIGURED)("форма ID в ответе боевого API",
       "в ответе не оказалось ни одного поля ID"
     ).toEqual(expect.arrayContaining(["Id", "CampaignId", "RegionIds"]))
     expect(ids.filter(([, value]) => typeof value !== "string")).toEqual([])
+  })
+})
+
+// Запись — только в группу кампании-полигона, оставленной черновиком; ID полигона — из
+// окружения, без YANDEX_DIRECT_POLYGON_CAMPAIGN_ID кейсы пропускаются.
+const POLYGON = process.env.YANDEX_DIRECT_POLYGON_CAMPAIGN_ID
+const POLYGON_SET = Boolean(POLYGON && CONFIGURED)
+
+type PolygonGroup = { Id: string; RegionIds: string[]; TrackingParams: string }
+
+async function readPolygonGroup(): Promise<PolygonGroup> {
+  const output = await handleListAdGroups({
+    campaign_ids: [POLYGON as string],
+    fields: ["Id", "RegionIds", "TrackingParams"],
+    limit: 1
+  })
+  const [group] = resultItems<PolygonGroup>(parseOutput(output), "AdGroups")
+  if (!group) throw new Error(`В кампании-полигоне ${POLYGON} нет ни одной группы`)
+  return group
+}
+
+describe.skipIf(!POLYGON_SET)("update_ad_group против боевого API", () => {
+  let original: PolygonGroup
+
+  beforeAll(async () => {
+    await expectPolygonDraft(POLYGON as string)
+    original = await readPolygonGroup()
+  })
+
+  afterAll(async () => {
+    // Группу не прочитали — в неё и не писали, восстанавливать нечего.
+    if (!original) return
+    await handleUpdateAdGroup(
+      updateAdGroupSchema.parse({
+        ad_group_id: original.Id,
+        region_ids: original.RegionIds,
+        tracking_params: original.TrackingParams || null
+      })
+    )
+  })
+
+  it("заменяет регионы целиком, а не дописывает к прежним", async () => {
+    await handleUpdateAdGroup(updateAdGroupSchema.parse({ ad_group_id: original.Id, region_ids: ["225", "-213"] }))
+
+    expect((await readPolygonGroup()).RegionIds).toEqual(["225", "-213"])
+  })
+
+  it("снимает разметку по null", async () => {
+    await handleUpdateAdGroup(
+      updateAdGroupSchema.parse({ ad_group_id: original.Id, tracking_params: "utm_source=probe" })
+    )
+    expect((await readPolygonGroup()).TrackingParams).toBe("utm_source=probe")
+
+    await handleUpdateAdGroup(updateAdGroupSchema.parse({ ad_group_id: original.Id, tracking_params: null }))
+
+    expect((await readPolygonGroup()).TrackingParams).toBe("")
   })
 })
 

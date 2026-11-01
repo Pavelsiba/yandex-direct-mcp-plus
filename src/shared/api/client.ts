@@ -1,19 +1,30 @@
 // JSON API v5 — основной клиент: один POST на сервис с телом { method, params }.
-import { holdWrite, isReadMethod } from "#shared/api/dry-run"
 import { assertNoApiError, isTransientApiError } from "#shared/api/errors"
 import { commonHeaders, fetchWithRetry, logUnits, readJson, retryWhen } from "#shared/api/fetch"
 import { stringifyJson } from "#shared/api/json"
 import { BASE_URL } from "#shared/config/endpoints"
 
-export async function apiPost(service: string, method: string, params: Record<string, unknown> = {}): Promise<unknown> {
-  const held = holdWrite(service, method, params)
-  if (held) return held
+// Всё, чего здесь нет, считается записью: незнакомый метод безопаснее не повторять лишний раз.
+const READ_METHODS = new Set([
+  "get",
+  "getGeoRegions",
+  "check",
+  "checkCampaigns",
+  "checkDictionaries",
+  "hasSearchVolume"
+])
 
-  const write = !isReadMethod(method)
+export async function apiPost(
+  service: string,
+  method: string,
+  params: Record<string, unknown> = {},
+  baseUrl: string = BASE_URL
+): Promise<unknown> {
+  const write = !READ_METHODS.has(method)
   return retryWhen(
     (error) => isTransientApiError(error, { write }),
     async () => {
-      const response = await fetchWithRetry(`${BASE_URL}${service}`, {
+      const response = await fetchWithRetry(`${baseUrl}${service}`, {
         method: "POST",
         headers: commonHeaders(),
         body: stringifyJson({ method, params })

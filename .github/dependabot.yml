@@ -1,0 +1,19 @@
+# Actions в workflow закреплены по SHA коммита: тег подвижен, коммит — нет.
+# Dependabot читает версию из комментария рядом с SHA и обновляет оба.
+# PR идут в dev, как и всё остальное: main наполняется только мерджем из dev.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    # Свежий релиз action — самое уязвимое место цепочки поставок: подменённую
+    # версию обычно отзывают в первые дни. Неделя выдержки это окно пропускает.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

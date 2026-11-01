@@ -1,23 +1,26 @@
 import type { z } from "zod"
 import { apiPost } from "#shared/api/client"
 import { API_FIELDS } from "#shared/config/api-fields"
+import { V501_URL } from "#shared/config/endpoints"
 import { formatResult } from "#shared/lib/format"
 import { apiId, apiIds } from "#shared/lib/id"
 import { buildPage } from "#shared/lib/pagination"
 import type {
-  createTextAdSchema,
+  createResponsiveAdSchema,
   listAdsSchema,
   manageAdsSchema,
   moderateAdsSchema,
-  updateTextAdSchema
+  updateResponsiveAdSchema
 } from "./schema.js"
 
 // Весь AdFieldEnum: баллы считаются за объекты, а не за поля, и без StatusClarification
 // не видно, почему объявление отклонено..
 const LIST_FIELDS = [...API_FIELDS.ads.AdFieldEnum]
 
+// Текстовые объявления Директ отдаёт комбинаторными, если спросить ResponsiveAdFieldNames,
+// а TextAd показывает только первый заголовок и текст. С обоими наборами приходит один ResponsiveAd.
 // *Moderation не берём: вложенные объекты раздувают ответ, причина отказа уже в StatusClarification.
-const TEXT_AD_FIELDS = API_FIELDS.ads.TextAdFieldEnum.filter((field) => !field.endsWith("Moderation"))
+const RESPONSIVE_AD_FIELDS = API_FIELDS.ads.ResponsiveAdFieldEnum.filter((field) => !field.endsWith("Moderation"))
 
 // На пустую выборку Директ отдаёт `{ "result": {} }` без ключа Ads — модель читает это
 // как поломку и начинает гадать.
@@ -47,7 +50,7 @@ export async function handleListAds(params: z.infer<typeof listAdsSchema>): Prom
   const requestParams: Record<string, unknown> = {
     SelectionCriteria: selectionCriteria,
     FieldNames: LIST_FIELDS,
-    TextAdFieldNames: TEXT_AD_FIELDS
+    ResponsiveAdFieldNames: RESPONSIVE_AD_FIELDS
   }
   const page = buildPage(params)
   if (page) requestParams.Page = page
@@ -57,28 +60,33 @@ export async function handleListAds(params: z.infer<typeof listAdsSchema>): Prom
   return hasAds(data) ? body : `${EMPTY_ADS_NOTICE}\n\n${body}`
 }
 
-export async function handleCreateTextAd(params: z.infer<typeof createTextAdSchema>): Promise<string> {
-  const textAd: Record<string, unknown> = { Title: params.title, Text: params.text, Href: params.href }
-  if (params.title2) textAd.Title2 = params.title2
-
-  const data = await apiPost("ads", "add", {
-    Ads: [{ AdGroupId: apiId(params.ad_group_id), TextAd: textAd }]
-  })
+export async function handleCreateResponsiveAd(params: z.infer<typeof createResponsiveAdSchema>): Promise<string> {
+  const { ad_group_id, titles, texts, href } = params
+  const data = await apiPost(
+    "ads",
+    "add",
+    { Ads: [{ AdGroupId: apiId(ad_group_id), ResponsiveAd: { Titles: titles, Texts: texts, Href: href } }] },
+    V501_URL
+  )
   return formatResult(data)
 }
 
-export async function handleUpdateTextAd(params: z.infer<typeof updateTextAdSchema>): Promise<string> {
-  const textAd: Record<string, unknown> = {}
-  if (params.title !== undefined) textAd.Title = params.title
-  if (params.title2 !== undefined) textAd.Title2 = params.title2
-  if (params.text !== undefined) textAd.Text = params.text
-  if (params.href !== undefined) textAd.Href = params.href
+export async function handleUpdateResponsiveAd(params: z.infer<typeof updateResponsiveAdSchema>): Promise<string> {
+  const responsiveAd: Record<string, unknown> = {}
+  if (params.titles !== undefined) responsiveAd.Titles = params.titles
+  if (params.texts !== undefined) responsiveAd.Texts = params.texts
+  if (params.href !== undefined) responsiveAd.Href = params.href
 
-  if (Object.keys(textAd).length === 0) {
-    throw new Error("Нечего обновлять: укажите хотя бы одно из title/title2/text/href.")
+  if (Object.keys(responsiveAd).length === 0) {
+    throw new Error("Нечего обновлять: укажите хотя бы одно из titles/texts/href.")
   }
 
-  const data = await apiPost("ads", "update", { Ads: [{ Id: apiId(params.ad_id), TextAd: textAd }] })
+  const data = await apiPost(
+    "ads",
+    "update",
+    { Ads: [{ Id: apiId(params.ad_id), ResponsiveAd: responsiveAd }] },
+    V501_URL
+  )
   return formatResult(data)
 }
 

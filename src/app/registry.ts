@@ -1,12 +1,17 @@
 // Реестр инструментов: единственный список, который знает про все домены сразу.
 // Импорты явные, не глоб: glob прячет инструмент от knip и ломает типизацию списка.
-import { withDryRun } from "#app/dry-run"
 import type { ToolDescriptor } from "#shared/lib/tool"
 import { getAccountBalanceTool } from "#tools/account/tool"
 import { addAdExtensionsTool, deleteAdExtensionsTool, listAdExtensionsTool } from "#tools/ad-extensions/tool"
-import { createAdGroupTool, deleteAdGroupsTool, listAdGroupsTool } from "#tools/ad-groups/tool"
+import { createAdGroupTool, deleteAdGroupsTool, listAdGroupsTool, updateAdGroupTool } from "#tools/ad-groups/tool"
 import { manageAdImagesTool } from "#tools/ad-images/tool"
-import { createTextAdTool, listAdsTool, manageAdsTool, moderateAdsTool, updateTextAdTool } from "#tools/ads/tool"
+import {
+  createResponsiveAdTool,
+  listAdsTool,
+  manageAdsTool,
+  moderateAdsTool,
+  updateResponsiveAdTool
+} from "#tools/ads/tool"
 import { listAudienceTargetsTool, setAudienceTargetsTool } from "#tools/audience-targets/tool"
 import {
   addBidAdjustmentsTool,
@@ -29,11 +34,13 @@ import { getChangesTool } from "#tools/changes/tool"
 import { getRegionsTool, listTimeZonesTool } from "#tools/dictionaries/tool"
 import { listDynamicTargetsTool, manageDynamicTargetsTool } from "#tools/dynamic-targets/tool"
 import { listFeedsTool } from "#tools/feeds/tool"
+import { getKeywordForecastTool } from "#tools/forecast/tool"
 import {
   addKeywordsTool,
   getKeywordAuctionTool,
   listKeywordsTool,
   manageKeywordsTool,
+  setAutoKeywordBidsTool,
   setKeywordBidsTool,
   updateKeywordsTool
 } from "#tools/keywords/tool"
@@ -79,11 +86,11 @@ export const toolGroups: readonly ToolGroup[] = [
   },
   {
     title: "Группы объявлений",
-    tools: [listAdGroupsTool, createAdGroupTool, deleteAdGroupsTool]
+    tools: [listAdGroupsTool, createAdGroupTool, updateAdGroupTool, deleteAdGroupsTool]
   },
   {
     title: "Объявления",
-    tools: [listAdsTool, createTextAdTool, updateTextAdTool, manageAdsTool, moderateAdsTool]
+    tools: [listAdsTool, createResponsiveAdTool, updateResponsiveAdTool, manageAdsTool, moderateAdsTool]
   },
   {
     title: "Ключевые фразы и ставки",
@@ -93,7 +100,9 @@ export const toolGroups: readonly ToolGroup[] = [
       updateKeywordsTool,
       manageKeywordsTool,
       setKeywordBidsTool,
-      getKeywordAuctionTool
+      setAutoKeywordBidsTool,
+      getKeywordAuctionTool,
+      getKeywordForecastTool
     ]
   },
   {
@@ -146,6 +155,6 @@ export const toolGroups: readonly ToolGroup[] = [
     title: "Аккаунт и справочники",
     tools: [getAccountBalanceTool, listBusinessesTool, getChangesTool, listFeedsTool, getRegionsTool, listTimeZonesTool]
   }
-].map((group) => ({ ...group, tools: group.tools.map(withDryRun) }))
+]
 
 export const tools: readonly ToolDescriptor[] = toolGroups.flatMap((group) => group.tools)

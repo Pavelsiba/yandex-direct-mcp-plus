@@ -5,6 +5,9 @@ import { tools } from "#app/registry"
 import { createServer } from "#app/server"
 import { formatResult } from "#shared/lib/format"
 import { defineTool, type ToolDescriptor, WRITE } from "#shared/lib/tool"
+import { installFetchMock, mockFetch } from "#testing/fetch-mock"
+
+installFetchMock()
 
 const toolAnswering = (response: unknown) =>
   defineTool({
@@ -63,8 +66,7 @@ describe("сервер", () => {
         campaign_id: "1",
         schedule: [{ days: ["MON"], start_hour: 9, end_hour: 21 }],
         suspend_on_holidays: true,
-        holiday_bid_percent: 50,
-        dry_run: true
+        holiday_bid_percent: 50
       }
     })
 
@@ -72,6 +74,20 @@ describe("сервер", () => {
     expect(result.content).toEqual([
       expect.objectContaining({ text: expect.stringContaining("suspend_on_holidays=true") })
     ])
+    await client.close()
+  })
+
+  it("отклоняет незнакомый параметр и не отправляет запись", async () => {
+    const client = await connect()
+
+    const result = await client.callTool({
+      name: "update_campaign",
+      arguments: { campaign_id: "1", name: "Новое", dry_run: true }
+    })
+
+    expect(result.isError).toBe(true)
+    expect(result.content).toEqual([expect.objectContaining({ text: expect.stringContaining("dry_run") })])
+    expect(mockFetch).not.toHaveBeenCalled()
     await client.close()
   })
 

@@ -5,10 +5,10 @@ import { API_FIELDS } from "#shared/config/api-fields"
 import { AD_STATES, AD_STATUSES, AD_TYPES } from "#shared/config/enums"
 import { CONFIGURED, firstCampaignId, smokeRead } from "#testing/smoke"
 
-// Настройки объявления лежат в отдельном объекте, имя которого зависит от типа: TextAd,
+// Настройки объявления лежат в отдельном объекте, имя которого зависит от типа: ResponsiveAd,
 // MobileAppAd и соседи. В AdFieldEnum этих ключей нет — перечисление описывает общие поля,
 // а не вложенный объект, поэтому имена типов добавляются к разрешённым.
-const AD_TYPE_KEYS = ["TextAd", "TextImageAd", "MobileAppAd", "DynamicTextAd", "SmartAdBuilderAd"]
+const AD_TYPE_KEYS = ["ResponsiveAd", "TextAd", "TextImageAd", "MobileAppAd", "DynamicTextAd", "SmartAdBuilderAd"]
 
 const FIELDS = [...API_FIELDS.ads.AdFieldEnum, ...AD_TYPE_KEYS]
 
@@ -20,7 +20,7 @@ describe.skipIf(!CONFIGURED)("smoke ads.get", () => {
       params: {
         SelectionCriteria: { CampaignIds: [BigInt(await firstCampaignId())] },
         FieldNames: [...API_FIELDS.ads.AdFieldEnum],
-        TextAdFieldNames: ["Title", "Text", "Href"],
+        ResponsiveAdFieldNames: ["Titles", "Texts", "Href"],
         Page: { Limit: 5 }
       },
       collection: "Ads",
