@@ -1,0 +1,10 @@
+// Тот же конфиг читает расширение markdownlint в VS Code: форматтер IDE и `npm run lint:md`
+// сходятся в одних правилах.
+{
+  "config": {
+    // Проза в README и docs переносится по смыслу, а не по 80 колонкам.
+    "MD013": false
+  },
+  // CHANGELOG и api-v5 генерируются, roadmap заморожен архивом.
+  "ignores": ["CHANGELOG.md", "docs/api-v5.md", "docs/roadmap.md", "node_modules/**", "dist/**", ".claude/**", ".git/**"]
+}

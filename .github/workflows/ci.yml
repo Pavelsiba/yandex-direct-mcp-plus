@@ -50,6 +50,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Lint Markdown
+        run: npm run lint:md
+
   # Отдельно от сборки намеренно: tsconfig.json покрывает тесты и конфиги,
   # которых нет в tsconfig.build.json. Сборка их не проверяет вообще.
   typecheck:
