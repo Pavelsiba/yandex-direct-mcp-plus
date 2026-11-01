@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { apiPost } from "#shared/api/client"
 import { API_FIELDS } from "#shared/config/api-fields"
-import { CONFIGURED, expectRubles, firstAdGroupId, smokeRead } from "#testing/smoke"
+import { CONFIGURED, expectPolygonDraft, expectRubles, firstAdGroupId, resultItems, smokeRead } from "#testing/smoke"
 import { handleUpdateKeywords } from "./handler.js"
 
 const KEYWORD_FIELDS = API_FIELDS.keywords.KeywordFieldEnum
@@ -69,7 +69,7 @@ async function findAutotargeting(): Promise<{ id: string; settings: Settings }> 
     AutotargetingSettingsCategoriesFieldNames: [...API_FIELDS["general.xsd"].AutotargetingCategoriesFieldEnum],
     AutotargetingSettingsBrandOptionsFieldNames: [...API_FIELDS["general.xsd"].AutotargetingBrandOptionsFieldEnum]
   })
-  const keywords = (data as { result?: { Keywords?: AutotargetingKeyword[] } }).result?.Keywords ?? []
+  const keywords = resultItems<AutotargetingKeyword>(data, "Keywords")
   const autotargeting = keywords.find((keyword) => keyword.Keyword === "---autotargeting")
   if (!autotargeting?.AutotargetingSettings) throw new Error(`У полигона ${POLYGON} нет фразы ---autotargeting`)
   return { id: String(autotargeting.Id), settings: autotargeting.AutotargetingSettings }
@@ -97,18 +97,8 @@ describe.skipIf(!POLYGON_CONFIGURED)("автотаргетинг полигон�
   let keywordId = ""
   let original: Settings
 
-  // Кампания вне черновика может показываться и тратить деньги: тест на неё не пишет и падает.
   beforeAll(async () => {
-    const data = await apiPost("campaigns", "get", {
-      SelectionCriteria: { Ids: [POLYGON] },
-      FieldNames: ["Id", "Status", "State"]
-    })
-    const campaign = (data as { result?: { Campaigns?: { Status?: string; State?: string }[] } }).result?.Campaigns?.[0]
-    expect(
-      { Status: campaign?.Status, State: campaign?.State },
-      `Кампания-полигон ${POLYGON} вышла из черновика — писать в неё нельзя`
-    ).toEqual({ Status: "DRAFT", State: "OFF" })
-
+    await expectPolygonDraft(POLYGON as string)
     const found = await findAutotargeting()
     keywordId = found.id
     original = found.settings
@@ -147,14 +137,13 @@ describe.skipIf(!POLYGON_CONFIGURED)("автотаргетинг полигон�
 
 type AuctionItem = { TrafficVolume: number; Bid: number; Price: number }
 
+type KeywordBid = { Search?: { AuctionBids?: { AuctionBidItems?: AuctionItem[] } } }
+
 function firstAuctionItem(payload: unknown): AuctionItem | undefined {
-  const items = (
-    payload as { result: { KeywordBids: { Search?: { AuctionBids?: { AuctionBidItems?: AuctionItem[] } } }[] } }
-  ).result.KeywordBids
+  const items = resultItems<KeywordBid>(payload, "KeywordBids")
   return items.flatMap((item) => item.Search?.AuctionBids?.AuctionBidItems ?? [])[0]
 }
 
 function firstBid(payload: unknown, collection: string): unknown {
-  const items = (payload as { result: Record<string, { Bid?: unknown }[]> }).result[collection]
-  return items.find((item) => typeof item.Bid === "number")?.Bid
+  return resultItems<{ Bid?: unknown }>(payload, collection).find((item) => typeof item.Bid === "number")?.Bid
 }

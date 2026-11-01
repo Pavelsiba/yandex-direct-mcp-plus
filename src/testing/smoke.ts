@@ -36,6 +36,36 @@ export function parseOutput(output: string): unknown {
   return JSON.parse(output.slice(output.indexOf("{")))
 }
 
+// Коллекция ответа v5 — из сырого apiPost или из parseOutput: у обоих она под `result`.
+// Без `result` ответ не той формы, и это ошибка теста, а не пустая выборка; пустую же
+// коллекцию Директ опускает, поэтому её отсутствие — [].
+export function resultItems<T>(data: unknown, collection: string): T[] {
+  const result = isRecord(data) ? data.result : undefined
+  if (!isRecord(result)) {
+    throw new Error(`В ответе нет result.${collection}: ключи верхнего уровня — ${Object.keys(Object(data))}`)
+  }
+  const items = result[collection]
+  if (items === undefined) return []
+  if (!Array.isArray(items)) throw new Error(`result.${collection} — не массив`)
+  return items as T[]
+}
+
+// Проверка цели до первой записи. Кампания вне черновика может показываться и тратить
+// деньги: тест на неё не пишет и падает, а не пропускается — пропуск читался бы как
+// «нечего проверять», хотя случилось непредвиденное.
+export async function expectPolygonDraft(polygon: string): Promise<void> {
+  const data = await apiPost("campaigns", "get", {
+    SelectionCriteria: { Ids: [polygon] },
+    FieldNames: ["Id", "Status", "State"]
+  })
+  const [campaign] = resultItems<{ Status?: string; State?: string }>(data, "Campaigns")
+  expect(campaign, `Кампания-полигон ${polygon} недоступна`).toBeDefined()
+  expect(
+    { Status: campaign?.Status, State: campaign?.State },
+    `Кампания-полигон ${polygon} вышла из черновика — писать в неё нельзя`
+  ).toEqual({ Status: "DRAFT", State: "OFF" })
+}
+
 // Ловится только ключ, которого нет в перечислении снимка; значения проверяют инварианты.
 function strictItem(fields: readonly string[]): z.ZodType {
   return z.strictObject(Object.fromEntries(fields.map((field) => [field, z.unknown().optional()])))

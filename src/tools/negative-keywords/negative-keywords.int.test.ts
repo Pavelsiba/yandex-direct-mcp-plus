@@ -10,7 +10,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { apiPost } from "#shared/api/client"
 import { API_FIELDS } from "#shared/config/api-fields"
-import { smokeRead, CONFIGURED as TOKEN_SET } from "#testing/smoke"
+import { expectPolygonDraft, resultItems, smokeRead, CONFIGURED as TOKEN_SET } from "#testing/smoke"
 import {
   handleLinkNegativeKeywordSets,
   handleManageNegativeKeywordSharedSets,
@@ -20,14 +20,14 @@ import {
 const POLYGON = process.env.YANDEX_DIRECT_POLYGON_CAMPAIGN_ID
 const CONFIGURED = Boolean(POLYGON && process.env.YANDEX_DIRECT_TOKEN)
 
-type Campaign = { Status?: string; State?: string; NegativeKeywords?: { Items: string[] } | null }
+type Campaign = { NegativeKeywords?: { Items: string[] } | null }
 
 async function getCampaign(fieldNames: string[]): Promise<Campaign | undefined> {
   const data = await apiPost("campaigns", "get", {
     SelectionCriteria: { Ids: [POLYGON] },
     FieldNames: ["Id", ...fieldNames]
   })
-  return (data as { result?: { Campaigns?: Campaign[] } }).result?.Campaigns?.[0]
+  return resultItems<Campaign>(data, "Campaigns")[0]
 }
 
 // null, а не пустой массив: у кампании без минус-фраз Директ отдаёт именно его.
@@ -44,17 +44,8 @@ const set = (keywords: string[], mode: "replace" | "add" | "remove"): Promise<st
   handleSetCampaignNegativeKeywords({ campaign_id: POLYGON as string, negative_keywords: keywords, mode })
 
 describe.skipIf(!CONFIGURED)("минус-фразы кампании против боевого API", () => {
-  // Проверка цели до первой записи. Кампания, вышедшая из черновика, может показываться и
-  // тратить деньги — на такую тест не пишет ничего и падает, а не пропускается: пропуск
-  // здесь читался бы как «нечего проверять», хотя случилось непредвиденное.
   beforeAll(async () => {
-    const campaign = await getCampaign(["Status", "State"])
-    expect(campaign, `Кампания-полигон ${POLYGON} недоступна`).toBeDefined()
-    expect(
-      { Status: campaign?.Status, State: campaign?.State },
-      `Кампания-полигон ${POLYGON} вышла из черновика — писать в неё нельзя`
-    ).toEqual({ Status: "DRAFT", State: "OFF" })
-
+    await expectPolygonDraft(POLYGON as string)
     await clearPolygon()
   })
 
@@ -120,7 +111,7 @@ async function listSets(): Promise<SharedSet[]> {
   const data = await apiPost("negativekeywordsharedsets", "get", {
     FieldNames: ["Id", "Name", "Associated", "NegativeKeywords"]
   })
-  return (data as { result?: { NegativeKeywordSharedSets?: SharedSet[] } }).result?.NegativeKeywordSharedSets ?? []
+  return resultItems<SharedSet>(data, "NegativeKeywordSharedSets")
 }
 
 // По имени, а не по сохранённому ID: упавший прошлый прогон мог оставить набор за собой.
@@ -199,11 +190,10 @@ async function readCampaignSetIds(): Promise<string[] | null> {
     TextCampaignFieldNames: ["NegativeKeywordSharedSetIds"]
   })
 
-  const campaign = (
-    data as {
-      result?: { Campaigns?: { TextCampaign?: { NegativeKeywordSharedSetIds?: { Items: string[] } | null } }[] }
-    }
-  ).result?.Campaigns?.[0]
+  const [campaign] = resultItems<{ TextCampaign?: { NegativeKeywordSharedSetIds?: { Items: string[] } | null } }>(
+    data,
+    "Campaigns"
+  )
 
   const items = campaign?.TextCampaign?.NegativeKeywordSharedSetIds?.Items
   return items ? items.map(String) : null
@@ -214,12 +204,7 @@ describe.skipIf(!CONFIGURED)("привязка общих наборов к ка
   let setId = ""
 
   beforeAll(async () => {
-    const campaign = await getCampaign(["Status", "State"])
-    expect(
-      { Status: campaign?.Status, State: campaign?.State },
-      `Кампания-полигон ${POLYGON} вышла из черновика — писать в неё нельзя`
-    ).toEqual({ Status: "DRAFT", State: "OFF" })
-
+    await expectPolygonDraft(POLYGON as string)
     await deleteProbeSets()
     await handleManageNegativeKeywordSharedSets({
       action: "add",

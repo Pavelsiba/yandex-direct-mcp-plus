@@ -1,4 +1,12 @@
 # Хуки гоняются локально; в CI отключены переменной LEFTHOOK=0 (проверки там свои).
+
+# Без рамки-баннера и цветов: вывод хуков читает и агент, ANSI-градиенты там — шум.
+colors: false
+output:
+  - summary
+  - failure
+  - execution_out
+
 pre-commit:
   parallel: true
   jobs:
@@ -20,6 +28,12 @@ pre-commit:
       glob: "{*.ts,*.js}"
       run: npx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
+
+    # Markdown — по тем же правилам, что форматтер IDE (.markdownlint-cli2.jsonc).
+    # Целиком, а не {staged_files}: так ловится и README, пересобранный docs:tools.
+    - name: markdown
+      glob: "{*.md,.markdownlint-cli2.jsonc}"
+      run: npm run lint:md
 
     # tsc проверяет проект целиком, per-file его гонять нельзя. Конфиги на .js
     # тоже под проверкой (tsconfig.json их включает), отсюда второй шаблон.

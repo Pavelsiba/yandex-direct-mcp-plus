@@ -6,9 +6,16 @@
 //
 // Чтение полигона не требует; запись update_ad_group — ниже, только на полигон.
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { apiPost } from "#shared/api/client"
 import { API_FIELDS } from "#shared/config/api-fields"
-import { CONFIGURED, collectIds, firstCampaignId, parseOutput, smokeRead } from "#testing/smoke"
+import {
+  CONFIGURED,
+  collectIds,
+  expectPolygonDraft,
+  firstCampaignId,
+  parseOutput,
+  resultItems,
+  smokeRead
+} from "#testing/smoke"
 import { handleListAdGroups, handleUpdateAdGroup } from "./handler.js"
 import { updateAdGroupSchema } from "./schema.js"
 
@@ -40,7 +47,7 @@ async function readPolygonGroup(): Promise<PolygonGroup> {
     fields: ["Id", "RegionIds", "TrackingParams"],
     limit: 1
   })
-  const group = (parseOutput(output) as { result?: { AdGroups?: PolygonGroup[] } }).result?.AdGroups?.[0]
+  const [group] = resultItems<PolygonGroup>(parseOutput(output), "AdGroups")
   if (!group) throw new Error(`В кампании-полигоне ${POLYGON} нет ни одной группы`)
   return group
 }
@@ -48,19 +55,8 @@ async function readPolygonGroup(): Promise<PolygonGroup> {
 describe.skipIf(!POLYGON_SET)("update_ad_group против боевого API", () => {
   let original: PolygonGroup
 
-  // Кампания, вышедшая из черновика, может показываться и тратить деньги: тест падает,
-  // а не пропускается.
   beforeAll(async () => {
-    const data = await apiPost("campaigns", "get", {
-      SelectionCriteria: { Ids: [POLYGON] },
-      FieldNames: ["Status", "State"]
-    })
-    const campaign = (data as { result?: { Campaigns?: { Status?: string; State?: string }[] } }).result?.Campaigns?.[0]
-    expect(
-      { Status: campaign?.Status, State: campaign?.State },
-      `Кампания-полигон ${POLYGON} вышла из черновика — писать в неё нельзя`
-    ).toEqual({ Status: "DRAFT", State: "OFF" })
-
+    await expectPolygonDraft(POLYGON as string)
     original = await readPolygonGroup()
   })
 

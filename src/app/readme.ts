@@ -26,7 +26,7 @@ function summary(description: string): string {
 
 function renderGroup(group: ToolGroup): string {
   const rows = group.tools.map((tool) => `| \`${tool.name}\` | ${summary(tool.description)} |`)
-  return [`**${group.title}**`, "", "| Инструмент | Описание |", "| ------------ | ---------- |", ...rows].join("\n")
+  return [`### ${group.title}`, "", "| Инструмент | Описание |", "| ------------ | ---------- |", ...rows].join("\n")
 }
 
 export function renderToolTables(groups: readonly ToolGroup[]): string {
